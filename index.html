@@ -632,6 +632,11 @@
                             <option value="COMERCIO">🏢 Setor: Comércio</option>
                             <option value="INDUSTRIA">🏭 Setor: Indústria</option>
                         </select>
+                        <select id="biFilterPeriod" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                            <option value="MES">📅 Mês Atual</option>
+                            <option value="30DIAS">⏱️ Últimos 30 Dias</option>
+                            <option value="TODOS">🌐 Geral Acumulado</option>
+                        </select>
                         <button type="button" onclick="loadBiDashboardData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-600"></i>
                             <span class="hidden sm:inline">Atualizar BI</span>
@@ -1291,29 +1296,49 @@
             const sectorSelect = document.getElementById('biFilterSector');
             const sector = sectorSelect ? sectorSelect.value : (currentUser?.setor_principal === 'INDUSTRIA' ? 'INDUSTRIA' : 'COMERCIO');
 
+            const periodSelect = document.getElementById('biFilterPeriod');
+            const period = periodSelect ? periodSelect.value : 'MES';
+
+            let startDate = null;
+            if (period === 'MES') {
+                startDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+            } else if (period === '30DIAS') {
+                startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            }
+
             const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio';
             const validadeTable = sector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
             const saldoTable = sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
 
             try {
-                // 1. CARREGAR CONTAGENS RECENTES (ÚLTIMAS 500)
-                const { data: contagensRaw } = await supabaseClient.from(contagemTable)
+                // 1. CARREGAR CONTAGENS RECENTES (FILTRADAS POR PERÍODO)
+                let contagensQuery = supabaseClient.from(contagemTable)
                     .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(500);
+                    .order('created_at', { ascending: false });
+                if (startDate) {
+                    contagensQuery = contagensQuery.gte('created_at', startDate);
+                } else {
+                    contagensQuery = contagensQuery.limit(500);
+                }
+                const { data: contagensRaw } = await contagensQuery;
                 const contagens = contagensRaw || [];
 
-                // 2. CARREGAR TRANSFERÊNCIAS DO MÊS
-                const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-                const { data: trfDataRaw } = await supabaseClient.from('transferencias_armazem')
-                    .select('id, codigo_lote, setor, status, criado_em, transferencias_armazem_itens(count)')
-                    .gte('criado_em', firstDayOfMonth);
+                // 2. CARREGAR TRANSFERÊNCIAS DO PERÍODO
+                let trfQuery = supabaseClient.from('transferencias_armazem')
+                    .select('id, codigo_lote, setor, status, criado_em, transferencias_armazem_itens(count)');
+                if (startDate) {
+                    trfQuery = trfQuery.gte('criado_em', startDate);
+                }
+                const { data: trfDataRaw } = await trfQuery;
                 const transferencias = trfDataRaw || [];
 
-                // 3. CARREGAR MINUTAS DO MÊS
-                const { data: minutasRaw } = await supabaseClient.from('minutas')
-                    .select('id, conferente, qtd_sacolas, created_at')
-                    .gte('created_at', firstDayOfMonth);
+                // 3. CARREGAR MINUTAS DO PERÍODO
+                let minQuery = supabaseClient.from('minutas')
+                    .select('id, conferente, qtd_sacolas, created_at');
+                if (startDate) {
+                    minQuery = minQuery.gte('created_at', startDate);
+                }
+                const { data: minutasRaw } = await minQuery;
                 const minutas = minutasRaw || [];
 
                 // 4. CARREGAR VALIDADES / AGING (ARMAZÉM 50)
