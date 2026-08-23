@@ -2449,19 +2449,28 @@
                 }
             }
 
-            // 2. Salva o item no Supabase
-            if (activeBatch.id && supabaseClient) {
-                const { data, error } = await supabaseClient.from('transferencias_armazem_itens')
-                    .insert(itemPayload)
-                    .select()
-                    .single();
+            // 2. Salva o item no Supabase (com fallback offline inteligente)
+            if (activeBatch.id && supabaseClient && navigator.onLine) {
+                try {
+                    const { data, error } = await supabaseClient.from('transferencias_armazem_itens')
+                        .insert(itemPayload)
+                        .select()
+                        .single();
 
-                if (!error && data) {
-                    activeBatch.itens.push(data);
-                } else {
+                    if (!error && data) {
+                        activeBatch.itens.push(data);
+                    } else {
+                        saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
+                        activeBatch.itens.push(itemPayload);
+                    }
+                } catch(eTrf) {
+                    saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
                     activeBatch.itens.push(itemPayload);
                 }
             } else {
+                if (activeBatch.id) {
+                    saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
+                }
                 activeBatch.itens.push(itemPayload);
             }
 

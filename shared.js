@@ -513,7 +513,15 @@ function scrollToBottom() {
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
 }
 
-// --- INDICADORES DE CONEXÃO E FILA OFFLINE ---
+// --- INDICADORES DE CONEXÃO E MOTOR OFFLINE (SYNC ENGINE) ---
+function ensureGlobalConnectivityWidget() {
+    if (document.getElementById('globalConnectivityWidget')) return;
+    const div = document.createElement('div');
+    div.id = 'globalConnectivityWidget';
+    div.className = 'fixed bottom-4 right-4 z-50 transition-all duration-300 pointer-events-auto no-print';
+    document.body.appendChild(div);
+}
+
 function updateStatusIndicators(isConnected) {
     const loginDot = document.getElementById('loginStatusDot');
     const appDot = document.getElementById('appStatusDot');
@@ -524,21 +532,62 @@ function updateStatusIndicators(isConnected) {
         if (loginDot) loginDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
         if (appDot) appDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
     }
+    updateOfflineBadgeUI();
 }
 
 function updateOfflineBadgeUI() {
+    ensureGlobalConnectivityWidget();
     const queue = JSON.parse(localStorage.getItem('amazon_offline_queue') || '[]');
-    const badge = document.getElementById('offlineSyncBadge');
-    const countSpan = document.getElementById('offlineSyncCount');
-    if (badge && countSpan) {
+    const widget = document.getElementById('globalConnectivityWidget');
+    const isOnline = navigator.onLine;
+    
+    // Atualiza badge no header se existir
+    const headerBadge = document.getElementById('offlineSyncBadge');
+    const headerCount = document.getElementById('offlineSyncCount');
+    if (headerBadge && headerCount) {
         if (queue.length > 0) {
-            countSpan.innerText = queue.length;
-            badge.classList.remove('hidden');
-            badge.classList.add('flex');
+            headerCount.innerText = queue.length;
+            headerBadge.classList.remove('hidden');
+            headerBadge.classList.add('flex');
         } else {
-            badge.classList.add('hidden');
-            badge.classList.remove('flex');
+            headerBadge.classList.add('hidden');
+            headerBadge.classList.remove('flex');
         }
+    }
+
+    if (!widget) return;
+
+    if (isSyncing) {
+        widget.innerHTML = `
+            <div class="flex items-center gap-2 bg-[#002f6c] text-white px-3.5 py-2 rounded-2xl shadow-xl border border-blue-400/30 text-xs font-bold animate-pulse">
+                <svg class="animate-spin h-3.5 w-3.5 text-blue-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Sincronizando ${queue.length} item(ns)...</span>
+            </div>
+        `;
+        widget.classList.remove('opacity-0', 'pointer-events-none');
+    } else if (!isOnline) {
+        widget.innerHTML = `
+            <div class="flex items-center gap-2 bg-amber-600 text-white px-3.5 py-2 rounded-2xl shadow-xl border border-amber-400/40 text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>Modo Offline ${queue.length > 0 ? `(${queue.length} salvo no aparelho)` : ''}</span>
+            </div>
+        `;
+        widget.classList.remove('opacity-0', 'pointer-events-none');
+    } else if (queue.length > 0) {
+        widget.innerHTML = `
+            <button onclick="processOfflineQueue()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-2xl shadow-xl border border-emerald-400/30 text-xs font-black transition cursor-pointer scale-100 hover:scale-105 active:scale-95">
+                <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                <span>Sincronizar ${queue.length} item(ns)</span>
+            </button>
+        `;
+        widget.classList.remove('opacity-0', 'pointer-events-none');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } else {
+        // Online e sem pendências: oculta suavemente
+        widget.innerHTML = '';
     }
 }
 
@@ -554,7 +603,7 @@ function saveOfflineAction(action, table, payload, meta = null) {
     });
     localStorage.setItem('amazon_offline_queue', JSON.stringify(queue));
     updateOfflineBadgeUI();
-    showAlert("Lançamento salvo offline! Será sincronizado automaticamente assim que a conexão retornar.", "warning");
+    showAlert("Lançamento salvo com segurança no dispositivo (Modo Offline)! Será enviado ao Supabase assim que houver conexão.", "warning");
 }
 
 async function processOfflineQueue() {
@@ -566,8 +615,7 @@ async function processOfflineQueue() {
     }
     
     isSyncing = true;
-    const loader = document.getElementById('globalLoader');
-    if (loader) loader.classList.remove('hidden');
+    updateOfflineBadgeUI();
     
     const remaining = [];
     let successCount = 0;
@@ -609,7 +657,7 @@ async function processOfflineQueue() {
                     errorOccurred = true;
                     remaining.push(item);
                 } else {
-                    console.warn("Item ignorado devido a erro de validação:", item);
+                    console.warn("Item ignorado devido a erro de validação/duplicidade:", item);
                 }
             } else {
                 successCount++;
@@ -623,17 +671,18 @@ async function processOfflineQueue() {
     
     localStorage.setItem('amazon_offline_queue', JSON.stringify(remaining));
     isSyncing = false;
-    if (loader) loader.classList.add('hidden');
     
     updateOfflineBadgeUI();
     
     if (successCount > 0) {
-        showAlert(`${successCount} item(ns) sincronizado(s) com sucesso!`, "success");
+        showAlert(`${successCount} lançamento(s) offline sincronizado(s) com sucesso no Supabase!`, "success");
         if (typeof fetchAllRecords === 'function') fetchAllRecords();
+        if (typeof loadMasterDataForSector === 'function') loadMasterDataForSector();
+        if (typeof loadHomeData === 'function') loadHomeData();
     }
     
     if (errorOccurred) {
-        showAlert("Alguns itens pendentes não puderam ser sincronizados devido a falha de conexão.", "warning");
+        showAlert("Conexão instável. Os itens restantes continuarão salvos no aparelho até o sinal estabilizar.", "warning");
     }
 }
 
