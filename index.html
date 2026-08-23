@@ -738,18 +738,28 @@
                         </div>
                     </div>
 
-                    <!-- TOP CONFERENTES RANKING -->
+                    <!-- TOP CONFERENTES RANKING (TOP 5 + BOTÃO GERAL) -->
                     <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                <i data-lucide="award" class="w-3.5 h-3.5 text-amber-500"></i>
-                                <span>Ranking de Produtividade</span>
-                            </h4>
-                            <span class="text-[10px] font-bold text-slate-400">Top Conferentes</span>
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="award" class="w-3.5 h-3.5 text-amber-500"></i>
+                                    <span>Ranking de Produtividade</span>
+                                </h4>
+                                <button type="button" onclick="openGlobalRankingModal()" class="text-[11px] font-bold text-[#002f6c] hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                    <span>Ver Geral</span>
+                                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            <div id="biRankingConferentes" class="space-y-2 text-xs">
+                                <div class="p-3 text-center text-slate-400 font-semibold">Carregando ranking...</div>
+                            </div>
                         </div>
-                        <div id="biRankingConferentes" class="space-y-2 text-xs">
-                            <div class="p-3 text-center text-slate-400 font-semibold">Carregando ranking...</div>
-                        </div>
+
+                        <button type="button" onclick="openGlobalRankingModal()" class="w-full mt-3 py-2 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                            <i data-lucide="users" class="w-3.5 h-3.5 text-[#002f6c] dark:text-blue-400"></i>
+                            <span>Ver Todas as Unidades &amp; Colaboradores</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -806,6 +816,83 @@
                 <button type="button" onclick="closeLogoutModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
                 <button type="button" onclick="executeLogout()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-md shadow-red-200">Sim, Sair</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL RANKING GERAL DE PRODUTIVIDADE (TODAS AS UNIDADES) -->
+    <div id="globalRankingModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+            
+            <!-- HEADER DO MODAL -->
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="award" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">Ranking Geral de Produtividade</h3>
+                            <span class="bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Todas as Unidades</span>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-400">Consolidado de contagens, transferências e acuracidade por colaborador</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeGlobalRankingModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 flex items-center justify-center transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- FILTROS DO MODAL -->
+            <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
+                <div class="relative w-full sm:flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="modalRankingSearch" oninput="filterGlobalRankingUI()" placeholder="Pesquisar colaborador ou matrícula..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                </div>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                    <select id="modalRankingFilialFilter" onchange="filterGlobalRankingUI()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none">
+                        <option value="ALL">🏢 Todas as Unidades</option>
+                        <option value="01">01 - Alvorada</option>
+                        <option value="02">02 - Matriz CD</option>
+                        <option value="04">04 - Raiz</option>
+                        <option value="05">05 - Cidade Nova</option>
+                        <option value="06">06 - Jorge Teixeira</option>
+                        <option value="INDUSTRIA">🏭 Indústria</option>
+                    </select>
+
+                    <button type="button" onclick="exportRankingToCSV()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Exportar CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABELA DO RANKING GERAL -->
+            <div class="overflow-y-auto flex-grow p-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                            <th class="px-3 py-2.5 text-center w-12">Posição</th>
+                            <th class="px-3 py-2.5">Colaborador</th>
+                            <th class="px-3 py-2.5 text-center">Unidade / Filial</th>
+                            <th class="px-3 py-2.5 text-right">Contagens</th>
+                            <th class="px-3 py-2.5 text-right">Transferências</th>
+                            <th class="px-3 py-2.5 text-right">Total Operações</th>
+                            <th class="px-3 py-2.5 text-center">Acuracidade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="globalRankingTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando dados consolidados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- FOOTER DO MODAL -->
+            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                <span id="modalRankingSummaryCount">Total: 0 colaboradores</span>
+                <button type="button" onclick="closeGlobalRankingModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-black transition">Fechar</button>
+            </div>
+
         </div>
     </div>
 
@@ -1555,30 +1642,85 @@
                     }
                 }
 
-                // --- RANKING DE CONFERENTES (TOP 5) ---
-                const rankingList = Object.keys(conferentesMap).map(k => ({
-                    nome: k,
-                    contagens: conferentesMap[k].contagens,
-                    transferencias: conferentesMap[k].transferencias,
-                    acuracia: conferentesMap[k].contagens > 0 ? ((conferentesMap[k].acertos / conferentesMap[k].contagens) * 100).toFixed(0) : 100
-                })).sort((a, b) => (b.contagens + b.transferencias) - (a.contagens + a.transferencias)).slice(0, 5);
+                // --- RANKING GLOBAL DE CONFERENTES (TODAS AS UNIDADES) ---
+                // 1. Busca todos os usuários cadastrados no sistema (todas as filiais)
+                let allUsers = [];
+                try {
+                    const { data: usersRaw } = await supabaseClient.from('usuarios')
+                        .select('matricula, nome, filial, filial_nome, setor_principal, cargo, role, ativo');
+                    allUsers = usersRaw || [];
+                } catch(eUsers) {
+                    console.warn("Aviso ao carregar usuários para o ranking:", eUsers);
+                }
 
+                // Inicializa o mapa com os usuários cadastrados
+                allUsers.forEach(u => {
+                    const uNome = (u.nome || '').trim().toUpperCase();
+                    if (!uNome) return;
+                    const filNum = String(u.filial || '01').padStart(2, '0');
+                    const filName = u.filial_nome || (filNum === '01' ? 'Alvorada' : filNum === '02' ? 'Matriz CD' : filNum === '04' ? 'Raiz' : filNum === '05' ? 'Cidade Nova' : filNum === '06' ? 'Jorge Teixeira' : `Filial ${filNum}`);
+                    
+                    if (!conferentesMap[uNome]) {
+                        conferentesMap[uNome] = {
+                            nome: u.nome,
+                            matricula: u.matricula || '---',
+                            filial: filNum,
+                            filialNome: filName,
+                            setor: u.setor_principal || 'COMERCIO',
+                            cargo: u.cargo || 'Operacional',
+                            contagens: 0,
+                            acertos: 0,
+                            transferencias: 0
+                        };
+                    } else {
+                        conferentesMap[uNome].matricula = u.matricula || conferentesMap[uNome].matricula || '---';
+                        conferentesMap[uNome].filial = filNum;
+                        conferentesMap[uNome].filialNome = filName;
+                        conferentesMap[uNome].setor = u.setor_principal || 'COMERCIO';
+                    }
+                });
+
+                // Converte em array completo e ordena por total de operações
+                globalRankingData = Object.keys(conferentesMap).map(k => {
+                    const c = conferentesMap[k];
+                    const totalOps = (c.contagens || 0) + (c.transferencias || 0);
+                    const acuracia = c.contagens > 0 ? Number(((c.acertos / c.contagens) * 100).toFixed(0)) : 100;
+                    return {
+                        nome: c.nome || k,
+                        matricula: c.matricula || '---',
+                        filial: c.filial || '01',
+                        filialNome: c.filialNome || `Filial ${c.filial || '01'}`,
+                        setor: c.setor || 'COMERCIO',
+                        cargo: c.cargo || 'Operacional',
+                        contagens: c.contagens || 0,
+                        transferencias: c.transferencias || 0,
+                        totalOps: totalOps,
+                        acuracia: acuracia
+                    };
+                }).sort((a, b) => b.totalOps - a.totalOps);
+
+                // TOP 5 PARA O CARD DA HOME (CONSOLIDADO GERAL DE TODAS AS UNIDADES)
+                const top5List = globalRankingData.filter(c => c.totalOps > 0).slice(0, 5);
                 const elRanking = document.getElementById('biRankingConferentes');
                 if (elRanking) {
-                    if (rankingList.length === 0) {
-                        elRanking.innerHTML = `<div class="p-3 text-center text-slate-400 font-semibold">Sem dados suficientes no período.</div>`;
+                    if (top5List.length === 0) {
+                        elRanking.innerHTML = `<div class="p-3 text-center text-slate-400 font-semibold">Sem operações registradas no período selecionado.</div>`;
                     } else {
                         const medalColors = ['bg-amber-400 text-amber-950', 'bg-slate-300 text-slate-900', 'bg-amber-600 text-white', 'bg-blue-100 text-blue-900', 'bg-slate-100 text-slate-700'];
                         let rankHtml = '';
-                        rankingList.forEach((c, idx) => {
+                        top5List.forEach((c, idx) => {
+                            const filBadge = c.setor === 'INDUSTRIA' ? 'IND' : `F${c.filial}`;
                             rankHtml += `
                                 <div class="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/70 shadow-2xs">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] ${medalColors[idx] || 'bg-slate-100'}">${idx + 1}</span>
-                                        <span class="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[120px]">${c.nome}</span>
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center font-black text-[10px] ${medalColors[idx] || 'bg-slate-100'} flex-shrink-0">${idx + 1}</span>
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-slate-800 dark:text-slate-100 truncate block text-xs leading-tight">${c.nome}</span>
+                                            <span class="text-[9px] font-extrabold text-blue-700 dark:text-blue-400 font-mono">${filBadge} • ${c.filialNome}</span>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2 font-mono">
-                                        <span class="text-[11px] font-black text-[#002f6c] dark:text-blue-400">${c.contagens + c.transferencias} ops</span>
+                                    <div class="flex items-center gap-2 font-mono flex-shrink-0">
+                                        <span class="text-[11px] font-black text-[#002f6c] dark:text-blue-400">${c.totalOps} ops</span>
                                         <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">${c.acuracia}%</span>
                                     </div>
                                 </div>
@@ -1593,6 +1735,115 @@
             } catch (err) {
                 console.error("Erro ao carregar dados do BI Executivo:", err);
             }
+        }
+
+        // =========================================================================
+        // CONTROLE DO MODAL DE RANKING GERAL (TODAS AS UNIDADES)
+        // =========================================================================
+        let globalRankingData = [];
+
+        function openGlobalRankingModal() {
+            const modal = document.getElementById('globalRankingModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            filterGlobalRankingUI();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeGlobalRankingModal() {
+            const modal = document.getElementById('globalRankingModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function filterGlobalRankingUI() {
+            const searchInput = document.getElementById('modalRankingSearch');
+            const filialFilter = document.getElementById('modalRankingFilialFilter');
+            
+            const q = (searchInput ? searchInput.value : '').toLowerCase().trim();
+            const fil = filialFilter ? filialFilter.value : 'ALL';
+
+            const filtered = globalRankingData.filter(c => {
+                const matchSearch = !q || (c.nome && c.nome.toLowerCase().includes(q)) || (c.matricula && c.matricula.toLowerCase().includes(q));
+                const matchFilial = fil === 'ALL' || (fil === 'INDUSTRIA' ? c.setor === 'INDUSTRIA' : c.filial === fil);
+                return matchSearch && matchFilial;
+            });
+
+            renderGlobalRankingTable(filtered);
+        }
+
+        function renderGlobalRankingTable(data) {
+            const tbody = document.getElementById('globalRankingTableBody');
+            const summarySpan = document.getElementById('modalRankingSummaryCount');
+            if (!tbody) return;
+
+            if (summarySpan) {
+                const totalOps = data.reduce((acc, it) => acc + it.totalOps, 0);
+                summarySpan.innerText = `Exibindo ${data.length} colaborador(es) • ${totalOps} operações realizadas`;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum colaborador encontrado com os filtros selecionados.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            const medalColors = ['bg-amber-400 text-amber-950 font-black', 'bg-slate-300 text-slate-900 font-black', 'bg-amber-600 text-white font-black'];
+
+            data.forEach((c, idx) => {
+                const posBadge = idx < 3 
+                    ? `<span class="w-6 h-6 rounded-full inline-flex items-center justify-center text-xs ${medalColors[idx]} shadow-xs">${idx + 1}º</span>`
+                    : `<span class="text-xs font-bold text-slate-400 font-mono">${idx + 1}º</span>`;
+
+                const filBadge = c.setor === 'INDUSTRIA'
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">Indústria</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-[#002f6c] border border-blue-200">Filial ${c.filial} - ${c.filialNome}</span>`;
+
+                const accBadge = c.totalOps > 0
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black ${c.acuracia >= 95 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">${c.acuracia}%</span>`
+                    : `<span class="text-slate-300 text-[10px]">---</span>`;
+
+                html += `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
+                        <td class="px-3 py-3 text-center">${posBadge}</td>
+                        <td class="px-3 py-3">
+                            <div class="font-black text-slate-900 dark:text-white">${c.nome}</div>
+                            <div class="text-[10px] font-mono text-slate-400">Matrícula: ${c.matricula} • ${c.cargo}</div>
+                        </td>
+                        <td class="px-3 py-3 text-center">${filBadge}</td>
+                        <td class="px-3 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-200">${c.contagens.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-3 text-right font-mono font-bold text-teal-700 dark:text-teal-400">${c.transferencias.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-3 text-right font-mono font-black text-[#002f6c] dark:text-blue-400">${c.totalOps.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-3 text-center">${accBadge}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function exportRankingToCSV() {
+            if (!globalRankingData || globalRankingData.length === 0) {
+                showAlert("Sem dados para exportar.", "warning");
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // BOM para acentuação no Excel
+            csvContent += "Posicao;Colaborador;Matricula;Cargo;Unidade;Contagens;Transferencias;Total_Operacoes;Acuracia_Percentual\n";
+
+            globalRankingData.forEach((c, idx) => {
+                const un = c.setor === 'INDUSTRIA' ? 'Industria' : `Filial ${c.filial} - ${c.filialNome}`;
+                csvContent += `"${idx + 1}";"${c.nome}";"${c.matricula}";"${c.cargo}";"${un}";${c.contagens};${c.transferencias};${c.totalOps};"${c.acuracia}%"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `ranking_produtividade_todas_unidades_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert("Relatório de Ranking Geral exportado com sucesso!", "success");
         }
 
         function populateRegisterFiliais() {
