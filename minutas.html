@@ -924,38 +924,16 @@
                 extractMinutasSeries(); 
                 populateMinutasYearDropdowns(); 
 
-                // Mapeia conferentes por filial com base no histórico real e cadastros
-                const confByFilial = {};
-                (rawMinutasDataset || []).forEach(m => {
-                    if (!m.conferente) return;
-                    const cName = String(m.conferente).trim().toUpperCase();
-                    const fNum = String(m.filial || '01').trim().padStart(2, '0');
-                    if (!confByFilial[cName]) confByFilial[cName] = new Set();
-                    confByFilial[cName].add(fNum);
-                });
-
-                // Inclui também conferentes de contagens da filial
+                // Carrega conferentes reais cadastrados em public.usuarios com suas filiais
                 try {
-                    const { data: contConfs } = await supabaseClient
-                        .from('contagem_comercio')
-                        .select('quem_contou, filial')
-                        .limit(400);
-                    (contConfs || []).forEach(c => {
-                        if (!c.quem_contou) return;
-                        const cName = String(c.quem_contou).trim().toUpperCase();
-                        const fNum = String(c.filial || '01').trim().padStart(2, '0');
-                        if (!confByFilial[cName]) confByFilial[cName] = new Set();
-                        confByFilial[cName].add(fNum);
-                    });
-                } catch (eC) {}
-
-                rawConferentesList = [];
-                Object.keys(confByFilial).forEach(cName => {
-                    confByFilial[cName].forEach(f => {
-                        rawConferentesList.push({ nome: cName, filial_comercio: f, filial_atual: f });
-                    });
-                });
-                knownConferentes = Object.keys(confByFilial);
+                    const { data: cData, error: cErr } = await supabaseClient.rpc('get_conferentes');
+                    if (!cErr && cData && cData.length > 0) {
+                        rawConferentesList = cData;
+                        knownConferentes = cData.map(u => u.nome ? String(u.nome).toUpperCase().trim() : '').filter(Boolean);
+                    }
+                } catch(eC) {
+                    console.warn("Aviso ao carregar conferentes da tabela usuarios:", eC);
+                }
 
                 populateFiliaisDropdowns();
                 populateConferentesDropdown();
@@ -1049,19 +1027,14 @@
             if (rawConferentesList && rawConferentesList.length > 0) {
                 filteredConferentes = rawConferentesList.filter(u => {
                     if (!u.nome) return false;
+                    if (u.status === false) return false;
+                    if (u.eh_conferente !== true && u.eh_almoxarife !== true) return false;
                     if (filToFilter === 'Todos' || filToFilter === '00') {
                         return true; // Admin global vê todos
                     }
-                    const cFilComercio = u.filial_comercio ? String(u.filial_comercio).trim().padStart(2, '0') : null;
-                    const cFilAtual = u.filial_atual ? String(u.filial_atual).trim().padStart(2, '0') : null;
-                    const cFil = cFilComercio || cFilAtual || '01';
-                    
+                    const cFil = String(u.filial_atual || u.filial_comercio || '01').trim().padStart(2, '0');
                     const targetPad = String(filToFilter).trim().padStart(2, '0');
-                    const targetRaw = targetPad.replace(/^0+/, '') || '0';
-                    const cPad = cFil.padStart(2, '0');
-                    const cRaw = cPad.replace(/^0+/, '') || '0';
-
-                    return cPad === targetPad || cRaw === targetRaw;
+                    return cFil === targetPad || cFil.replace(/^0+/, '') === targetPad.replace(/^0+/, '');
                 });
             }
 
