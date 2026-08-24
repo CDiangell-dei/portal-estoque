@@ -906,31 +906,6 @@
             const loader = document.getElementById('globalLoader');
             if (showLoader && loader) loader.classList.remove('hidden');
             try {
-                // Carrega conferentes com respectivas filiais
-                try {
-                    const { data: uData } = await supabaseClient
-                        .from('usuarios')
-                        .select('id, matricula, nome, filial_atual, filial_comercio, eh_conferente')
-                        .or('eh_conferente.eq.true,eh_almoxarife.eq.true')
-                        .eq('status', true);
-                    
-                    if (uData && uData.length > 0) {
-                        rawConferentesList = uData;
-                        knownConferentes = uData.map(u => u.nome ? String(u.nome).toUpperCase().trim() : '').filter(Boolean);
-                    } else {
-                        const { data: cData } = await supabaseClient.rpc('get_conferentes');
-                        if (cData) {
-                            knownConferentes = cData.map(u => u.nome ? String(u.nome).toUpperCase().trim() : '').filter(Boolean);
-                            rawConferentesList = knownConferentes.map(n => ({ nome: n, filial_comercio: '01', filial_atual: '01' }));
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Erro ao buscar conferentes da filial:", e);
-                }
-
-                populateFiliaisDropdowns();
-                populateConferentesDropdown();
-
                 let minutasList = [];
                 let fromM = 0, stepM = 1000, fetchMoreM = true;
                 while (fetchMoreM) {
@@ -948,6 +923,42 @@
                 filteredMinutasDataset = rawMinutasDataset;
                 extractMinutasSeries(); 
                 populateMinutasYearDropdowns(); 
+
+                // Mapeia conferentes por filial com base no histórico real e cadastros
+                const confByFilial = {};
+                (rawMinutasDataset || []).forEach(m => {
+                    if (!m.conferente) return;
+                    const cName = String(m.conferente).trim().toUpperCase();
+                    const fNum = String(m.filial || '01').trim().padStart(2, '0');
+                    if (!confByFilial[cName]) confByFilial[cName] = new Set();
+                    confByFilial[cName].add(fNum);
+                });
+
+                // Inclui também conferentes de contagens da filial
+                try {
+                    const { data: contConfs } = await supabaseClient
+                        .from('contagem_comercio')
+                        .select('quem_contou, filial')
+                        .limit(400);
+                    (contConfs || []).forEach(c => {
+                        if (!c.quem_contou) return;
+                        const cName = String(c.quem_contou).trim().toUpperCase();
+                        const fNum = String(c.filial || '01').trim().padStart(2, '0');
+                        if (!confByFilial[cName]) confByFilial[cName] = new Set();
+                        confByFilial[cName].add(fNum);
+                    });
+                } catch (eC) {}
+
+                rawConferentesList = [];
+                Object.keys(confByFilial).forEach(cName => {
+                    confByFilial[cName].forEach(f => {
+                        rawConferentesList.push({ nome: cName, filial_comercio: f, filial_atual: f });
+                    });
+                });
+                knownConferentes = Object.keys(confByFilial);
+
+                populateFiliaisDropdowns();
+                populateConferentesDropdown();
                 applyMinutaGlobalFilters();
             } catch (err) {
                 console.error("Erro ao carregar minutas:", err);
