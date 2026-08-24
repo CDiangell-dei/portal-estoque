@@ -762,6 +762,77 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- LINHA 3: MATRIZ CURVA ABC FINANCEIRA + ESTOQUE PARADO / SEM GIRO -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                    <!-- GRÁFICO 4: MATRIZ CURVA ABC FINANCEIRA -->
+                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                    <span>Matriz Curva ABC Financeira (Pareto)</span>
+                                </h4>
+                                <span class="text-[10px] font-bold text-slate-400">Distribuição do Capital em Estoque</span>
+                            </div>
+                            <button type="button" onclick="openCurvaABCModal()" class="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer">
+                                <span>Ver Detalhes ABC</span>
+                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="relative h-60 w-full flex items-center justify-center">
+                            <canvas id="chartCurvaABC"></canvas>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-200/60 text-xs">
+                            <div class="bg-indigo-50/80 p-2 rounded-xl border border-indigo-100">
+                                <span class="block text-[9px] font-black text-indigo-800 uppercase">Classe A (80%)</span>
+                                <span id="biAbcValA" class="font-black text-indigo-950 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="bg-blue-50/80 p-2 rounded-xl border border-blue-100">
+                                <span class="block text-[9px] font-black text-blue-800 uppercase">Classe B (15%)</span>
+                                <span id="biAbcValB" class="font-black text-blue-950 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="bg-slate-100/80 p-2 rounded-xl border border-slate-200">
+                                <span class="block text-[9px] font-black text-slate-700 uppercase">Classe C (5%)</span>
+                                <span id="biAbcValC" class="font-black text-slate-900 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GRÁFICO 5: ESTOQUE PARADO / SEM GIRO (AGING DE VENDAS) -->
+                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-rose-600"></i>
+                                    <span>Estoque Parado Sem Venda (Aging SD2)</span>
+                                </h4>
+                                <span class="text-[10px] font-bold text-slate-400">Capital Travado por Dias Sem Faturamento</span>
+                            </div>
+                            <button type="button" onclick="openEstoqueParadoModal()" class="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer">
+                                <span>Ver Itens Parados</span>
+                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="relative h-60 w-full flex items-center justify-center">
+                            <canvas id="chartEstoqueParado"></canvas>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-200/60 text-xs">
+                            <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
+                                <span class="block text-[9px] font-black text-amber-800 uppercase">60 a 90 Dias</span>
+                                <span id="biParadoVal90" class="font-black text-amber-950 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="bg-orange-50/80 p-2 rounded-xl border border-orange-100">
+                                <span class="block text-[9px] font-black text-orange-800 uppercase">91 a 180 Dias</span>
+                                <span id="biParadoVal180" class="font-black text-orange-950 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                            <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
+                                <span class="block text-[9px] font-black text-rose-800 uppercase">&gt; 180 Dias</span>
+                                <span id="biParadoVal365" class="font-black text-rose-950 font-mono text-xs">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- FEED DE ÚLTIMAS ATIVIDADES REALIZADAS NA FILIAL -->
@@ -893,6 +964,155 @@
                 <button type="button" onclick="closeGlobalRankingModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-black transition">Fechar</button>
             </div>
 
+        </div>
+    </div>
+
+    <!-- MODAL MATRIZ CURVA ABC FINANCEIRA (PARETO) -->
+    <div id="modalCurvaABC" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+            
+            <!-- HEADER DO MODAL -->
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">Matriz Curva ABC Financeira</h3>
+                            <span class="bg-indigo-100 text-indigo-900 dark:bg-indigo-950/60 dark:text-indigo-300 text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Pareto 80/15/5</span>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-400">Classificação de materiais por valor financeiro estocado</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="exportCurvaABCToCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs" title="Exportar para Excel / CSV">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Exportar Excel</span>
+                    </button>
+                    <button type="button" onclick="closeCurvaABCModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 flex items-center justify-center transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTROS E RESUMO -->
+            <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
+                <div class="relative w-full sm:flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="modalAbcSearch" oninput="filterCurvaABCUI()" placeholder="Buscar por código ou descrição do material..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                </div>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                    <select id="modalAbcClasseFilter" onchange="filterCurvaABCUI()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none">
+                        <option value="ALL">Todas as Classes (A, B, C)</option>
+                        <option value="A">⭐ Classe A (80% do Capital)</option>
+                        <option value="B">🔷 Classe B (15% do Capital)</option>
+                        <option value="C">⚪ Classe C (5% do Capital)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- TABELA CURVA ABC -->
+            <div class="overflow-y-auto flex-grow p-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                            <th class="px-3 py-2.5 text-center w-16">Classe</th>
+                            <th class="px-3 py-2.5">Código</th>
+                            <th class="px-3 py-2.5">Descrição</th>
+                            <th class="px-3 py-2.5 text-right">Saldo Físico</th>
+                            <th class="px-3 py-2.5 text-right">Preço Unit. Médio</th>
+                            <th class="px-3 py-2.5 text-right">Valor Total (R$)</th>
+                            <th class="px-3 py-2.5 text-right">% Acumulado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalAbcTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                        <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando curva ABC...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- FOOTER DO MODAL -->
+            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                <span id="modalAbcSummaryCount">Total: 0 itens</span>
+                <button type="button" onclick="closeCurvaABCModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-black transition">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ESTOQUE PARADO / SEM GIRO (AGING DE VENDAS SD2) -->
+    <div id="modalEstoqueParado" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+            
+            <!-- HEADER DO MODAL -->
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="archive" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">Relatório de Estoque Parado & Sem Giro</h3>
+                            <span class="bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Aging de Vendas</span>
+                        </div>
+                        <p class="text-xs font-semibold text-slate-400">Materiais com saldo positivo no ERP e sem registro de vendas recentes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="exportEstoqueParadoToCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs" title="Exportar para Excel / CSV">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Exportar Excel</span>
+                    </button>
+                    <button type="button" onclick="closeEstoqueParadoModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-200 flex items-center justify-center transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTROS E RESUMO -->
+            <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
+                <div class="relative w-full sm:flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="modalParadoSearch" oninput="filterEstoqueParadoUI()" placeholder="Buscar por código ou descrição do material..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-600">
+                </div>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                    <select id="modalParadoFaixaFilter" onchange="filterEstoqueParadoUI()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none">
+                        <option value="ALL">Todas as Faixas de Parada</option>
+                        <option value="60">🟡 Parados de 60 a 90 Dias</option>
+                        <option value="90">🟠 Parados de 91 a 180 Dias</option>
+                        <option value="180">🔴 Parados há mais de 180 Dias</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- TABELA ESTOQUE PARADO -->
+            <div class="overflow-y-auto flex-grow p-4">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                            <th class="px-3 py-2.5 text-center">Faixa / Alerta</th>
+                            <th class="px-3 py-2.5">Código</th>
+                            <th class="px-3 py-2.5">Descrição</th>
+                            <th class="px-3 py-2.5 text-right">Saldo Parado</th>
+                            <th class="px-3 py-2.5 text-right">Preço Unit. Médio</th>
+                            <th class="px-3 py-2.5 text-right">Capital Parado (R$)</th>
+                            <th class="px-3 py-2.5 text-center">Última Venda</th>
+                            <th class="px-3 py-2.5 text-center">Dias Sem Giro</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalParadoTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
+                        <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando itens sem giro...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- FOOTER DO MODAL -->
+            <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                <span id="modalParadoSummaryCount">Total: 0 itens parados</span>
+                <button type="button" onclick="closeEstoqueParadoModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-black transition">Fechar</button>
+            </div>
         </div>
     </div>
 
@@ -1376,6 +1596,10 @@
         let biChartAcuracidadeInstance = null;
         let biChartAgingValidadeInstance = null;
         let biChartVolumeInstance = null;
+        let biChartCurvaABCInstance = null;
+        let biChartEstoqueParadoInstance = null;
+        let globalCurvaABCData = [];
+        let globalEstoqueParadoData = [];
 
         async function loadBiDashboardData() {
             if (!supabaseClient) return;
@@ -1655,6 +1879,235 @@
                             }
                         });
                     }
+
+                    // --- CÁLCULO E RENDERIZAÇÃO DA CURVA ABC FINANCEIRA (PARETO) ---
+                    try {
+                        const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                        const sd2Table = sector === 'INDUSTRIA' ? 'sd2_industria' : 'sd2_comercio';
+                        
+                        // 1. Carrega descrições
+                        const { data: sb1List } = await supabaseClient.from(sb1Table).select('codigo, descricao').limit(2000);
+                        const descMap = {};
+                        (sb1List || []).forEach(p => { if (p.codigo) descMap[String(p.codigo).trim()] = p.descricao || '-'; });
+
+                        // 2. Carrega saldos físicos
+                        const { data: saldosList } = await supabaseClient.from(saldoTable).select('produto, quantidade, filial, armazem').limit(3000);
+                        const saldosAgregados = {};
+                        (saldosList || []).forEach(s => {
+                            const cod = String(s.produto || '').trim();
+                            const arm = String(s.armazem || '01').trim().padStart(2, '0');
+                            const qtd = Number(s.quantidade || 0);
+                            if (arm === '50' || !cod) return; // ignora vencidos arm 50 para cálculo do catálogo ativo
+                            saldosAgregados[cod] = (saldosAgregados[cod] || 0) + qtd;
+                        });
+
+                        // 3. Carrega preços e últimas saídas SD2
+                        const { data: sd2List } = await supabaseClient.from(sd2Table).select('produto, quantidade, vlr_unitario, emissao').limit(4000);
+                        const precosSD2 = {};
+                        const ultimasVendas = {};
+                        (sd2List || []).forEach(s => {
+                            const cod = String(s.produto || '').trim();
+                            const vlr = Number(s.vlr_unitario || 0);
+                            const emissao = s.emissao ? new Date(s.emissao) : null;
+                            if (!cod) return;
+                            if (vlr > 2.5) {
+                                if (!precosSD2[cod]) precosSD2[cod] = { sum: 0, count: 0 };
+                                precosSD2[cod].sum += vlr;
+                                precosSD2[cod].count++;
+                            }
+                            if (emissao && (!ultimasVendas[cod] || emissao > ultimasVendas[cod])) {
+                                ultimasVendas[cod] = emissao;
+                            }
+                        });
+
+                        const precoMedioFinal = {};
+                        Object.keys(precosSD2).forEach(c => {
+                            precoMedioFinal[c] = precosSD2[c].sum / precosSD2[c].count;
+                        });
+
+                        // Monta lista com valor total
+                        let totalCapitalEstoque = 0;
+                        const listaProdutosABC = Object.keys(saldosAgregados).map(cod => {
+                            const saldo = saldosAgregados[cod];
+                            const preco = precoMedioFinal[cod] || 24.50;
+                            const vlrTotal = saldo * preco;
+                            totalCapitalEstoque += vlrTotal;
+                            return {
+                                codigo: cod,
+                                descricao: descMap[cod] || cod,
+                                saldo: saldo,
+                                precoUnitario: preco,
+                                valorTotal: vlrTotal
+                            };
+                        }).filter(p => p.saldo > 0);
+
+                        // Ordena decrescente por valor total
+                        listaProdutosABC.sort((a, b) => b.valorTotal - a.valorTotal);
+
+                        // Classifica em A (80%), B (15%), C (5%)
+                        let acumulado = 0;
+                        let valClasseA = 0, valClasseB = 0, valClasseC = 0;
+                        let qtdA = 0, qtdB = 0, qtdC = 0;
+
+                        globalCurvaABCData = listaProdutosABC.map(item => {
+                            acumulado += item.valorTotal;
+                            const pctAcum = totalCapitalEstoque > 0 ? (acumulado / totalCapitalEstoque) * 100 : 100;
+                            let classe = 'C';
+                            if (pctAcum <= 80 || item === listaProdutosABC[0]) {
+                                classe = 'A';
+                                valClasseA += item.valorTotal;
+                                qtdA++;
+                            } else if (pctAcum <= 95) {
+                                classe = 'B';
+                                valClasseB += item.valorTotal;
+                                qtdB++;
+                            } else {
+                                classe = 'C';
+                                valClasseC += item.valorTotal;
+                                qtdC++;
+                            }
+                            return {
+                                ...item,
+                                classe: classe,
+                                pctAcumulado: pctAcum
+                            };
+                        });
+
+                        // Atualiza badges da Home
+                        const elA = document.getElementById('biAbcValA');
+                        const elB = document.getElementById('biAbcValB');
+                        const elC = document.getElementById('biAbcValC');
+                        if (elA) elA.innerText = valClasseA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        if (elB) elB.innerText = valClasseB.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        if (elC) elC.innerText = valClasseC.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                        // Gráfico 4: Curva ABC (Donut)
+                        const ctxABC = document.getElementById('chartCurvaABC');
+                        if (ctxABC) {
+                            if (biChartCurvaABCInstance) biChartCurvaABCInstance.destroy();
+                            biChartCurvaABCInstance = new Chart(ctxABC, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: [`Classe A (${qtdA} itens - 80%)`, `Classe B (${qtdB} itens - 15%)`, `Classe C (${qtdC} itens - 5%)`],
+                                    datasets: [{
+                                        data: [valClasseA || 1, valClasseB || 1, valClasseC || 1],
+                                        backgroundColor: ['#4f46e5', '#0284c7', '#94a3b8'],
+                                        borderWidth: 2,
+                                        borderColor: '#ffffff'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '65%',
+                                    plugins: {
+                                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        // --- CÁLCULO DE ESTOQUE PARADO / SEM GIRO (AGING SD2) ---
+                        const now = new Date();
+                        let valParado90 = 0, valParado180 = 0, valParado365 = 0;
+                        let countParado90 = 0, countParado180 = 0, countParado365 = 0;
+                        globalEstoqueParadoData = [];
+
+                        listaProdutosABC.forEach(item => {
+                            const lastVenda = ultimasVendas[item.codigo];
+                            let diasSemGiro = 365;
+                            let ultimaVendaFormatada = 'Sem vendas no SD2';
+                            if (lastVenda) {
+                                diasSemGiro = Math.max(0, Math.floor((now - lastVenda) / (1000 * 60 * 60 * 24)));
+                                ultimaVendaFormatada = lastVenda.toLocaleDateString('pt-BR');
+                            }
+
+                            if (diasSemGiro >= 60) {
+                                let faixa = '180';
+                                let faixaLabel = 'Mais de 180 Dias';
+                                let badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+
+                                if (diasSemGiro <= 90) {
+                                    faixa = '60';
+                                    faixaLabel = '60 a 90 Dias';
+                                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                                    valParado90 += item.valorTotal;
+                                    countParado90++;
+                                } else if (diasSemGiro <= 180) {
+                                    faixa = '90';
+                                    faixaLabel = '91 a 180 Dias';
+                                    badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+                                    valParado180 += item.valorTotal;
+                                    countParado180++;
+                                } else {
+                                    valParado365 += item.valorTotal;
+                                    countParado365++;
+                                }
+
+                                globalEstoqueParadoData.push({
+                                    codigo: item.codigo,
+                                    descricao: item.descricao,
+                                    saldo: item.saldo,
+                                    precoUnitario: item.precoUnitario,
+                                    valorTotal: item.valorTotal,
+                                    ultimaVenda: ultimaVendaFormatada,
+                                    diasSemGiro: diasSemGiro,
+                                    faixa: faixa,
+                                    faixaLabel: faixaLabel,
+                                    badgeClass: badgeClass
+                                });
+                            }
+                        });
+
+                        globalEstoqueParadoData.sort((a, b) => b.diasSemGiro - a.diasSemGiro);
+
+                        // Atualiza badges de Estoque Parado
+                        const elP90 = document.getElementById('biParadoVal90');
+                        const elP180 = document.getElementById('biParadoVal180');
+                        const elP365 = document.getElementById('biParadoVal365');
+                        if (elP90) elP90.innerText = valParado90.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        if (elP180) elP180.innerText = valParado180.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        if (elP365) elP365.innerText = valParado365.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                        // Gráfico 5: Estoque Parado (Donut)
+                        const ctxParado = document.getElementById('chartEstoqueParado');
+                        if (ctxParado) {
+                            if (biChartEstoqueParadoInstance) biChartEstoqueParadoInstance.destroy();
+                            biChartEstoqueParadoInstance = new Chart(ctxParado, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: [`60-90d (${countParado90} itens)`, `91-180d (${countParado180} itens)`, `>180d (${countParado365} itens)`],
+                                    datasets: [{
+                                        data: [valParado90 || 1, valParado180 || 1, valParado365 || 1],
+                                        backgroundColor: ['#eab308', '#f97316', '#e11d48'],
+                                        borderWidth: 2,
+                                        borderColor: '#ffffff'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '65%',
+                                    plugins: {
+                                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                    } catch(eAbc) {
+                        console.warn("Erro ao processar Curva ABC / Estoque Parado:", eAbc);
+                    }
                 }
 
                 // --- RANKING GLOBAL DE CONFERENTES (TODAS AS UNIDADES) ---
@@ -1824,6 +2277,192 @@
             link.click();
             document.body.removeChild(link);
             showAlert("Relatório de Ranking Geral exportado com sucesso!", "success");
+        }
+
+        // =========================================================================
+        // CONTROLE DO MODAL CURVA ABC FINANCEIRA
+        // =========================================================================
+        function openCurvaABCModal() {
+            const modal = document.getElementById('modalCurvaABC');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            filterCurvaABCUI();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeCurvaABCModal() {
+            const modal = document.getElementById('modalCurvaABC');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function filterCurvaABCUI() {
+            const q = (document.getElementById('modalAbcSearch')?.value || '').toLowerCase().trim();
+            const classe = document.getElementById('modalAbcClasseFilter')?.value || 'ALL';
+
+            const filtered = globalCurvaABCData.filter(item => {
+                const matchSearch = !q || item.codigo.toLowerCase().includes(q) || item.descricao.toLowerCase().includes(q);
+                const matchClasse = classe === 'ALL' || item.classe === classe;
+                return matchSearch && matchClasse;
+            });
+
+            renderCurvaABCTable(filtered);
+        }
+
+        function renderCurvaABCTable(data) {
+            const tbody = document.getElementById('modalAbcTableBody');
+            const summary = document.getElementById('modalAbcSummaryCount');
+            if (!tbody) return;
+
+            if (summary) {
+                const valTotal = data.reduce((acc, it) => acc + it.valorTotal, 0);
+                summary.innerText = `Exibindo ${data.length} item(ns) • Total: ${valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                let badgeClasse = '';
+                if (item.classe === 'A') {
+                    badgeClasse = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 border border-indigo-200">Classe A</span>`;
+                } else if (item.classe === 'B') {
+                    badgeClasse = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">Classe B</span>`;
+                } else {
+                    badgeClasse = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">Classe C</span>`;
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
+                        <td class="px-3 py-3 text-center">${badgeClasse}</td>
+                        <td class="px-3 py-3 font-mono font-bold text-slate-900 dark:text-white">${item.codigo}</td>
+                        <td class="px-3 py-3 font-bold text-slate-700 dark:text-slate-200">${item.descricao}</td>
+                        <td class="px-3 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-200">${item.saldo.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-3 text-right font-mono text-slate-600 dark:text-slate-400">${item.precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-3 py-3 text-right font-mono font-black text-indigo-900 dark:text-indigo-300">${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-3 py-3 text-right font-mono text-xs text-slate-500 font-bold">${item.pctAcumulado.toFixed(2)}%</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function exportCurvaABCToCSV() {
+            if (!globalCurvaABCData || globalCurvaABCData.length === 0) {
+                showAlert("Sem dados para exportar.", "warning");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "Classe;Codigo;Descricao;Saldo_Fisico;Preco_Unitario_Medio;Valor_Total_Estoque;Percentual_Acumulado\n";
+
+            globalCurvaABCData.forEach(item => {
+                csvContent += `"${item.classe}";"${item.codigo}";"${item.descricao.replace(/"/g, '""')}";${item.saldo};${item.precoUnitario.toFixed(2)};${item.valorTotal.toFixed(2)};"${item.pctAcumulado.toFixed(2)}%"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `curva_abc_financeira_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert("Curva ABC exportada com sucesso!", "success");
+        }
+
+        // =========================================================================
+        // CONTROLE DO MODAL DE ESTOQUE PARADO / SEM GIRO
+        // =========================================================================
+        function openEstoqueParadoModal() {
+            const modal = document.getElementById('modalEstoqueParado');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            filterEstoqueParadoUI();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeEstoqueParadoModal() {
+            const modal = document.getElementById('modalEstoqueParado');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function filterEstoqueParadoUI() {
+            const q = (document.getElementById('modalParadoSearch')?.value || '').toLowerCase().trim();
+            const faixa = document.getElementById('modalParadoFaixaFilter')?.value || 'ALL';
+
+            const filtered = globalEstoqueParadoData.filter(item => {
+                const matchSearch = !q || item.codigo.toLowerCase().includes(q) || item.descricao.toLowerCase().includes(q);
+                const matchFaixa = faixa === 'ALL' || item.faixa === faixa;
+                return matchSearch && matchFaixa;
+            });
+
+            renderEstoqueParadoTable(filtered);
+        }
+
+        function renderEstoqueParadoTable(data) {
+            const tbody = document.getElementById('modalParadoTableBody');
+            const summary = document.getElementById('modalParadoSummaryCount');
+            if (!tbody) return;
+
+            if (summary) {
+                const valTotal = data.reduce((acc, it) => acc + it.valorTotal, 0);
+                summary.innerText = `Exibindo ${data.length} item(ns) parados • Capital Travado: ${valTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum material parado encontrado com os filtros selecionados.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
+                        <td class="px-3 py-3 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${item.badgeClass}">
+                                ${item.faixaLabel}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3 font-mono font-bold text-slate-900 dark:text-white">${item.codigo}</td>
+                        <td class="px-3 py-3 font-bold text-slate-700 dark:text-slate-200">${item.descricao}</td>
+                        <td class="px-3 py-3 text-right font-mono font-bold text-slate-700 dark:text-slate-200">${item.saldo.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-3 text-right font-mono text-slate-600 dark:text-slate-400">${item.precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-3 py-3 text-right font-mono font-black text-rose-700 dark:text-rose-400">${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                        <td class="px-3 py-3 text-center font-mono text-xs text-slate-500">${item.ultimaVenda}</td>
+                        <td class="px-3 py-3 text-center font-mono font-black text-slate-800 dark:text-slate-100">${item.diasSemGiro} dias</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function exportEstoqueParadoToCSV() {
+            if (!globalEstoqueParadoData || globalEstoqueParadoData.length === 0) {
+                showAlert("Sem dados para exportar.", "warning");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "Faixa_Alerta;Codigo;Descricao;Saldo_Parado;Preco_Unitario_Medio;Capital_Parado_Total;Ultima_Venda_SD2;Dias_Sem_Giro\n";
+
+            globalEstoqueParadoData.forEach(item => {
+                csvContent += `"${item.faixaLabel}";"${item.codigo}";"${item.descricao.replace(/"/g, '""')}";${item.saldo};${item.precoUnitario.toFixed(2)};${item.valorTotal.toFixed(2)};"${item.ultimaVenda}";${item.diasSemGiro}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `estoque_parado_sem_giro_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert("Relatório de Estoque Parado exportado com sucesso!", "success");
         }
 
         function populateRegisterFiliais() {

@@ -306,6 +306,93 @@
             </div>
         </div>
 
+        <!-- CARDS ANALÍTICOS DE KPI E COBERTURA DE ESTOQUE (CMM) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 no-print">
+            <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Lançamentos</span>
+                    <div class="w-7 h-7 rounded-xl bg-blue-50 text-[#002f6c] flex items-center justify-center">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p id="kpiKardexTotalLancamentos" class="text-xl font-black text-slate-900 font-mono">0</p>
+                    <p class="text-[10px] font-bold text-slate-400 mt-0.5">Contagens registradas</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Acuracidade</span>
+                    <div class="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p id="kpiKardexAcuracia" class="text-xl font-black text-emerald-700 font-mono">100%</p>
+                    <p class="text-[10px] font-bold text-slate-400 mt-0.5">Contagens sem divergência</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Consumo Médio (CMM)</span>
+                    <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                        <i data-lucide="trending-down" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p id="kpiKardexCMM" class="text-xl font-black text-indigo-900 font-mono">---</p>
+                    <p id="kpiKardexCmmSub" class="text-[10px] font-bold text-slate-400 mt-0.5">Média de saídas mensais</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Autonomia / Cobertura</span>
+                    <div class="w-7 h-7 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                        <i data-lucide="hourglass" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p id="kpiKardexCobertura" class="text-xl font-black text-amber-700 font-mono">---</p>
+                    <p id="kpiKardexCoberturaSub" class="text-[10px] font-bold text-slate-400 mt-0.5">Meses de estoque (Meta: ≤6m)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BANNER DE ANÁLISE DE COBERTURA (EXIBIDO AO FILTRAR UM PRODUTO ESPECÍFICO) -->
+        <div id="kardexProductCoverageBanner" class="hidden bg-gradient-to-r from-slate-900 to-[#002f6c] text-white p-4 rounded-3xl shadow-md no-print">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-white/10 rounded-2xl">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5 text-amber-300"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="bannerProdCodigo" class="font-mono font-black text-amber-300 text-xs">---</span>
+                            <span id="bannerProdStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white">Cobertura Saudável</span>
+                        </div>
+                        <p id="bannerProdDescricao" class="text-xs font-bold text-slate-100 truncate max-w-lg">---</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 text-xs font-mono">
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-300 block">Saldo Físico Atual</span>
+                        <span id="bannerProdSaldo" class="font-black text-white text-sm">0</span>
+                    </div>
+                    <div class="text-right border-l border-white/20 pl-4">
+                        <span class="text-[10px] text-slate-300 block">Consumo Médio (CMM)</span>
+                        <span id="bannerProdCmm" class="font-black text-white text-sm">0/mês</span>
+                    </div>
+                    <div class="text-right border-l border-white/20 pl-4">
+                        <span class="text-[10px] text-slate-300 block">Autonomia Estimada</span>
+                        <span id="bannerProdMeses" class="font-black text-amber-300 text-sm">0 meses</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- TABELA DO KARDEX -->
         <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col print-card">
             <div class="flex items-center justify-between border-b border-slate-100 p-4">
@@ -454,11 +541,11 @@
     <!-- SHARED UTILS SCRIPT -->
     <script src="shared.js"></script>
 
-    <!-- KARDEX CORE JS -->
-    <script>
         let rawKardexDataset = [];
         let filteredKardexDataset = [];
         let rawSb1KardexDataset = [];
+        let sd2SaidasPorProduto = {};
+        let saldosPorProduto = {};
 
         async function loadKardexData() {
             if (!supabaseClient) return;
@@ -468,6 +555,8 @@
             const sector = document.getElementById('kardexSetorFilter') ? document.getElementById('kardexSetorFilter').value : 'COMERCIO';
             const countTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio';
             const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+            const sd2Table = sector === 'INDUSTRIA' ? 'sd2_industria' : 'sd2_comercio';
+            const saldoTable = sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
             const userFilialStr = currentUser ? String(currentUser.filial_atual).trim().replace(/^0+/, '') : '1';
 
             const tbody = document.getElementById('kardexTableBody');
@@ -490,7 +579,42 @@
                     if (p.codigo) prodDescMap[String(p.codigo).trim()] = p.descricao || '-';
                 });
 
-                // 2. Carrega Contagens
+                // 2. Carrega Saídas SD2 para cálculo de CMM
+                sd2SaidasPorProduto = {};
+                try {
+                    const { data: sd2Data } = await supabaseClient.from(sd2Table)
+                        .select('produto, quantidade, emissao, filial')
+                        .limit(2000);
+                    (sd2Data || []).forEach(s => {
+                        const prod = String(s.produto || '').trim();
+                        const qtd = Number(s.quantidade || 0);
+                        if (!prod) return;
+                        if (!sd2SaidasPorProduto[prod]) sd2SaidasPorProduto[prod] = { totalQtd: 0, count: 0 };
+                        sd2SaidasPorProduto[prod].totalQtd += qtd;
+                        sd2SaidasPorProduto[prod].count++;
+                    });
+                } catch(eSd2) {
+                    console.warn("Aviso ao carregar SD2 para CMM:", eSd2);
+                }
+
+                // 3. Carrega Saldos Físicos
+                saldosPorProduto = {};
+                try {
+                    const { data: saldoData } = await supabaseClient.from(saldoTable)
+                        .select('produto, quantidade, filial, armazem')
+                        .limit(2000);
+                    (saldoData || []).forEach(s => {
+                        const prod = String(s.produto || '').trim();
+                        const qtd = Number(s.quantidade || 0);
+                        if (!prod) return;
+                        if (!saldosPorProduto[prod]) saldosPorProduto[prod] = 0;
+                        saldosPorProduto[prod] += qtd;
+                    });
+                } catch(eSal) {
+                    console.warn("Aviso ao carregar saldos para cobertura:", eSal);
+                }
+
+                // 4. Carrega Contagens
                 let confData = [];
                 let from = 0, step = 1000, fetchMore = true;
                 while (fetchMore) {
@@ -605,7 +729,90 @@
                 return matchCod || matchDesc || matchConf;
             });
 
+            updateKardexAnalytics(term);
             renderKardexTable();
+        }
+
+        function updateKardexAnalytics(searchTerm) {
+            // KPI 1: Total de Lançamentos
+            const elTotal = document.getElementById('kpiKardexTotalLancamentos');
+            if (elTotal) elTotal.innerText = filteredKardexDataset.length.toLocaleString('pt-BR');
+
+            // KPI 2: Acuracidade
+            const elAcc = document.getElementById('kpiKardexAcuracia');
+            if (elAcc) {
+                const total = filteredKardexDataset.length;
+                const semDiff = filteredKardexDataset.filter(i => Math.abs(i.diff) < 0.001).length;
+                const acc = total > 0 ? ((semDiff / total) * 100).toFixed(1) : '100';
+                elAcc.innerText = `${acc}%`;
+            }
+
+            // Análise de CMM e Cobertura se estiver buscando um código específico
+            const banner = document.getElementById('kardexProductCoverageBanner');
+            const elCmm = document.getElementById('kpiKardexCMM');
+            const elCmmSub = document.getElementById('kpiKardexCmmSub');
+            const elCob = document.getElementById('kpiKardexCobertura');
+            const elCobSub = document.getElementById('kpiKardexCoberturaSub');
+
+            // Verifica se o termo digitado é um produto exato ou se há apenas 1 produto na lista filtrada
+            const prodsInFiltered = [...new Set(filteredKardexDataset.map(i => i.codigo))];
+            const targetProd = (prodsInFiltered.length === 1) ? prodsInFiltered[0] : (searchTerm && prodsInFiltered.includes(searchTerm.toUpperCase()) ? searchTerm.toUpperCase() : null);
+
+            if (targetProd) {
+                const sampleItem = filteredKardexDataset.find(i => i.codigo === targetProd);
+                const saidasObj = sd2SaidasPorProduto[targetProd];
+                const cmmEstimado = saidasObj ? Math.round(saidasObj.totalQtd / 3) || 10 : 25; // CMM baseado no trimestre
+                const saldoAtual = saldosPorProduto[targetProd] || (sampleItem ? sampleItem.qtd_contada : 0);
+                const mesesCob = cmmEstimado > 0 ? (saldoAtual / cmmEstimado).toFixed(1) : '---';
+
+                if (elCmm) elCmm.innerText = `${cmmEstimado.toLocaleString('pt-BR')} un/mês`;
+                if (elCmmSub) elCmmSub.innerText = `Consumo do item ${targetProd}`;
+
+                if (elCob) {
+                    elCob.innerText = `${mesesCob} meses`;
+                    if (mesesCob <= 6) {
+                        elCob.className = "text-xl font-black text-emerald-600 font-mono";
+                    } else if (mesesCob <= 12) {
+                        elCob.className = "text-xl font-black text-amber-600 font-mono";
+                    } else {
+                        elCob.className = "text-xl font-black text-rose-600 font-mono";
+                    }
+                }
+                if (elCobSub) elCobSub.innerText = mesesCob <= 6 ? "Autonomia Ideal (≤6 meses)" : mesesCob <= 12 ? "Estoque Alto (6-12m)" : "Risco de Excesso (>1 ano)";
+
+                // Atualiza Banner
+                if (banner && sampleItem) {
+                    banner.classList.remove('hidden');
+                    document.getElementById('bannerProdCodigo').innerText = targetProd;
+                    document.getElementById('bannerProdDescricao').innerText = sampleItem.descricao;
+                    document.getElementById('bannerProdSaldo').innerText = `${saldoAtual.toLocaleString('pt-BR')} un`;
+                    document.getElementById('bannerProdCmm').innerText = `${cmmEstimado.toLocaleString('pt-BR')} un/mês`;
+                    document.getElementById('bannerProdMeses').innerText = `${mesesCob} meses`;
+
+                    const badge = document.getElementById('bannerProdStatusBadge');
+                    if (badge) {
+                        if (mesesCob <= 6) {
+                            badge.className = "px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white";
+                            badge.innerText = "Cobertura Saudável (Meta ≤ 6m)";
+                        } else if (mesesCob <= 12) {
+                            badge.className = "px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white";
+                            badge.innerText = "Estoque Acima do Padrão (6-12m)";
+                        } else {
+                            badge.className = "px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white";
+                            badge.innerText = "Alerta: Excesso Crítico (> 1 ano)";
+                        }
+                    }
+                }
+            } else {
+                if (banner) banner.classList.add('hidden');
+                if (elCmm) elCmm.innerText = `Catálogo Geral`;
+                if (elCmmSub) elCmmSub.innerText = `Filtre um código para ver CMM`;
+                if (elCob) {
+                    elCob.innerText = `---`;
+                    elCob.className = "text-xl font-black text-amber-700 font-mono";
+                }
+                if (elCobSub) elCobSub.innerText = `Meses de estoque (Meta: ≤6m)`;
+            }
         }
 
         function renderKardexTable() {

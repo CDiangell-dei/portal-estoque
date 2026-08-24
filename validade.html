@@ -378,6 +378,42 @@
             </div>
         </div>
 
+        <!-- CARDS FINANCEIROS DE VALIDADE & GOVERNANÇA (R$) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 no-print">
+            <div class="bg-gradient-to-br from-slate-900 to-[#002f6c] text-white p-5 rounded-3xl shadow-md flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black text-amber-300 uppercase tracking-wider">Estoque sob Gestão FEFO</p>
+                    <h3 id="kpiValidadeValorTotal" class="text-2xl font-black font-mono text-white mt-1">R$ 0,00</h3>
+                    <p id="kpiValidadePesoTotal" class="text-[11px] text-slate-300 font-semibold mt-0.5">0 kg monitorados</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-white/10 text-amber-300 flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl border border-emerald-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Capital Protegido no Prazo</p>
+                    <h3 id="kpiValidadeValorProtegido" class="text-2xl font-black font-mono text-emerald-700 mt-1">R$ 0,00</h3>
+                    <p class="text-[11px] text-slate-500 font-semibold mt-0.5">Sob controle ativo de giro</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl border border-rose-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] font-black text-rose-600 uppercase tracking-wider">Prejuízo Histórico / Arm. 50</p>
+                    <h3 id="kpiValidadeValorVencido" class="text-2xl font-black font-mono text-rose-600 mt-1">R$ 0,00</h3>
+                    <p class="text-[11px] text-slate-500 font-semibold mt-0.5">Lotes vencidos acumulados</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </div>
+
         <!-- CARDS KPIS DE VALIDADE -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 no-print">
             <!-- 1. VENCIDOS -->
@@ -1355,6 +1391,30 @@
                     quantidade: parseFloat(s.quantidade || 0)
                 }));
 
+                // 4. Carrega Preços da SD2 para Valoração Financeira
+                let sd2PricesMap = {};
+                try {
+                    const sd2Table = currentSector === 'INDUSTRIA' ? 'sd2_industria' : 'sd2_comercio';
+                    const { data: pData } = await supabaseClient.from(sd2Table)
+                        .select('produto, vlr_unitario')
+                        .gt('vlr_unitario', 2.5)
+                        .limit(2000);
+                    const accum = {};
+                    (pData || []).forEach(p => {
+                        const cod = String(p.produto || '').trim();
+                        const v = Number(p.vlr_unitario || 0);
+                        if (!accum[cod]) accum[cod] = { sum: 0, count: 0 };
+                        accum[cod].sum += v;
+                        accum[cod].count++;
+                    });
+                    Object.keys(accum).forEach(cod => {
+                        sd2PricesMap[cod] = accum[cod].sum / accum[cod].count;
+                    });
+                } catch(eP) {
+                    console.warn("Aviso preços SD2:", eP);
+                }
+                globalSd2PricesMap = sd2PricesMap;
+
                 const saldoArmazens = [...new Set(rawSaldoDataset.map(s => s.armazem))].filter(Boolean);
                 const valArmazens = (rawValidadeDataset || [])
                     .map(v => String(v.armazem || '').trim().padStart(2, '0'))
@@ -1921,6 +1981,37 @@
                     if (kpiDivSub) kpiDivSub.innerText = `${faltaCount} falta(m) | ${excessoCount} sobra(m)`;
                 }
             }
+
+            // --- CÁLCULOS FINANCEIROS DE VALIDADE (R$) ---
+            let valorTotalGeral = 0;
+            let valorProtegidoGeral = 0;
+            let valorVencidoGeral = 0;
+            let pesoTotalGeral = 0;
+
+            (rawValidadeDataset || []).forEach(v => {
+                const qtd = Number(v.quantidade || 0);
+                const precoUnit = (typeof globalSd2PricesMap !== 'undefined' && globalSd2PricesMap[v.produto]) ? globalSd2PricesMap[v.produto] : 24.50;
+                const vlr = qtd * precoUnit;
+                valorTotalGeral += vlr;
+                pesoTotalGeral += qtd;
+
+                const st = getStatusValidade(v.data_validade);
+                if (st.status === 'OK' || st.status === 'AVENCER') {
+                    valorProtegidoGeral += vlr;
+                } else if (st.status === 'VENCIDO') {
+                    valorVencidoGeral += vlr;
+                }
+            });
+
+            const elValTotal = document.getElementById('kpiValidadeValorTotal');
+            const elPesoTotal = document.getElementById('kpiValidadePesoTotal');
+            const elValProt = document.getElementById('kpiValidadeValorProtegido');
+            const elValVenc = document.getElementById('kpiValidadeValorVencido');
+
+            if (elValTotal) elValTotal.innerText = valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (elPesoTotal) elPesoTotal.innerText = `${pesoTotalGeral.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg monitorados`;
+            if (elValProt) elValProt.innerText = valorProtegidoGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            if (elValVenc) elValVenc.innerText = valorVencidoGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             updateKpiCardsVisualState(status, conf);
         }

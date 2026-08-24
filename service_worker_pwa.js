@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v6.0-offline';
+const CACHE_NAME = 'portal-estoques-v7.0-analytics';
 const STATIC_ASSETS = [
   './',
   './index.html',
