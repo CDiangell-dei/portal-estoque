@@ -1880,229 +1880,140 @@
                         });
                     }
 
-                    // --- CÁLCULO E RENDERIZAÇÃO DA CURVA ABC FINANCEIRA (PARETO) ---
+                    // --- CÁLCULO E RENDERIZAÇÃO DA CURVA ABC FINANCEIRA (PARETO VIA RPC SUPABASE) ---
                     try {
-                        const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
-                        const sd2Table = sector === 'INDUSTRIA' ? 'sd2_industria' : 'sd2_comercio';
-                        
-                        // 1. Carrega descrições
-                        const { data: sb1List } = await supabaseClient.from(sb1Table).select('codigo, descricao').limit(2000);
-                        const descMap = {};
-                        (sb1List || []).forEach(p => { if (p.codigo) descMap[String(p.codigo).trim()] = p.descricao || '-'; });
+                        const { data: rpcAbcData, error: errAbc } = await supabaseClient.rpc('get_curva_abc', { p_setor: sector });
+                        if (!errAbc && rpcAbcData) {
+                            globalCurvaABCData = rpcAbcData.map(item => ({
+                                classe: item.classe,
+                                codigo: item.codigo,
+                                descricao: item.descricao,
+                                unidade: item.unidade,
+                                saldo: Number(item.saldo_fisico || 0),
+                                precoUnitario: Number(item.preco_unitario_medio || 0),
+                                valorTotal: Number(item.valor_total || 0),
+                                pctAcumulado: Number(item.pct_acumulado || 0)
+                            }));
 
-                        // 2. Carrega saldos físicos
-                        const { data: saldosList } = await supabaseClient.from(saldoTable).select('produto, quantidade, filial, armazem').limit(3000);
-                        const saldosAgregados = {};
-                        (saldosList || []).forEach(s => {
-                            const cod = String(s.produto || '').trim();
-                            const arm = String(s.armazem || '01').trim().padStart(2, '0');
-                            const qtd = Number(s.quantidade || 0);
-                            if (arm === '50' || !cod) return; // ignora vencidos arm 50 para cálculo do catálogo ativo
-                            saldosAgregados[cod] = (saldosAgregados[cod] || 0) + qtd;
-                        });
+                            let valClasseA = 0, valClasseB = 0, valClasseC = 0;
+                            let qtdA = 0, qtdB = 0, qtdC = 0;
+                            globalCurvaABCData.forEach(item => {
+                                if (item.classe === 'A') { valClasseA += item.valorTotal; qtdA++; }
+                                else if (item.classe === 'B') { valClasseB += item.valorTotal; qtdB++; }
+                                else { valClasseC += item.valorTotal; qtdC++; }
+                            });
 
-                        // 3. Carrega preços e últimas saídas SD2
-                        const { data: sd2List } = await supabaseClient.from(sd2Table).select('produto, quantidade, vlr_unitario, emissao').limit(4000);
-                        const precosSD2 = {};
-                        const ultimasVendas = {};
-                        (sd2List || []).forEach(s => {
-                            const cod = String(s.produto || '').trim();
-                            const vlr = Number(s.vlr_unitario || 0);
-                            const emissao = s.emissao ? new Date(s.emissao) : null;
-                            if (!cod) return;
-                            if (vlr > 2.5) {
-                                if (!precosSD2[cod]) precosSD2[cod] = { sum: 0, count: 0 };
-                                precosSD2[cod].sum += vlr;
-                                precosSD2[cod].count++;
-                            }
-                            if (emissao && (!ultimasVendas[cod] || emissao > ultimasVendas[cod])) {
-                                ultimasVendas[cod] = emissao;
-                            }
-                        });
+                            // Atualiza badges da Home
+                            const elA = document.getElementById('biAbcValA');
+                            const elB = document.getElementById('biAbcValB');
+                            const elC = document.getElementById('biAbcValC');
+                            if (elA) elA.innerText = valClasseA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            if (elB) elB.innerText = valClasseB.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            if (elC) elC.innerText = valClasseC.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                        const precoMedioFinal = {};
-                        Object.keys(precosSD2).forEach(c => {
-                            precoMedioFinal[c] = precosSD2[c].sum / precosSD2[c].count;
-                        });
-
-                        // Monta lista com valor total
-                        let totalCapitalEstoque = 0;
-                        const listaProdutosABC = Object.keys(saldosAgregados).map(cod => {
-                            const saldo = saldosAgregados[cod];
-                            const preco = precoMedioFinal[cod] || 24.50;
-                            const vlrTotal = saldo * preco;
-                            totalCapitalEstoque += vlrTotal;
-                            return {
-                                codigo: cod,
-                                descricao: descMap[cod] || cod,
-                                saldo: saldo,
-                                precoUnitario: preco,
-                                valorTotal: vlrTotal
-                            };
-                        }).filter(p => p.saldo > 0);
-
-                        // Ordena decrescente por valor total
-                        listaProdutosABC.sort((a, b) => b.valorTotal - a.valorTotal);
-
-                        // Classifica em A (80%), B (15%), C (5%)
-                        let acumulado = 0;
-                        let valClasseA = 0, valClasseB = 0, valClasseC = 0;
-                        let qtdA = 0, qtdB = 0, qtdC = 0;
-
-                        globalCurvaABCData = listaProdutosABC.map(item => {
-                            acumulado += item.valorTotal;
-                            const pctAcum = totalCapitalEstoque > 0 ? (acumulado / totalCapitalEstoque) * 100 : 100;
-                            let classe = 'C';
-                            if (pctAcum <= 80 || item === listaProdutosABC[0]) {
-                                classe = 'A';
-                                valClasseA += item.valorTotal;
-                                qtdA++;
-                            } else if (pctAcum <= 95) {
-                                classe = 'B';
-                                valClasseB += item.valorTotal;
-                                qtdB++;
-                            } else {
-                                classe = 'C';
-                                valClasseC += item.valorTotal;
-                                qtdC++;
-                            }
-                            return {
-                                ...item,
-                                classe: classe,
-                                pctAcumulado: pctAcum
-                            };
-                        });
-
-                        // Atualiza badges da Home
-                        const elA = document.getElementById('biAbcValA');
-                        const elB = document.getElementById('biAbcValB');
-                        const elC = document.getElementById('biAbcValC');
-                        if (elA) elA.innerText = valClasseA.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        if (elB) elB.innerText = valClasseB.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        if (elC) elC.innerText = valClasseC.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-                        // Gráfico 4: Curva ABC (Donut)
-                        const ctxABC = document.getElementById('chartCurvaABC');
-                        if (ctxABC) {
-                            if (biChartCurvaABCInstance) biChartCurvaABCInstance.destroy();
-                            biChartCurvaABCInstance = new Chart(ctxABC, {
-                                type: 'doughnut',
-                                data: {
-                                    labels: [`Classe A (${qtdA} itens - 80%)`, `Classe B (${qtdB} itens - 15%)`, `Classe C (${qtdC} itens - 5%)`],
-                                    datasets: [{
-                                        data: [valClasseA || 1, valClasseB || 1, valClasseC || 1],
-                                        backgroundColor: ['#4f46e5', '#0284c7', '#94a3b8'],
-                                        borderWidth: 2,
-                                        borderColor: '#ffffff'
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    cutout: '65%',
-                                    plugins: {
-                                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                            // Gráfico 4: Curva ABC (Donut)
+                            const ctxABC = document.getElementById('chartCurvaABC');
+                            if (ctxABC) {
+                                if (biChartCurvaABCInstance) biChartCurvaABCInstance.destroy();
+                                biChartCurvaABCInstance = new Chart(ctxABC, {
+                                    type: 'doughnut',
+                                    data: {
+                                        labels: [`Classe A (${qtdA} itens - 80%)`, `Classe B (${qtdB} itens - 15%)`, `Classe C (${qtdC} itens - 5%)`],
+                                        datasets: [{
+                                            data: [valClasseA || 1, valClasseB || 1, valClasseC || 1],
+                                            backgroundColor: ['#4f46e5', '#0284c7', '#94a3b8'],
+                                            borderWidth: 2,
+                                            borderColor: '#ffffff'
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        cutout: '65%',
+                                        plugins: {
+                                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
 
-                        // --- CÁLCULO DE ESTOQUE PARADO / SEM GIRO (AGING SD2) ---
-                        const now = new Date();
-                        let valParado90 = 0, valParado180 = 0, valParado365 = 0;
-                        let countParado90 = 0, countParado180 = 0, countParado365 = 0;
-                        globalEstoqueParadoData = [];
+                        // --- CÁLCULO E RENDERIZAÇÃO DO ESTOQUE PARADO (AGING SD2 VIA RPC SUPABASE) ---
+                        const { data: rpcParadoData, error: errParado } = await supabaseClient.rpc('get_estoque_parado', { p_setor: sector });
+                        if (!errParado && rpcParadoData) {
+                            globalEstoqueParadoData = rpcParadoData.map(item => ({
+                                faixa: item.faixa,
+                                faixaLabel: item.faixa_label,
+                                badgeClass: item.badge_class,
+                                codigo: item.codigo,
+                                descricao: item.descricao,
+                                unidade: item.unidade,
+                                saldo: Number(item.saldo_parado || 0),
+                                precoUnitario: Number(item.preco_unitario_medio || 0),
+                                valorTotal: Number(item.capital_parado || 0),
+                                ultimaVenda: item.ultima_venda,
+                                diasSemGiro: Number(item.dias_sem_giro || 0)
+                            }));
 
-                        listaProdutosABC.forEach(item => {
-                            const lastVenda = ultimasVendas[item.codigo];
-                            let diasSemGiro = 365;
-                            let ultimaVendaFormatada = 'Sem vendas no SD2';
-                            if (lastVenda) {
-                                diasSemGiro = Math.max(0, Math.floor((now - lastVenda) / (1000 * 60 * 60 * 24)));
-                                ultimaVendaFormatada = lastVenda.toLocaleDateString('pt-BR');
-                            }
+                            let valParado90 = 0, valParado180 = 0, valParado365 = 0;
+                            let countParado90 = 0, countParado180 = 0, countParado365 = 0;
 
-                            if (diasSemGiro >= 60) {
-                                let faixa = '180';
-                                let faixaLabel = 'Mais de 180 Dias';
-                                let badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
-
-                                if (diasSemGiro <= 90) {
-                                    faixa = '60';
-                                    faixaLabel = '60 a 90 Dias';
-                                    badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+                            globalEstoqueParadoData.forEach(item => {
+                                if (item.faixa === '60') {
                                     valParado90 += item.valorTotal;
                                     countParado90++;
-                                } else if (diasSemGiro <= 180) {
-                                    faixa = '90';
-                                    faixaLabel = '91 a 180 Dias';
-                                    badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+                                } else if (item.faixa === '90') {
                                     valParado180 += item.valorTotal;
                                     countParado180++;
                                 } else {
                                     valParado365 += item.valorTotal;
                                     countParado365++;
                                 }
+                            });
 
-                                globalEstoqueParadoData.push({
-                                    codigo: item.codigo,
-                                    descricao: item.descricao,
-                                    saldo: item.saldo,
-                                    precoUnitario: item.precoUnitario,
-                                    valorTotal: item.valorTotal,
-                                    ultimaVenda: ultimaVendaFormatada,
-                                    diasSemGiro: diasSemGiro,
-                                    faixa: faixa,
-                                    faixaLabel: faixaLabel,
-                                    badgeClass: badgeClass
-                                });
-                            }
-                        });
+                            // Atualiza badges de Estoque Parado
+                            const elP90 = document.getElementById('biParadoVal90');
+                            const elP180 = document.getElementById('biParadoVal180');
+                            const elP365 = document.getElementById('biParadoVal365');
+                            if (elP90) elP90.innerText = valParado90.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            if (elP180) elP180.innerText = valParado180.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            if (elP365) elP365.innerText = valParado365.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-                        globalEstoqueParadoData.sort((a, b) => b.diasSemGiro - a.diasSemGiro);
-
-                        // Atualiza badges de Estoque Parado
-                        const elP90 = document.getElementById('biParadoVal90');
-                        const elP180 = document.getElementById('biParadoVal180');
-                        const elP365 = document.getElementById('biParadoVal365');
-                        if (elP90) elP90.innerText = valParado90.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        if (elP180) elP180.innerText = valParado180.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                        if (elP365) elP365.innerText = valParado365.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-                        // Gráfico 5: Estoque Parado (Donut)
-                        const ctxParado = document.getElementById('chartEstoqueParado');
-                        if (ctxParado) {
-                            if (biChartEstoqueParadoInstance) biChartEstoqueParadoInstance.destroy();
-                            biChartEstoqueParadoInstance = new Chart(ctxParado, {
-                                type: 'doughnut',
-                                data: {
-                                    labels: [`60-90d (${countParado90} itens)`, `91-180d (${countParado180} itens)`, `>180d (${countParado365} itens)`],
-                                    datasets: [{
-                                        data: [valParado90 || 1, valParado180 || 1, valParado365 || 1],
-                                        backgroundColor: ['#eab308', '#f97316', '#e11d48'],
-                                        borderWidth: 2,
-                                        borderColor: '#ffffff'
-                                    }]
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    cutout: '65%',
-                                    plugins: {
-                                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                                        tooltip: {
-                                            callbacks: {
-                                                label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                            // Gráfico 5: Estoque Parado (Donut)
+                            const ctxParado = document.getElementById('chartEstoqueParado');
+                            if (ctxParado) {
+                                if (biChartEstoqueParadoInstance) biChartEstoqueParadoInstance.destroy();
+                                biChartEstoqueParadoInstance = new Chart(ctxParado, {
+                                    type: 'doughnut',
+                                    data: {
+                                        labels: [`60-90d (${countParado90} itens)`, `91-180d (${countParado180} itens)`, `>180d (${countParado365} itens)`],
+                                        datasets: [{
+                                            data: [valParado90 || 1, valParado180 || 1, valParado365 || 1],
+                                            backgroundColor: ['#eab308', '#f97316', '#e11d48'],
+                                            borderWidth: 2,
+                                            borderColor: '#ffffff'
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        cutout: '65%',
+                                        plugins: {
+                                            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+                                            tooltip: {
+                                                callbacks: {
+                                                    label: ctx => ` ${ctx.label}: ${ctx.raw.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
 
                     } catch(eAbc) {

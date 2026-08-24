@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v7.0-analytics';
+const CACHE_NAME = 'portal-estoques-v7.1-rpc-fix';
 const STATIC_ASSETS = [
   './',
   './index.html',
