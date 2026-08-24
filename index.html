@@ -1463,7 +1463,22 @@
 
                     const quem = (c.quem_contou || c.conferente_nome || 'CONFERENTE').trim().toUpperCase();
                     if (quem && quem !== 'SISTEMA' && !quem.includes('ADMIN')) {
-                        if (!conferentesMap[quem]) conferentesMap[quem] = { contagens: 0, acertos: 0, transferencias: 0 };
+                        const filName = fil === '01' ? 'Alvorada' : fil === '02' ? 'Matriz CD' : fil === '04' ? 'Raiz' : fil === '05' ? 'Cidade Nova' : fil === '06' ? 'Jorge Teixeira' : fil === '12' ? 'Boa Vista' : `Filial ${fil}`;
+                        if (!conferentesMap[quem]) {
+                            conferentesMap[quem] = {
+                                nome: quem,
+                                matricula: (quem.match(/^\d+/) || ['---'])[0],
+                                filial: fil,
+                                filialNome: filName,
+                                setor: sector,
+                                contagens: 0,
+                                acertos: 0,
+                                transferencias: 0
+                            };
+                        } else {
+                            conferentesMap[quem].filial = fil;
+                            conferentesMap[quem].filialNome = filName;
+                        }
                         conferentesMap[quem].contagens++;
                         if (isExata) conferentesMap[quem].acertos++;
                     }
@@ -1643,53 +1658,18 @@
                 }
 
                 // --- RANKING GLOBAL DE CONFERENTES (TODAS AS UNIDADES) ---
-                // 1. Busca todos os usuários cadastrados no sistema (todas as filiais)
-                let allUsers = [];
-                try {
-                    const { data: usersRaw } = await supabaseClient.from('usuarios')
-                        .select('matricula, nome, filial, filial_nome, setor_principal, cargo, role, ativo');
-                    allUsers = usersRaw || [];
-                } catch(eUsers) {
-                    console.warn("Aviso ao carregar usuários para o ranking:", eUsers);
-                }
-
-                // Inicializa o mapa com os usuários cadastrados
-                allUsers.forEach(u => {
-                    const uNome = (u.nome || '').trim().toUpperCase();
-                    if (!uNome) return;
-                    const filNum = String(u.filial || '01').padStart(2, '0');
-                    const filName = u.filial_nome || (filNum === '01' ? 'Alvorada' : filNum === '02' ? 'Matriz CD' : filNum === '04' ? 'Raiz' : filNum === '05' ? 'Cidade Nova' : filNum === '06' ? 'Jorge Teixeira' : `Filial ${filNum}`);
-                    
-                    if (!conferentesMap[uNome]) {
-                        conferentesMap[uNome] = {
-                            nome: u.nome,
-                            matricula: u.matricula || '---',
-                            filial: filNum,
-                            filialNome: filName,
-                            setor: u.setor_principal || 'COMERCIO',
-                            cargo: u.cargo || 'Operacional',
-                            contagens: 0,
-                            acertos: 0,
-                            transferencias: 0
-                        };
-                    } else {
-                        conferentesMap[uNome].matricula = u.matricula || conferentesMap[uNome].matricula || '---';
-                        conferentesMap[uNome].filial = filNum;
-                        conferentesMap[uNome].filialNome = filName;
-                        conferentesMap[uNome].setor = u.setor_principal || 'COMERCIO';
-                    }
-                });
-
                 // Converte em array completo e ordena por total de operações
                 globalRankingData = Object.keys(conferentesMap).map(k => {
                     const c = conferentesMap[k];
                     const totalOps = (c.contagens || 0) + (c.transferencias || 0);
                     const acuracia = c.contagens > 0 ? Number(((c.acertos / c.contagens) * 100).toFixed(0)) : 100;
+                    const fil = String(c.filial || '01').padStart(2, '0');
+                    const filName = c.filialNome || (fil === '01' ? 'Alvorada' : fil === '02' ? 'Matriz CD' : fil === '04' ? 'Raiz' : fil === '05' ? 'Cidade Nova' : fil === '06' ? 'Jorge Teixeira' : `Filial ${fil}`);
                     return {
                         nome: c.nome || k,
-                        matricula: c.matricula || '---',
-                        filial: c.filial || '01',
-                        filialNome: c.filialNome || `Filial ${c.filial || '01'}`,
+                        matricula: c.matricula || (String(k).match(/^\d+/) || ['---'])[0],
+                        filial: fil,
+                        filialNome: filName,
                         setor: c.setor || 'COMERCIO',
                         cargo: c.cargo || 'Operacional',
                         contagens: c.contagens || 0,
