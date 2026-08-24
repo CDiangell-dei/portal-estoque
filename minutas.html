@@ -1027,7 +1027,6 @@
             if (rawConferentesList && rawConferentesList.length > 0) {
                 filteredConferentes = rawConferentesList.filter(u => {
                     if (!u.nome) return false;
-                    if (u.status === false) return false;
                     if (u.eh_conferente !== true && u.eh_almoxarife !== true) return false;
                     if (filToFilter === 'Todos' || filToFilter === '00') {
                         return true; // Admin global vê todos
