@@ -1254,6 +1254,7 @@
         let stagedImportRows = [];
 
         let rawSaldoDataset = [];
+        let globalSd2PricesMap = {};
 
         function getTargetFilialForSector() {
             if (!currentUser) return '01';
@@ -1995,10 +1996,10 @@
                 valorTotalGeral += vlr;
                 pesoTotalGeral += qtd;
 
-                const st = getStatusValidade(v.data_validade);
-                if (st.status === 'OK' || st.status === 'AVENCER') {
+                const st = getValidadeStatus(v.data_validade);
+                if (st === 'OK' || st === 'AVENCER') {
                     valorProtegidoGeral += vlr;
-                } else if (st.status === 'VENCIDO') {
+                } else if (st === 'VENCIDO') {
                     valorVencidoGeral += vlr;
                 }
             });
