@@ -632,6 +632,14 @@
                             <option value="COMERCIO">🏢 Setor: Comércio</option>
                             <option value="INDUSTRIA">🏭 Setor: Indústria</option>
                         </select>
+                        <select id="biFilterFilial" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                            <option value="ALL">🏢 Todas as Filiais</option>
+                            <option value="01">📍 Filial 01 - Alvorada</option>
+                            <option value="02">📍 Filial 02 - Matriz CD</option>
+                            <option value="04">📍 Filial 04 - Raiz</option>
+                            <option value="05">📍 Filial 05 - Cidade Nova</option>
+                            <option value="06">📍 Filial 06 - Jorge Teixeira</option>
+                        </select>
                         <select id="biFilterPeriod" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
                             <option value="MES">📅 Mês Atual</option>
                             <option value="30DIAS">⏱️ Últimos 30 Dias</option>
@@ -1607,6 +1615,18 @@
             const sectorSelect = document.getElementById('biFilterSector');
             const sector = sectorSelect ? sectorSelect.value : (currentUser?.setor_principal === 'INDUSTRIA' ? 'INDUSTRIA' : 'COMERCIO');
 
+            const filialSelect = document.getElementById('biFilterFilial');
+            const isGlobal = isGlobalFilial(currentUser);
+            const userFilialPad = getUserAssignedFilial(currentUser, sector);
+
+            if (!isGlobal && filialSelect && userFilialPad) {
+                filialSelect.value = userFilialPad;
+                filialSelect.disabled = true;
+                filialSelect.title = "Visualização restrita à sua filial atribuída.";
+            }
+
+            const filialFilter = filialSelect ? filialSelect.value : (isGlobal ? 'ALL' : userFilialPad);
+
             const periodSelect = document.getElementById('biFilterPeriod');
             const period = periodSelect ? periodSelect.value : 'MES';
 
@@ -1882,7 +1902,7 @@
 
                     // --- CÁLCULO E RENDERIZAÇÃO DA CURVA ABC FINANCEIRA (PARETO VIA RPC SUPABASE) ---
                     try {
-                        const { data: rpcAbcData, error: errAbc } = await supabaseClient.rpc('get_curva_abc', { p_setor: sector });
+                        const { data: rpcAbcData, error: errAbc } = await supabaseClient.rpc('get_curva_abc', { p_setor: sector, p_filial: filialFilter });
                         if (!errAbc && rpcAbcData) {
                             globalCurvaABCData = rpcAbcData.map(item => ({
                                 classe: item.classe,
@@ -1944,7 +1964,7 @@
                         }
 
                         // --- CÁLCULO E RENDERIZAÇÃO DO ESTOQUE PARADO (AGING SD2 VIA RPC SUPABASE) ---
-                        const { data: rpcParadoData, error: errParado } = await supabaseClient.rpc('get_estoque_parado', { p_setor: sector });
+                        const { data: rpcParadoData, error: errParado } = await supabaseClient.rpc('get_estoque_parado', { p_setor: sector, p_filial: filialFilter });
                         if (!errParado && rpcParadoData) {
                             globalEstoqueParadoData = rpcParadoData.map(item => ({
                                 faixa: item.faixa,
