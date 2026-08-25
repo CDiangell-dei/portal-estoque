@@ -2423,6 +2423,7 @@
                     const inCode = item.codigo.toLowerCase().includes(term);
                     const inDesc = item.descricao.toLowerCase().includes(term);
                     const inTags = item.tags.toLowerCase().includes(term);
+                    const inForn = (item.fornecedores || '').toLowerCase().includes(term);
                     const addrMap = getProductAddressMap(item.codigo);
                     const allAddrs = Object.values(addrMap).join(' ').toLowerCase();
                     const inEnd = allAddrs.includes(term);
