@@ -1534,7 +1534,7 @@
                 let saldoAll = [];
                 let from2 = 0, step2 = 1000, fetchMore2 = true;
                 while (fetchMore2) {
-                    let query = supabaseClient.from(saldoTable).select('produto, filial, armazem, quantidade, endereco');
+                    let query = supabaseClient.from(saldoTable).select('produto, filial, armazem, quantidade, endereco, custo_unitario');
                     if (!isGlobal && userFilial && userFilial !== 'ALL' && userFilial !== '00') {
                         query = query.eq('filial', userFilial);
                     }

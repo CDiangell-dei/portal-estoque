@@ -1372,7 +1372,7 @@
                 let saldoAll = [];
                 let fromSaldo = 0, stepSaldo = 1000, fetchMoreSaldo = true;
                 while (fetchMoreSaldo) {
-                    let sQuery = supabaseClient.from(saldoTable).select('produto, filial, armazem, quantidade');
+                    let sQuery = supabaseClient.from(saldoTable).select('produto, filial, armazem, quantidade, custo_unitario');
                     if (!isGlobalFilial(currentUser) && targetFilial && targetFilial !== 'ALL' && targetFilial !== '00') {
                         sQuery = sQuery.eq('filial', targetFilial);
                     }
@@ -1389,11 +1389,20 @@
                     produto: String(s.produto || '').trim().toUpperCase(),
                     filial: String(s.filial || '01').trim().padStart(2, '0'),
                     armazem: String(s.armazem || '01').trim().padStart(2, '0'),
-                    quantidade: parseFloat(s.quantidade || 0)
+                    quantidade: parseFloat(s.quantidade || 0),
+                    custo_unitario: parseFloat(s.custo_unitario || 0)
                 }));
 
-                // 4. Carrega Preços da SD2 para Valoração Financeira
+                // 4. Carrega Preços da SD2 e Custo de Compra para Valoração Financeira
                 let sd2PricesMap = {};
+                
+                // Prioriza Custo Unitário do Saldo
+                rawSaldoDataset.forEach(s => {
+                    if (s.custo_unitario && s.custo_unitario > 0 && !sd2PricesMap[s.produto]) {
+                        sd2PricesMap[s.produto] = s.custo_unitario;
+                    }
+                });
+
                 try {
                     const sd2Table = currentSector === 'INDUSTRIA' ? 'sd2_industria' : 'sd2_comercio';
                     const { data: pData } = await supabaseClient.from(sd2Table)
@@ -1409,7 +1418,9 @@
                         accum[cod].count++;
                     });
                     Object.keys(accum).forEach(cod => {
-                        sd2PricesMap[cod] = accum[cod].sum / accum[cod].count;
+                        if (!sd2PricesMap[cod]) {
+                            sd2PricesMap[cod] = accum[cod].sum / accum[cod].count;
+                        }
                     });
                 } catch(eP) {
                     console.warn("Aviso preços SD2:", eP);
