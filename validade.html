@@ -1321,31 +1321,9 @@
             const saldoTable = currentSector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
 
             try {
-                // 1. Carrega SB1
-                let sb1Data = [];
-                let fromSb1 = 0, stepSb1 = 1000, fetchMoreSb1 = true;
-                while (fetchMoreSb1) {
-                    const { data, error } = await supabaseClient.from(sb1Table).select('codigo, descricao, unidade, endereco').range(fromSb1, fromSb1 + stepSb1 - 1);
-                    if (error || !data || data.length === 0) fetchMoreSb1 = false;
-                    else {
-                        sb1Data = sb1Data.concat(data);
-                        if (data.length < stepSb1) fetchMoreSb1 = false; else fromSb1 += stepSb1;
-                    }
-                }
-                rawSb1Dataset = sb1Data.map(p => ({
-                    Codigo: String(p.codigo || '').trim(),
-                    codigo: String(p.codigo || '').trim(),
-                    'Descr.Espec.': p.descricao || '-',
-                    descricao: p.descricao || '-',
-                    Unidade: p.unidade || 'UN',
-                    unidade: p.unidade || 'UN',
-                    endereco: p.endereco || '',
-                    Endereco: p.endereco || ''
-                }));
-
                 const targetFilial = getTargetFilialForSector();
 
-                // 2. Carrega Validades
+                // 1. Carrega Validades
                 let query = supabaseClient.from(valTable).select('*');
                 if (!isGlobalFilial(currentUser) && targetFilial && targetFilial !== 'ALL' && targetFilial !== '00') {
                     query = query.eq('filial', targetFilial);
@@ -1368,7 +1346,7 @@
                     }));
                 }
 
-                // 3. Carrega Saldos do ERP para Comparação Lotes x Saldo Sistema
+                // 2. Carrega Saldos do ERP para Comparação Lotes x Saldo Sistema
                 let saldoAll = [];
                 let fromSaldo = 0, stepSaldo = 1000, fetchMoreSaldo = true;
                 while (fetchMoreSaldo) {
@@ -1391,6 +1369,36 @@
                     armazem: String(s.armazem || '01').trim().padStart(2, '0'),
                     quantidade: parseFloat(s.quantidade || 0),
                     custo_unitario: parseFloat(s.custo_unitario || 0)
+                }));
+
+                // 3. Carrega Catálogo SB1 apenas dos produtos ativos (velocidade ultra-rápida)
+                let sb1Data = [];
+                const activeCodesSet = new Set([
+                    ...rawValidadeDataset.map(v => v.produto),
+                    ...rawSaldoDataset.map(s => s.produto)
+                ]);
+                const activeCodes = Array.from(activeCodesSet).filter(Boolean);
+
+                if (activeCodes.length > 0) {
+                    const chunkSize = 500;
+                    for (let i = 0; i < activeCodes.length; i += chunkSize) {
+                        const chunk = activeCodes.slice(i, i + chunkSize);
+                        const { data: chunkData } = await supabaseClient.from(sb1Table)
+                            .select('codigo, descricao, unidade, endereco')
+                            .in('codigo', chunk);
+                        if (chunkData) sb1Data = sb1Data.concat(chunkData);
+                    }
+                }
+
+                rawSb1Dataset = sb1Data.map(p => ({
+                    Codigo: String(p.codigo || '').trim(),
+                    codigo: String(p.codigo || '').trim(),
+                    'Descr.Espec.': p.descricao || '-',
+                    descricao: p.descricao || '-',
+                    Unidade: p.unidade || 'UN',
+                    unidade: p.unidade || 'UN',
+                    endereco: p.endereco || '',
+                    Endereco: p.endereco || ''
                 }));
 
                 // 4. Carrega Preços da SD2 e Custo de Compra para Valoração Financeira

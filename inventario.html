@@ -1618,36 +1618,23 @@
                     }
                 } catch(eVal) { console.warn("Erro validades:", eVal); }
 
-                // 4. Carrega Catálogo SB1
+                // 4. Carrega Catálogo SB1 (Apenas produtos ativos com saldo/contagem/validade para velocidade máxima)
                 let sb1All = [];
-                if (currentSector === 'INDUSTRIA') {
-                    const activeCodesSet = new Set([
-                        ...saldoAll.map(s => String(s.produto).trim()),
-                        ...confAll.map(c => String(c.produto).trim())
-                    ]);
-                    const activeCodes = Array.from(activeCodesSet).filter(Boolean);
+                const activeCodesSet = new Set([
+                    ...saldoAll.map(s => String(s.produto).trim()),
+                    ...confAll.map(c => String(c.produto).trim()),
+                    ...valAll.map(v => String(v.produto).trim())
+                ]);
+                const activeCodes = Array.from(activeCodesSet).filter(Boolean);
 
-                    if (activeCodes.length > 0) {
-                        const chunkSize = 500;
-                        for (let i = 0; i < activeCodes.length; i += chunkSize) {
-                            const chunk = activeCodes.slice(i, i + chunkSize);
-                            const { data, error } = await supabaseClient.from('sb1_industria')
-                                .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-                                .in('codigo', chunk);
-                            if (data) sb1All = sb1All.concat(data);
-                        }
-                    }
-                } else {
-                    let from1 = 0, step1 = 1000, fetchMore1 = true;
-                    while (fetchMore1) {
-                        const { data, error } = await supabaseClient.from('sb1_comercio')
+                if (activeCodes.length > 0) {
+                    const chunkSize = 500;
+                    for (let i = 0; i < activeCodes.length; i += chunkSize) {
+                        const chunk = activeCodes.slice(i, i + chunkSize);
+                        const { data, error } = await supabaseClient.from(sb1Table)
                             .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-                            .range(from1, from1 + step1 - 1);
-                        if (error || !data || data.length === 0) { fetchMore1 = false; } 
-                        else {
-                            sb1All = sb1All.concat(data);
-                            if (data.length < step1) fetchMore1 = false; else from1 += step1;
-                        }
+                            .in('codigo', chunk);
+                        if (data) sb1All = sb1All.concat(data);
                     }
                 }
 
