@@ -2356,7 +2356,7 @@
                         if (lotSt === 'VENCIDO') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">Vencido</span>`;
                         else if (lotSt === 'AVENCER') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">A Vencer</span>`;
 
-                        const palletDisplay = lot.embalagem ? lot.embalagem : 'PALETE PADRÃO';
+                        const palletDisplay = lot.embalagem ? lot.embalagem : unidade;
 
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700";
@@ -2643,7 +2643,7 @@
                                 ...lot,
                                 id: `${lot.id}_split_${i}_${Date.now()}`,
                                 quantidade: perPallet,
-                                embalagem: `PALETE ${i}/${totalSlices}`
+                                embalagem: totalSlices > 1 ? `${u} ${i}/${totalSlices}` : u
                             });
                         }
 
@@ -2652,7 +2652,7 @@
                                 ...lot,
                                 id: `${lot.id}_split_${totalSlices}_${Date.now()}`,
                                 quantidade: remainder,
-                                embalagem: `PALETE ${totalSlices}/${totalSlices} (RESTO)`
+                                embalagem: `${u} ${totalSlices}/${totalSlices} (RESTO)`
                             });
                         }
                     } else {
@@ -2694,7 +2694,7 @@
                             ...targetLot,
                             id: `${targetLot.id}_split_${i}_${Date.now()}`,
                             quantidade: perPallet,
-                            embalagem: `PALETE ${i}/${totalSlices}`
+                            embalagem: totalSlices > 1 ? `${u} ${i}/${totalSlices}` : u
                         });
                     }
 
@@ -2703,14 +2703,14 @@
                             ...targetLot,
                             id: `${targetLot.id}_split_${totalSlices}_${Date.now()}`,
                             quantidade: remainder,
-                            embalagem: `PALETE ${totalSlices}/${totalSlices} (RESTO)`
+                            embalagem: `${u} ${totalSlices}/${totalSlices} (RESTO)`
                         });
                     }
                 } else {
                     splitLots.push({
                         ...targetLot,
                         quantidade: finalTotal,
-                        embalagem: targetLot.embalagem || 'PALETE 1/1'
+                        embalagem: targetLot.embalagem || u
                     });
                 }
 
@@ -2800,7 +2800,7 @@
                 if (lotSt === 'VENCIDO') badge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-800">Vencido</span>`;
                 else if (lotSt === 'AVENCER') badge = `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-100 text-amber-800">A Vencer</span>`;
 
-                const palletDisplay = lot.embalagem ? lot.embalagem : 'PALETE';
+                const palletDisplay = lot.embalagem ? lot.embalagem : (currentA4PalletData ? currentA4PalletData.unidade : 'UN');
                 const isChecked = checkedIds ? checkedIds.includes(String(lot.id)) : true;
 
                 itemDiv.innerHTML = `
@@ -3221,8 +3221,7 @@
         function addModalPalletRow(initialData = null) {
             const code = document.getElementById('valInputCodigo') ? document.getElementById('valInputCodigo').value : '';
             const unit = getProductUnit(code);
-            const nextNum = modalPalletRows.length + 1;
-            const defaultName = nextNum === 1 ? unit : `${unit} ${nextNum}`;
+            const defaultName = unit;
 
             const newRow = initialData ? { ...initialData } : {
                 id: 'row_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5),
@@ -3305,7 +3304,7 @@
                 div.id = `palletCard_${row.id}`;
                 div.className = `flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border ${isTarget ? 'border-amber-500 ring-2 ring-amber-400/30' : 'border-slate-200 dark:border-slate-700'} shadow-2xs transition-all`;
                 
-                const rowDisplayName = row.nome || (idx === 0 ? unit : `${unit} ${idx+1}`);
+                const rowDisplayName = row.nome || unit;
 
                 div.innerHTML = `
                     <span class="w-6 text-center text-xs font-black text-indigo-600 dark:text-indigo-400">#${idx+1}</span>
@@ -3733,14 +3732,16 @@
 
             if (diff < 0) {
                 const missingQtd = Math.abs(diff);
+                const code = codeInput ? codeInput.value.trim().toUpperCase() : '';
+                const unit = getProductUnit(code);
                 addModalPalletRow({
                     id: 'row_' + Date.now(),
                     isNew: true,
                     dbId: null,
-                    nome: `PALETE ${modalPalletRows.length + 1}`,
+                    nome: unit,
                     qtd: missingQtd
                 });
-                showAlert(`Novo palete adicionado com a quantidade restante de ${missingQtd.toLocaleString('pt-BR')}.`, "info");
+                showAlert(`Nova linha adicionada com a quantidade restante de ${missingQtd.toLocaleString('pt-BR')} ${unit}.`, "info");
             }
         }
 
@@ -3799,7 +3800,7 @@
                         produto: produto,
                         lote: lote || null,
                         quantidade: parseFloat(r.qtd) || 0,
-                        embalagem: (r.nome || 'PALETE').trim().toUpperCase(),
+                        embalagem: (r.nome || getProductUnit(produto)).trim().toUpperCase(),
                         data_fabricacao: fabricacao || null,
                         data_validade: validade,
                         quem_registrou: currentUser ? currentUser.nome : 'SISTEMA',
