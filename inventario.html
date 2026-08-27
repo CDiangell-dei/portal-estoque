@@ -3864,35 +3864,44 @@
 
         function getProductAddressMap(code) {
             const cleanCode = String(code || '').trim().toUpperCase();
+            const currentFilial = String(getTargetFilialForSector() || '01').padStart(2, '0');
             const map = {};
 
-            // 1. Pega do SB1
-            const sbMatch = rawSb1Dataset ? rawSb1Dataset.find(p => String(p.codigo || p.Codigo).trim().toUpperCase() === cleanCode) : null;
-            if (sbMatch) {
-                const raw = sbMatch.endereco || sbMatch.Endereco || '';
-                if (raw && raw.startsWith('{') && raw.endsWith('}')) {
-                    try {
-                        const parsed = JSON.parse(raw);
-                        Object.keys(parsed).forEach(k => {
-                            const a = String(k).trim().padStart(2, '0');
-                            if (parsed[k]) map[a] = String(parsed[k]).trim();
-                        });
-                    } catch(e) {}
-                } else if (raw) {
-                    map['01'] = raw.trim();
-                }
-            }
-
-            // 2. Mescla com dados de rawSaldoDataset
+            // 1. Pega do rawSaldoDataset (que é específico da filial ativa)
             if (rawSaldoDataset) {
-                rawSaldoDataset.filter(s => String(s.produto).trim().toUpperCase() === cleanCode).forEach(s => {
+                rawSaldoDataset.filter(s => 
+                    String(s.produto).trim().toUpperCase() === cleanCode &&
+                    (s.filial === currentFilial || currentFilial === 'ALL' || isGlobalFilial(currentUser))
+                ).forEach(s => {
                     const a = String(s.armazem || '01').trim().padStart(2, '0');
-                    if (s.endereco && !map[a]) {
+                    if (s.endereco) {
                         map[a] = String(s.endereco).trim();
-                    } else if (map[a] && !s.endereco) {
-                        s.endereco = map[a];
                     }
                 });
+            }
+
+            // 2. Se não achou no saldo da filial, verifica se há no SB1
+            if (Object.keys(map).length === 0 && rawSb1Dataset) {
+                const sbMatch = rawSb1Dataset.find(p => String(p.codigo || p.Codigo).trim().toUpperCase() === cleanCode);
+                if (sbMatch) {
+                    const raw = sbMatch.endereco || sbMatch.Endereco || '';
+                    if (raw && raw.startsWith('{') && raw.endsWith('}')) {
+                        try {
+                            const parsed = JSON.parse(raw);
+                            if (parsed[currentFilial] && typeof parsed[currentFilial] === 'object') {
+                                Object.keys(parsed[currentFilial]).forEach(k => {
+                                    map[k.padStart(2, '0')] = String(parsed[currentFilial][k]).trim();
+                                });
+                            } else {
+                                Object.keys(parsed).forEach(k => {
+                                    map[k.padStart(2, '0')] = String(parsed[k]).trim();
+                                });
+                            }
+                        } catch(e) {}
+                    } else if (raw) {
+                        map['01'] = raw.trim();
+                    }
+                }
             }
 
             return map;
@@ -4078,6 +4087,8 @@
 
             const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
             const saldoTable = currentSector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
+            const enderecoTable = currentSector === 'INDUSTRIA' ? 'enderecos_industria' : 'enderecos_comercio';
+            const currentFilial = String(getTargetFilialForSector() || '01').padStart(2, '0');
 
             const finalMap = {};
             currentModalAddressList.forEach(item => {
@@ -4093,35 +4104,30 @@
 
             try {
                 if (supabaseClient && navigator.onLine) {
-                    // 1. Atualiza SB1 com o mapa JSON
-                    let { error } = await supabaseClient
-                        .from(sb1Table)
-                        .update({ 'endereco': jsonStr })
-                        .eq('codigo', code);
-
-                    if (error) {
-                        const res2 = await supabaseClient
-                            .from(sb1Table)
-                            .update({ 'endereco': jsonStr })
-                            .eq('Codigo', code);
-                        error = res2.error;
+                    // 1. Grava na tabela permanente de endereços particionada por filial e armazém
+                    const endRows = Object.keys(finalMap).map(arm => ({
+                        filial: currentFilial,
+                        armazem: arm,
+                        produto: code,
+                        endereco: finalMap[arm],
+                        updated_by: currentUser ? currentUser.nome : 'ALMOXARIFADO',
+                        updated_at: new Date().toISOString()
+                    }));
+                    if (endRows.length > 0) {
+                        await supabaseClient.from(enderecoTable).upsert(endRows);
                     }
 
-                    if (error) {
-                        showAlert(`Erro ao salvar endereço: ${error.message}`, "error");
-                        return;
-                    }
-
-                    // 2. Atualiza endereço individual nos saldos por armazém
+                    // 2. Atualiza endereço nos saldos da filial ativa
                     for (const arm of Object.keys(finalMap)) {
                         await supabaseClient
                             .from(saldoTable)
                             .update({ 'endereco': finalMap[arm] })
+                            .eq('filial', currentFilial)
                             .eq('produto', code)
                             .eq('armazem', arm);
                     }
                 } else {
-                    saveOfflineAction('update', sb1Table, [{ codigo: code, endereco: jsonStr }]);
+                    saveOfflineAction('update', enderecoTable, [{ filial: currentFilial, produto: code, endereco: jsonStr }]);
                 }
 
                 // Atualiza datasets locais
@@ -4133,7 +4139,7 @@
                     }
                 }
                 if (rawSaldoDataset) {
-                    rawSaldoDataset.filter(s => String(s.produto).trim().toUpperCase() === code).forEach(s => {
+                    rawSaldoDataset.filter(s => String(s.produto).trim().toUpperCase() === code && s.filial === currentFilial).forEach(s => {
                         const a = String(s.armazem || '01').trim().padStart(2, '0');
                         s.endereco = finalMap[a] || '';
                     });
