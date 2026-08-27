@@ -454,12 +454,12 @@
 
             <!-- 4. TOTAL MONITORADO -->
             <div id="cardKpiTotal" onclick="filterResetAll()" class="bg-white p-5 rounded-3xl border border-blue-200 shadow-sm flex items-center justify-between cursor-pointer hover:border-blue-400 hover:shadow-md transition-all group touch-active" title="Clique para ver todos os lotes sem restrição de status">
-                <div>
-                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-wider group-hover:text-blue-800 transition-colors">Total em Lotes</p>
-                    <h3 id="kpiValidadeTotalQtd" class="text-2xl font-black text-[#002f6c] mt-1">0</h3>
+                <div class="flex-1 min-w-0 pr-2">
+                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-wider group-hover:text-blue-800 transition-colors">Total Monitorado</p>
+                    <div id="kpiValidadeTotalQtd" class="text-xl font-black text-[#002f6c] mt-1 leading-tight flex items-baseline gap-1.5 flex-wrap">0</div>
                     <p id="kpiValidadeTotalQtdSub" class="text-[11px] text-slate-500 font-semibold mt-0.5">Qtd. total monitorada</p>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
                     <i data-lucide="boxes" class="w-6 h-6"></i>
                 </div>
             </div>
@@ -1712,13 +1712,17 @@
         }
 
         function getValidadeStatus(dataValidadeStr) {
-            if (!dataValidadeStr || !/^\d{4}-\d{2}$/.test(dataValidadeStr)) return 'OK';
+            if (!dataValidadeStr) return 'OK';
+            const s = String(dataValidadeStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return 'OK';
             
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth() + 1;
 
-            const [valYear, valMonth] = dataValidadeStr.split('-').map(Number);
+            const parts = s.split('-');
+            const valYear = parseInt(parts[0], 10);
+            const valMonth = parseInt(parts[1], 10);
 
             const currentTotalMonths = currentYear * 12 + currentMonth;
             const valTotalMonths = valYear * 12 + valMonth;
@@ -1735,11 +1739,17 @@
         }
 
         function formatAnoMesDisplay(anoMesStr) {
-            if (!anoMesStr || !/^\d{4}-\d{2}$/.test(anoMesStr)) return '-';
-            const [ano, mes] = anoMesStr.split('-');
+            if (!anoMesStr) return '-';
+            const s = String(anoMesStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return s;
+            const parts = s.split('-');
+            const ano = parts[0];
+            const mes = parts[1];
+            const dia = parts.length > 2 ? parts[2].slice(0, 2) : null;
             const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const idx = parseInt(mes, 10) - 1;
-            return `${meses[idx] || mes}/${ano}`;
+            const mesNome = meses[idx] || mes;
+            return dia ? `${dia}/${mesNome}/${ano}` : `${mesNome}/${ano}`;
         }
 
         function getValidadeStatusText(status) {
@@ -1913,10 +1923,24 @@
             const status = activeStatus || (document.getElementById('valFilterStatus') ? document.getElementById('valFilterStatus').value : 'ALL');
             const conf = activeConf || (document.getElementById('valFilterSaldoConferencia') ? document.getElementById('valFilterSaldoConferencia').value : 'ALL');
 
+            // Mapa SB1 para resolver Unidades de Medida
+            const sb1Map = {};
+            rawSb1Dataset.forEach(p => {
+                const c = p.Codigo || p.codigo;
+                if (c) {
+                    sb1Map[String(c).trim().toUpperCase()] = {
+                        descricao: p['Descr.Espec.'] || p.descricao || '-',
+                        unidade: (p.Unidade || p.unidade || 'UN').trim().toUpperCase()
+                    };
+                }
+            });
+
             let vencidosCount = 0;
             let aVencerCount = 0;
             let okCount = 0;
-            let totalQtd = 0;
+            let totalKg = 0;
+            let totalPc = 0;
+            let totalLt = 0;
 
             list.forEach(v => {
                 const st = getValidadeStatus(v.data_validade);
@@ -1924,12 +1948,40 @@
                 else if (st === 'AVENCER') aVencerCount++;
                 else okCount++;
 
-                totalQtd += parseFloat(v.quantidade || 0);
+                const prodCode = String(v.produto || '').trim().toUpperCase();
+                const uInfo = sb1Map[prodCode] || { unidade: 'UN' };
+                const u = uInfo.unidade || 'UN';
+                const q = parseFloat(v.quantidade || 0);
+
+                if (u === 'KG') {
+                    totalKg += q;
+                } else if (u === 'PC' || u === 'PÇ' || u === 'UN' || u === 'CX' || u === 'RL') {
+                    totalPc += q;
+                } else if (u === 'L' || u === 'LT' || u === 'GL') {
+                    totalLt += q;
+                } else {
+                    totalPc += q;
+                }
             });
 
-            let filteredQtd = 0;
+            let filteredKg = 0;
+            let filteredPc = 0;
+            let filteredLt = 0;
             fullFiltered.forEach(item => {
-                filteredQtd += parseFloat(item.totalLotes || 0);
+                const prodCode = String(item.produto || '').trim().toUpperCase();
+                const uInfo = sb1Map[prodCode] || { unidade: 'UN' };
+                const u = uInfo.unidade || 'UN';
+                const q = parseFloat(item.totalLotes || 0);
+
+                if (u === 'KG') {
+                    filteredKg += q;
+                } else if (u === 'PC' || u === 'PÇ' || u === 'UN' || u === 'CX' || u === 'RL') {
+                    filteredPc += q;
+                } else if (u === 'L' || u === 'LT' || u === 'GL') {
+                    filteredLt += q;
+                } else {
+                    filteredPc += q;
+                }
             });
 
             const filial = document.getElementById('valFilterFilial') ? document.getElementById('valFilterFilial').value : 'ALL';
@@ -1982,12 +2034,34 @@
             if (kpiOK) kpiOK.innerText = okCount.toLocaleString('pt-BR');
 
             if (kpiTotal) {
-                if (status !== 'ALL' || conf !== 'ALL') {
-                    kpiTotal.innerText = filteredQtd.toLocaleString('pt-BR');
-                    if (kpiTotalSub) kpiTotalSub.innerText = `Filtrado (${totalQtd.toLocaleString('pt-BR')} no escopo)`;
-                } else {
-                    kpiTotal.innerText = totalQtd.toLocaleString('pt-BR');
-                    if (kpiTotalSub) kpiTotalSub.innerText = "Qtd. total monitorada";
+                const isFiltered = (status !== 'ALL' || conf !== 'ALL');
+                const displayKg = isFiltered ? filteredKg : totalKg;
+                const displayPc = isFiltered ? filteredPc : totalPc;
+                const displayLt = isFiltered ? filteredLt : totalLt;
+
+                const displayParts = [];
+                if (displayKg > 0 || (displayPc === 0 && displayLt === 0)) {
+                    displayParts.push(`<span>${displayKg.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} <span class="text-[11px] font-bold text-slate-500">KG</span></span>`);
+                }
+                if (displayPc > 0) {
+                    displayParts.push(`<span>${displayPc.toLocaleString('pt-BR')} <span class="text-[11px] font-bold text-slate-500">PC</span></span>`);
+                }
+                if (displayLt > 0) {
+                    displayParts.push(`<span>${displayLt.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} <span class="text-[11px] font-bold text-slate-500">L</span></span>`);
+                }
+
+                kpiTotal.innerHTML = displayParts.join('<span class="text-slate-300 font-bold">•</span>');
+
+                if (kpiTotalSub) {
+                    if (isFiltered) {
+                        const totalSummary = [];
+                        if (totalKg > 0) totalSummary.push(`${totalKg.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`);
+                        if (totalPc > 0) totalSummary.push(`${totalPc.toLocaleString('pt-BR')} pc`);
+                        if (totalLt > 0) totalSummary.push(`${totalLt.toLocaleString('pt-BR')} L`);
+                        kpiTotalSub.innerText = `Filtrado (Escopo: ${totalSummary.join(' + ')})`;
+                    } else {
+                        kpiTotalSub.innerText = "Qtd. total monitorada";
+                    }
                 }
             }
 
@@ -2002,18 +2076,33 @@
                 }
             }
 
-            // --- CÁLCULOS FINANCEIROS DE VALIDADE (R$) ---
+            // --- CÁLCULOS FINANCEIROS DE VALIDADE (R$) & SEPARAÇÃO DE PESO/QUANTIDADE ---
             let valorTotalGeral = 0;
             let valorProtegidoGeral = 0;
             let valorVencidoGeral = 0;
-            let pesoTotalGeral = 0;
+            let pesoKgGeral = 0;
+            let pesoPcGeral = 0;
+            let pesoLtGeral = 0;
 
             (rawValidadeDataset || []).forEach(v => {
                 const qtd = Number(v.quantidade || 0);
+                const prodCode = String(v.produto || '').trim().toUpperCase();
+                const uInfo = sb1Map[prodCode] || { unidade: 'UN' };
+                const u = uInfo.unidade || 'UN';
+
+                if (u === 'KG') {
+                    pesoKgGeral += qtd;
+                } else if (u === 'PC' || u === 'PÇ' || u === 'UN' || u === 'CX' || u === 'RL') {
+                    pesoPcGeral += qtd;
+                } else if (u === 'L' || u === 'LT' || u === 'GL') {
+                    pesoLtGeral += qtd;
+                } else {
+                    pesoPcGeral += qtd;
+                }
+
                 const precoUnit = (typeof globalSd2PricesMap !== 'undefined' && globalSd2PricesMap[v.produto]) ? globalSd2PricesMap[v.produto] : 24.50;
                 const vlr = qtd * precoUnit;
                 valorTotalGeral += vlr;
-                pesoTotalGeral += qtd;
 
                 const st = getValidadeStatus(v.data_validade);
                 if (st === 'OK' || st === 'AVENCER') {
@@ -2029,7 +2118,13 @@
             const elValVenc = document.getElementById('kpiValidadeValorVencido');
 
             if (elValTotal) elValTotal.innerText = valorTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            if (elPesoTotal) elPesoTotal.innerText = `${pesoTotalGeral.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg monitorados`;
+            if (elPesoTotal) {
+                const parts = [];
+                if (pesoKgGeral > 0) parts.push(`${pesoKgGeral.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`);
+                if (pesoPcGeral > 0) parts.push(`${pesoPcGeral.toLocaleString('pt-BR')} pçs`);
+                if (pesoLtGeral > 0) parts.push(`${pesoLtGeral.toLocaleString('pt-BR')} L`);
+                elPesoTotal.innerText = parts.length > 0 ? `${parts.join(' • ')} monitorados` : '0 monitorados';
+            }
             if (elValProt) elValProt.innerText = valorProtegidoGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             if (elValVenc) elValVenc.innerText = valorVencidoGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -3568,11 +3663,11 @@
                 }
                 const fabInp = document.getElementById('valInputFabricacao');
                 if (fabInp && !fabInp.value && firstLot.data_fabricacao) {
-                    fabInp.value = firstLot.data_fabricacao;
+                    fabInp.value = String(firstLot.data_fabricacao).slice(0, 7);
                 }
                 const valInp = document.getElementById('valInputValidade');
                 if (valInp && !valInp.value && firstLot.data_validade) {
-                    valInp.value = firstLot.data_validade;
+                    valInp.value = String(firstLot.data_validade).slice(0, 7);
                 }
                 const obsInp = document.getElementById('valInputObservacao');
                 if (obsInp && !obsInp.value && firstLot.observacao) {
@@ -3605,8 +3700,8 @@
             if (inpCodigo) inpCodigo.value = item.produto;
             document.getElementById('valInputArmazem').value = item.armazem;
             document.getElementById('valInputLote').value = item.lote || '';
-            document.getElementById('valInputFabricacao').value = item.data_fabricacao || '';
-            document.getElementById('valInputValidade').value = item.data_validade || '';
+            document.getElementById('valInputFabricacao').value = item.data_fabricacao ? String(item.data_fabricacao).slice(0, 7) : '';
+            document.getElementById('valInputValidade').value = item.data_validade ? String(item.data_validade).slice(0, 7) : '';
             document.getElementById('valInputObservacao').value = item.observacao || '';
 
             const unit = getProductUnit(item.produto);
