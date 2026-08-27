@@ -850,7 +850,7 @@
 
             <div class="bg-indigo-50/60 p-3.5 rounded-2xl border border-indigo-100 text-xs text-indigo-900 space-y-1">
                 <p class="font-bold flex items-center gap-1.5"><i data-lucide="info" class="w-4 h-4 text-indigo-600"></i> Formato Esperado do CSV:</p>
-                <p class="text-[11px] leading-relaxed">Colunas separadas por ponto e vírgula (;) ou vírgula: <strong>Filial; Armazém; Código Produto; Quantidade</strong></p>
+                <p class="text-[11px] leading-relaxed">Colunas aceitas: <strong>Filial; Armazém; Código Produto; Quantidade; Custo Unitário; Endereço</strong></p>
                 <p class="text-[10px] text-indigo-700 font-semibold">Tabela de Destino: <span id="importSaldoTableName" class="font-mono font-black">saldo_comercio</span> (<span id="importSaldoActiveSector">Comércio</span>)</p>
             </div>
 
@@ -4433,13 +4433,15 @@
                     const delimiter = lines[0].includes(';') ? ';' : ',';
                     const headers = lines[0].split(delimiter).map(h => h.trim().toUpperCase());
                     
-                    let idxFilial = -1, idxProduto = -1, idxArmazem = -1, idxQtd = -1;
+                    let idxFilial = -1, idxProduto = -1, idxArmazem = -1, idxQtd = -1, idxCusto = -1, idxEndereco = -1;
                     headers.forEach((h, idx) => {
                         const clean = h.trim().toUpperCase();
                         if (clean.includes('FILIAL') || clean === 'B2_FILIAL') idxFilial = idx;
                         else if (clean.includes('PROD') || clean.includes('COD') || clean === 'B2_COD' || clean.includes('MATER')) idxProduto = idx;
                         else if (clean.includes('ARM') || clean.includes('LOC') || clean === 'B2_LOCAL' || clean.includes('DEP')) idxArmazem = idx;
                         else if (clean.includes('QTD') || clean.includes('QUANT') || clean.includes('SALDO') || clean === 'B2_QATU') idxQtd = idx;
+                        else if (clean.includes('CUSTO') || clean.includes('PRECO') || clean.includes('PREÇO') || clean.includes('VALOR') || clean.includes('CM1') || clean.includes('UNIT') || clean === 'B2_CM1') idxCusto = idx;
+                        else if (clean.includes('ENDER') || clean.includes('RUA') || clean === 'B2_LOCALIZ') idxEndereco = idx;
                     });
 
                     const hasHeader = (idxProduto !== -1 || idxArmazem !== -1 || idxQtd !== -1);
@@ -4454,6 +4456,8 @@
                         let armazem = '01';
                         let produto = '';
                         let quantidade = 0;
+                        let custo_unitario = null;
+                        let endereco = '';
 
                         if (hasHeader) {
                             if (idxFilial !== -1 && parts[idxFilial]) filial = String(parts[idxFilial]).trim().padStart(2, '0');
@@ -4462,6 +4466,14 @@
                             if (idxQtd !== -1 && parts[idxQtd]) {
                                 const rawQtd = String(parts[idxQtd]).trim().replace(',', '.');
                                 quantidade = parseFloat(rawQtd) || 0;
+                            }
+                            if (idxCusto !== -1 && parts[idxCusto]) {
+                                const rawCusto = String(parts[idxCusto]).trim().replace('R$', '').trim().replace(/\./g, '').replace(',', '.');
+                                const parsedCusto = parseFloat(rawCusto);
+                                if (!isNaN(parsedCusto) && parsedCusto >= 0) custo_unitario = parsedCusto;
+                            }
+                            if (idxEndereco !== -1 && parts[idxEndereco]) {
+                                endereco = String(parts[idxEndereco]).trim();
                             }
                         } else {
                             if (parts.length >= 4) {
@@ -4478,6 +4490,11 @@
                                 } else {
                                     armazem = col1.padStart(2, '0');
                                     produto = col2;
+                                }
+                                if (parts.length >= 5) {
+                                    const rawCusto = String(parts[4]).trim().replace('R$', '').trim().replace(',', '.');
+                                    const parsedCusto = parseFloat(rawCusto);
+                                    if (!isNaN(parsedCusto) && parsedCusto >= 0) custo_unitario = parsedCusto;
                                 }
                             } else if (parts.length === 3) {
                                 const col0 = String(parts[0]).trim();
@@ -4507,18 +4524,21 @@
                         }
 
                         if (!produto) continue;
+                        if (Math.abs(quantidade) < 0.0001) continue; // Otimização: ignora saldos zerados para evitar lentidão
 
                         payload.push({
                             filial,
                             produto,
                             armazem,
-                            quantidade
+                            quantidade,
+                            custo_unitario,
+                            endereco
                         });
                     }
 
                     const totalItems = payload.length;
                     if (totalItems === 0) {
-                        throw new Error("Nenhum registro válido localizado no arquivo CSV.");
+                        throw new Error("Nenhum registro com saldo ativo localizado no arquivo CSV.");
                     }
 
                     const tableName = currentSector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
