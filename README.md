@@ -1,2 +1,2 @@
-# projeto-amazon-aco-almoxarifado
-Local onde eu vou preparar meu projeto de uso interno do Almoxarifado Alvorada
+# projeto-amazon-aco
+Local onde eu vou preparar meu projeto de uso interno da empresa Amazon Aço
