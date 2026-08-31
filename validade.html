@@ -591,7 +591,13 @@
                     <div id="valProductPreviewLabel" class="mt-1.5 text-[11px] font-bold min-h-[18px] transition-all"></div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filial</label>
+                        <select id="valInputFilial" onchange="onValidadeFilialChange()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </select>
+                    </div>
                     <div>
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Armazém em Saldo</label>
                         <select id="valInputArmazem" onchange="onValidadeCodeOrLoteChange()" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
@@ -781,7 +787,13 @@
                 <p class="text-[10px] text-slate-500 font-semibold mt-1">Colunas aceitas: Código, Lote, Quantidade, Validade, Palete/Caixa/Unidade</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filial de Destino</label>
+                    <select id="importValidadeFilial" onchange="updateImportWarehousesForFilial()" class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </select>
+                </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Armazém Padrão de Destino</label>
                     <select id="importDefaultArmazem" class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
@@ -2503,7 +2515,7 @@
 
         function openNewValidadeModalForCurrentProduct() {
             if (!currentProductLotsData) return;
-            openNewValidadeModal(currentProductLotsData.produto, currentProductLotsData.armazem);
+            openNewValidadeModal(currentProductLotsData.produto, currentProductLotsData.armazem, currentProductLotsData.filial);
         }
 
         function fillRemainingBalanceFromModal() {
@@ -2511,7 +2523,7 @@
             const { filial, armazem, produto } = currentProductLotsData;
             const comp = getBalanceComparison(filial, armazem, produto);
             if (comp.diff < 0) {
-                openNewValidadeModal(produto, armazem);
+                openNewValidadeModal(produto, armazem, filial);
                 const missingQtd = Math.abs(comp.diff);
                 if (modalPalletRows.length > 0) {
                     modalPalletRows[0].qtd = missingQtd;
@@ -3553,7 +3565,167 @@
             }, { title: "Bipar Código do Material" });
         }
 
-        function openNewValidadeModal(codigo = '', armazem = '01') {
+        function populateModalFilialSelect(chosenFilial = null) {
+            const sel = document.getElementById('valInputFilial');
+            if (!sel) return;
+            const isGlobal = isGlobalFilial(currentUser);
+            const userAssigned = getTargetFilialForSector();
+
+            const filials = [...new Set(rawValidadeDataset.map(v => v.filial))].sort();
+            const allAvailable = currentSector === 'INDUSTRIA' ? ['01', '02', '03', '04', '05', '06'] : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+            const merged = [...new Set([...allAvailable, ...filials])].filter(f => f && f !== '00' && f !== 'ALL').sort();
+
+            let defaultFilial = chosenFilial;
+            if (!defaultFilial) {
+                const filterFil = document.getElementById('valFilterFilial') ? document.getElementById('valFilterFilial').value : 'ALL';
+                if (filterFil && filterFil !== 'ALL' && filterFil !== '00') {
+                    defaultFilial = filterFil;
+                } else if (!isGlobal && userAssigned && userAssigned !== '00') {
+                    defaultFilial = userAssigned;
+                } else {
+                    defaultFilial = '01';
+                }
+            }
+            defaultFilial = String(defaultFilial).padStart(2, '0');
+
+            if (isGlobal) {
+                sel.disabled = false;
+                sel.className = "w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer";
+                let html = '';
+                merged.forEach(f => {
+                    const name = getFilialDisplayName(f, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                    html += `<option value="${f}" ${f === defaultFilial ? 'selected' : ''}>${name}</option>`;
+                });
+                sel.innerHTML = html;
+                sel.value = defaultFilial;
+            } else {
+                sel.disabled = true;
+                sel.className = "w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600 cursor-not-allowed opacity-80";
+                const name = getFilialDisplayName(userAssigned, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                sel.innerHTML = `<option value="${userAssigned}" selected>${name}</option>`;
+                sel.value = userAssigned;
+            }
+        }
+
+        function updateModalWarehousesForSelectedFilial() {
+            const selFilial = document.getElementById('valInputFilial');
+            const targetFil = selFilial ? selFilial.value : '01';
+            const selArm = document.getElementById('valInputArmazem');
+            if (!selArm) return;
+
+            const saldoArmazens = rawSaldoDataset
+                .filter(s => isFilialMatch(s.filial, targetFil))
+                .map(s => String(s.armazem || '').trim().padStart(2, '0'))
+                .filter(Boolean);
+
+            const valArmazens = (rawValidadeDataset || [])
+                .filter(v => isFilialMatch(v.filial, targetFil))
+                .map(v => String(v.armazem || '').trim().padStart(2, '0'))
+                .filter(Boolean);
+
+            let knownArms = [...new Set([...saldoArmazens, ...valArmazens])]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            if (knownArms.length === 0) knownArms = ['01', '24', '50'];
+
+            const curArm = selArm.value;
+            let html = '';
+            knownArms.forEach(a => {
+                html += `<option value="${a}">Armazém ${a}</option>`;
+            });
+            selArm.innerHTML = html;
+            if (curArm && knownArms.includes(curArm)) {
+                selArm.value = curArm;
+            } else if (knownArms.length > 0) {
+                selArm.value = knownArms[0];
+            }
+        }
+
+        function onValidadeFilialChange() {
+            updateModalWarehousesForSelectedFilial();
+            onValidadeCodeOrLoteChange();
+        }
+
+        function populateImportFilialSelect(chosenFilial = null) {
+            const sel = document.getElementById('importValidadeFilial');
+            if (!sel) return;
+            const isGlobal = isGlobalFilial(currentUser);
+            const userAssigned = getTargetFilialForSector();
+
+            const filials = [...new Set(rawValidadeDataset.map(v => v.filial))].sort();
+            const allAvailable = currentSector === 'INDUSTRIA' ? ['01', '02', '03', '04', '05', '06'] : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+            const merged = [...new Set([...allAvailable, ...filials])].filter(f => f && f !== '00' && f !== 'ALL').sort();
+
+            let defaultFilial = chosenFilial;
+            if (!defaultFilial) {
+                const filterFil = document.getElementById('valFilterFilial') ? document.getElementById('valFilterFilial').value : 'ALL';
+                if (filterFil && filterFil !== 'ALL' && filterFil !== '00') {
+                    defaultFilial = filterFil;
+                } else if (!isGlobal && userAssigned && userAssigned !== '00') {
+                    defaultFilial = userAssigned;
+                } else {
+                    defaultFilial = '01';
+                }
+            }
+            defaultFilial = String(defaultFilial).padStart(2, '0');
+
+            if (isGlobal) {
+                sel.disabled = false;
+                sel.className = "w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 cursor-pointer";
+                let html = '';
+                merged.forEach(f => {
+                    const name = getFilialDisplayName(f, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                    html += `<option value="${f}" ${f === defaultFilial ? 'selected' : ''}>${name}</option>`;
+                });
+                sel.innerHTML = html;
+                sel.value = defaultFilial;
+            } else {
+                sel.disabled = true;
+                sel.className = "w-full bg-slate-100 border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-600 cursor-not-allowed opacity-80";
+                const name = getFilialDisplayName(userAssigned, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                sel.innerHTML = `<option value="${userAssigned}" selected>${name}</option>`;
+                sel.value = userAssigned;
+            }
+            updateImportWarehousesForFilial();
+        }
+
+        function updateImportWarehousesForFilial() {
+            const selFil = document.getElementById('importValidadeFilial');
+            const targetFil = selFil ? selFil.value : '01';
+            const selArm = document.getElementById('importDefaultArmazem');
+            if (!selArm) return;
+
+            const saldoArmazens = rawSaldoDataset
+                .filter(s => isFilialMatch(s.filial, targetFil))
+                .map(s => String(s.armazem || '').trim().padStart(2, '0'))
+                .filter(Boolean);
+
+            const valArmazens = (rawValidadeDataset || [])
+                .filter(v => isFilialMatch(v.filial, targetFil))
+                .map(v => String(v.armazem || '').trim().padStart(2, '0'))
+                .filter(Boolean);
+
+            let knownArms = [...new Set([...saldoArmazens, ...valArmazens])]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            if (knownArms.length === 0) knownArms = ['01', '24', '50'];
+
+            const curArm = selArm.value;
+            let html = '';
+            knownArms.forEach(a => {
+                html += `<option value="${a}">Armazém ${a}</option>`;
+            });
+            selArm.innerHTML = html;
+            if (curArm && knownArms.includes(curArm)) {
+                selArm.value = curArm;
+            } else if (knownArms.includes('24')) {
+                selArm.value = '24';
+            } else if (knownArms.length > 0) {
+                selArm.value = knownArms[0];
+            }
+        }
+
+        function openNewValidadeModal(codigo = '', armazem = '01', filial = null) {
             const modal = document.getElementById('newValidadeModal');
             const inpCodigo = document.getElementById('valInputCodigo');
             const title = document.getElementById('newValidadeModalTitle');
@@ -3562,7 +3734,12 @@
 
             document.getElementById('valEditId').value = '';
             if (inpCodigo) inpCodigo.value = codigo || '';
-            document.getElementById('valInputArmazem').value = armazem || '01';
+            
+            // Popula seletor de filial e armazéns da filial escolhida
+            populateModalFilialSelect(filial);
+            updateModalWarehousesForSelectedFilial();
+            if (armazem) document.getElementById('valInputArmazem').value = armazem;
+
             document.getElementById('valInputLote').value = '';
             document.getElementById('valInputFabricacao').value = '';
             document.getElementById('valInputValidade').value = '';
@@ -3616,10 +3793,8 @@
             const code = codeInp ? codeInp.value.trim().toUpperCase() : '';
             const lote = loteInp ? loteInp.value.trim().toUpperCase() : '';
             const armazem = document.getElementById('valInputArmazem').value.trim().padStart(2, '0');
-            const selFilial = document.getElementById('valFilterFilial');
-            const isGlobal = isGlobalFilial(currentUser);
-            const activeFilial = (isGlobal && selFilial && selFilial.value !== 'ALL' && selFilial.value !== '00') ? selFilial.value : getTargetFilialForSector();
-            const targetFilial = (activeFilial && activeFilial !== 'ALL' && activeFilial !== '00') ? String(activeFilial).padStart(2, '0') : '01';
+            const selModalFilial = document.getElementById('valInputFilial');
+            const targetFilial = (selModalFilial && selModalFilial.value) ? String(selModalFilial.value).padStart(2, '0') : '01';
 
             updateModalSaldoComparison();
 
@@ -3641,7 +3816,7 @@
                 return;
             }
 
-            // Procura lotes já existentes desse material nesse armazém
+            // Procura lotes já existentes desse material nesse armazém da filial selecionada
             let existingLots = rawValidadeDataset.filter(v => 
                 isFilialMatch(v.filial, targetFilial) &&
                 isArmMatch(v.armazem, armazem) &&
@@ -3698,7 +3873,12 @@
             if (title) title.innerText = `Editar Lote: ${item.lote || item.produto}`;
             document.getElementById('valEditId').value = item.id;
             if (inpCodigo) inpCodigo.value = item.produto;
+            
+            // Popula filial do item editado e carrega armazéns correspondentes
+            populateModalFilialSelect(item.filial);
+            updateModalWarehousesForSelectedFilial();
             document.getElementById('valInputArmazem').value = item.armazem;
+
             document.getElementById('valInputLote').value = item.lote || '';
             document.getElementById('valInputFabricacao').value = item.data_fabricacao ? String(item.data_fabricacao).slice(0, 7) : '';
             document.getElementById('valInputValidade').value = item.data_validade ? String(item.data_validade).slice(0, 7) : '';
@@ -3758,10 +3938,8 @@
 
             const code = codeInput.value.trim().toUpperCase();
             const armazem = armazemInput.value.trim().padStart(2, '0');
-            const selFilial = document.getElementById('valFilterFilial');
-            const isGlobal = isGlobalFilial(currentUser);
-            const activeFilial = (isGlobal && selFilial && selFilial.value !== 'ALL' && selFilial.value !== '00') ? selFilial.value : getTargetFilialForSector();
-            const targetFilial = (activeFilial && activeFilial !== 'ALL' && activeFilial !== '00') ? String(activeFilial).padStart(2, '0') : '01';
+            const selModalFilial = document.getElementById('valInputFilial');
+            const targetFilial = (selModalFilial && selModalFilial.value) ? String(selModalFilial.value).padStart(2, '0') : '01';
 
             if (!code || !armazem) {
                 card.classList.add('hidden');
@@ -3826,7 +4004,8 @@
 
             const code = codeInput.value.trim().toUpperCase();
             const armazem = armazemInput.value.trim().padStart(2, '0');
-            const targetFilial = getTargetFilialForSector();
+            const selModalFilial = document.getElementById('valInputFilial');
+            const targetFilial = (selModalFilial && selModalFilial.value) ? String(selModalFilial.value).padStart(2, '0') : '01';
             const comp = getBalanceComparison(targetFilial, armazem, code);
 
             let currentRowsSum = 0;
@@ -3873,10 +4052,8 @@
                 return false;
             }
 
-            const selFilial = document.getElementById('valFilterFilial');
-            const isGlobal = isGlobalFilial(currentUser);
-            const activeFilial = (isGlobal && selFilial && selFilial.value !== 'ALL' && selFilial.value !== '00') ? selFilial.value : getTargetFilialForSector();
-            const targetFilial = (activeFilial && activeFilial !== 'ALL' && activeFilial !== '00') ? String(activeFilial).padStart(2, '0') : '01';
+            const selModalFilial = document.getElementById('valInputFilial');
+            const targetFilial = (selModalFilial && selModalFilial.value) ? String(selModalFilial.value).padStart(2, '0') : '01';
             const valTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
 
             const btn = document.getElementById('btnSaveValidade');
@@ -3959,10 +4136,8 @@
             const produtoInput = document.getElementById('valInputCodigo');
             const produto = produtoInput ? produtoInput.value.trim().toUpperCase() : '';
             const armazem = document.getElementById('valInputArmazem').value.padStart(2, '0');
-            const selFilial = document.getElementById('valFilterFilial');
-            const isGlobal = isGlobalFilial(currentUser);
-            const activeFilial = (isGlobal && selFilial && selFilial.value !== 'ALL' && selFilial.value !== '00') ? selFilial.value : getTargetFilialForSector();
-            const targetFilial = (activeFilial && activeFilial !== 'ALL' && activeFilial !== '00') ? String(activeFilial).padStart(2, '0') : '01';
+            const selModalFilial = document.getElementById('valInputFilial');
+            const targetFilial = (selModalFilial && selModalFilial.value) ? String(selModalFilial.value).padStart(2, '0') : '01';
 
             const saved = await saveValidadeEntry();
             if (!saved) return;
@@ -3985,6 +4160,8 @@
             if (summary) summary.classList.add('hidden');
             const btn = document.getElementById('btnExecuteImportValidade');
             if (btn) btn.disabled = true;
+
+            populateImportFilialSelect();
 
             const modal = document.getElementById('importValidadeModal');
             if (modal) modal.classList.remove('pointer-events-none', 'opacity-0');
@@ -4072,10 +4249,8 @@
                     if (colEmb === -1) colEmb = 4;
 
                     const defaultArm = document.getElementById('importDefaultArmazem').value.padStart(2, '0');
-                    const selFilial = document.getElementById('valFilterFilial');
-                    const isGlobal = isGlobalFilial(currentUser);
-                    const activeFilial = (isGlobal && selFilial && selFilial.value !== 'ALL' && selFilial.value !== '00') ? selFilial.value : getTargetFilialForSector();
-                    const targetFilial = (activeFilial && activeFilial !== 'ALL' && activeFilial !== '00') ? String(activeFilial).padStart(2, '0') : '01';
+                    const selFilial = document.getElementById('importValidadeFilial');
+                    const targetFilial = (selFilial && selFilial.value) ? String(selFilial.value).padStart(2, '0') : '01';
 
                     const sb1Map = {};
                     rawSb1Dataset.forEach(p => {
@@ -4155,7 +4330,8 @@
 
             const defaultArm = document.getElementById('importDefaultArmazem').value.padStart(2, '0');
             const duplicateRule = document.getElementById('importDuplicateRule').value;
-            const targetFilial = getTargetFilialForSector();
+            const selImportFil = document.getElementById('importValidadeFilial');
+            const targetFilial = (selImportFil && selImportFil.value) ? String(selImportFil.value).padStart(2, '0') : '01';
             const valTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
 
             const btn = document.getElementById('btnExecuteImportValidade');
