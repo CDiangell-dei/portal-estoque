@@ -1879,11 +1879,37 @@
                     updateUIProgress(pct, "Baixando saldos dos armazéns...");
                 });
 
-                updateUIProgress(55, `Baixando saídas do SD2 (${sd2Table})...`);
-                const dbSd2 = await fetchSupabaseRestFast(sd2Table, 'filial,produto,quantidade,vlr_unitario,vlr_total,tipo_saida,armazem,emissao,num_documento', 160000, 'emissao=gte.' + dateFilterStr + '&order=emissao.desc', () => {
-                    const pct = 55 + Math.min(40, (sd2ProgressTotalCount / 130000) * 40);
-                    updateUIProgress(pct, "Baixando saídas do SD2...");
-                });
+                updateUIProgress(55, `Processando saídas do SD2 agregadas no Supabase (${sd2Table})...`);
+                let dbSd2 = [];
+                try {
+                    const { data: rpcSd2Data, error: rpcErr } = await supabaseClient.rpc('get_sd2_monthly_aggregation', {
+                        p_sector: currentSd2Sector,
+                        p_start_date: dateFilterStr
+                    });
+                    if (!rpcErr && rpcSd2Data && Array.isArray(rpcSd2Data) && rpcSd2Data.length > 0) {
+                        dbSd2 = rpcSd2Data.map(r => ({
+                            filial: r.filial,
+                            produto: r.produto,
+                            armazem: r.armazem,
+                            tipo_saida: r.tipo_saida,
+                            quantidade: Number(r.quantidade_total || 0),
+                            vlr_unitario: Number(r.quantidade_total) > 0 ? (Number(r.vlr_total || 0) / Number(r.quantidade_total)) : 0,
+                            vlr_total: Number(r.vlr_total || 0),
+                            emissao: r.mes ? `${r.mes}-15` : 'Data N/D',
+                            num_documento: `${r.total_linhas || 1} lançamentos`
+                        }));
+                        sd2ProgressTotalCount += dbSd2.length;
+                        updateUIProgress(90, `Agregação de ${dbSd2.length} grupos de demanda processada instantaneamente pelo Supabase!`);
+                    } else {
+                        throw (rpcErr || new Error("RPC retornou vazio"));
+                    }
+                } catch (rpcFallbackErr) {
+                    console.warn("RPC aggregation fallback para REST:", rpcFallbackErr);
+                    dbSd2 = await fetchSupabaseRestFast(sd2Table, 'filial,produto,quantidade,vlr_unitario,vlr_total,tipo_saida,armazem,emissao,num_documento', 160000, 'emissao=gte.' + dateFilterStr + '&order=emissao.desc', () => {
+                        const pct = 55 + Math.min(40, (sd2ProgressTotalCount / 130000) * 40);
+                        updateUIProgress(pct, "Baixando saídas do SD2...");
+                    });
+                }
 
                 updateUIProgress(95, "Processando relatórios e integrando filiais...");
 

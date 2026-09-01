@@ -1,10 +1,12 @@
-const CACHE_NAME = 'portal-estoques-v7.2-filial-bi';
+const CACHE_NAME = 'portal-estoques-v7.3-modular-perf';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './inventario.html',
+  './inventario.js',
   './transferencia.html',
   './validade.html',
+  './validade.js',
   './minutas.html',
   './kardex.html',
   './luvas.html',
