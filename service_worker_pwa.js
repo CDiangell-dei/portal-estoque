@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.1-design-unificado-amazonaco';
+const CACHE_NAME = 'portal-estoques-v8.2-codigos-fornecedor-barras';
 const STATIC_ASSETS = [
   './',
   './index.html',

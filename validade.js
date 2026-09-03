@@ -8,6 +8,13 @@
         let rawSaldoDataset = [];
         let globalSd2PricesMap = {};
 
+        // Mapeamento de Códigos de Fornecedores e Códigos de Barras / QR Code
+        let rawFornecedoresProdutos = [];
+        let fornecedorByNossoMap = {};   // codigo_nosso -> { id, codigo_nosso, codigo_fornecedor, codigo_antigo, codigo_barras }
+        let nossoByFornecedorMap = {};   // uppercase(codigo_fornecedor) -> codigo_nosso
+        let nossoByBarrasMap = {};       // uppercase(codigo_barras) -> codigo_nosso
+        let nossoByAntigoMap = {};       // uppercase(codigo_antigo) -> codigo_nosso
+
         function getTargetFilialForSector() {
             if (!currentUser) return '01';
             if (isGlobalFilial(currentUser)) {
@@ -123,7 +130,17 @@
                     custo_unitario: parseFloat(s.custo_unitario || 0)
                 }));
 
-                // 3. Carrega Catálogo SB1 apenas dos produtos ativos (velocidade ultra-rápida)
+                // 3. Carrega Fornecedores Produtos (De-Para Fornecedores e Códigos de Barras)
+                try {
+                    const { data: fornData } = await supabaseClient.from('fornecedores_produtos').select('*');
+                    if (fornData) {
+                        rawFornecedoresProdutos = fornData;
+                    }
+                } catch(errForn) {
+                    console.warn("Aviso ao carregar fornecedores_produtos:", errForn);
+                }
+
+                // 4. Carrega Catálogo SB1 apenas dos produtos ativos (velocidade ultra-rápida)
                 let sb1Data = [];
                 const activeCodesSet = new Set([
                     ...rawValidadeDataset.map(v => v.produto),
@@ -136,7 +153,7 @@
                     for (let i = 0; i < activeCodes.length; i += chunkSize) {
                         const chunk = activeCodes.slice(i, i + chunkSize);
                         const { data: chunkData } = await supabaseClient.from(sb1Table)
-                            .select('codigo, descricao, unidade, endereco')
+                            .select('codigo, descricao, unidade, endereco, codigo_barras')
                             .in('codigo', chunk);
                         if (chunkData) sb1Data = sb1Data.concat(chunkData);
                     }
@@ -150,8 +167,12 @@
                     Unidade: p.unidade || 'UN',
                     unidade: p.unidade || 'UN',
                     endereco: p.endereco || '',
-                    Endereco: p.endereco || ''
+                    Endereco: p.endereco || '',
+                    codigo_barras: String(p.codigo_barras || '').trim()
                 }));
+
+                // Reconstrói índices em memória para busca instantânea por Fornecedor / Barras / Interno
+                rebuildFornecedoresMaps();
 
                 // 4. Carrega Preços da SD2 e Custo de Compra para Valoração Financeira
                 let sd2PricesMap = {};
@@ -209,6 +230,433 @@
             if (currentProductLotsData) {
                 renderProductLotsModal();
             }
+        }
+
+        /**
+         * Reconstrói mapas de busca rápida em memória por fornecedor, código de barras e código antigo
+         */
+        function rebuildFornecedoresMaps() {
+            fornecedorByNossoMap = {};
+            nossoByFornecedorMap = {};
+            nossoByBarrasMap = {};
+            nossoByAntigoMap = {};
+
+            (rawFornecedoresProdutos || []).forEach(f => {
+                const codNosso = String(f.codigo_nosso || '').trim().toUpperCase();
+                if (!codNosso) return;
+
+                fornecedorByNossoMap[codNosso] = f;
+
+                const codForn = String(f.codigo_fornecedor || '').trim().toUpperCase();
+                if (codForn) {
+                    nossoByFornecedorMap[codForn] = codNosso;
+                }
+
+                const codBar = String(f.codigo_barras || '').trim().toUpperCase();
+                if (codBar) {
+                    nossoByBarrasMap[codBar] = codNosso;
+                }
+
+                const codAnt = String(f.codigo_antigo || '').trim().toUpperCase();
+                if (codAnt) {
+                    nossoByAntigoMap[codAnt] = codNosso;
+                }
+            });
+
+            // Inclui também códigos de barras registrados no SB1
+            (rawSb1Dataset || []).forEach(p => {
+                const cod = String(p.Codigo || p.codigo || '').trim().toUpperCase();
+                const bar = String(p.codigo_barras || '').trim().toUpperCase();
+                if (cod && bar && !nossoByBarrasMap[bar]) {
+                    nossoByBarrasMap[bar] = cod;
+                }
+            });
+        }
+
+        function cacheSb1Item(p) {
+            if (!p) return null;
+            const cod = String(p.codigo || p.Codigo || '').trim().toUpperCase();
+            let existing = rawSb1Dataset.find(x => String(x.Codigo || x.codigo).trim().toUpperCase() === cod);
+            if (existing) {
+                if (p.codigo_barras) existing.codigo_barras = String(p.codigo_barras).trim();
+                return existing;
+            }
+            const newObj = {
+                Codigo: cod,
+                codigo: cod,
+                'Descr.Espec.': p.descricao || '-',
+                descricao: p.descricao || '-',
+                Unidade: p.unidade || 'UN',
+                unidade: p.unidade || 'UN',
+                endereco: p.endereco || '',
+                Endereco: p.endereco || '',
+                codigo_barras: String(p.codigo_barras || '').trim()
+            };
+            rawSb1Dataset.push(newObj);
+            return newObj;
+        }
+
+        async function fetchAndCacheSingleSb1(codNosso) {
+            const cod = String(codNosso || '').trim().toUpperCase();
+            if (!cod) return null;
+            let existing = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === cod);
+            if (existing) return existing;
+
+            const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+            try {
+                let { data: sbMatch } = await supabaseClient.from(sb1Table).select('codigo, descricao, unidade, endereco, codigo_barras').eq('codigo', cod).maybeSingle();
+                if (!sbMatch && currentSector === 'COMERCIO') {
+                    const { data: indMatch } = await supabaseClient.from('sb1_industria').select('codigo, descricao, unidade, endereco, codigo_barras').eq('codigo', cod).maybeSingle();
+                    sbMatch = indMatch;
+                }
+                if (sbMatch) {
+                    return cacheSb1Item(sbMatch);
+                }
+            } catch(e) {
+                console.warn("Erro ao buscar SB1 individual:", e);
+            }
+            return null;
+        }
+
+        /**
+         * Busca inteligente de material por:
+         * 1) Código interno (SB1)
+         * 2) Código do Fornecedor
+         * 3) Código de Barras / QR Code
+         * 4) Código Antigo
+         */
+        async function findProductByAnyCode(query) {
+            if (!query) return null;
+            const clean = String(query).trim().toUpperCase();
+
+            // 1. Match direto por código interno no cache SB1
+            let match = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === clean);
+            if (match) {
+                return { product: match, matchType: 'CODIGO_INTERNO', originalInput: clean };
+            }
+
+            // 2. Match por Código de Fornecedor no De-Para
+            if (nossoByFornecedorMap[clean]) {
+                const codNosso = nossoByFornecedorMap[clean];
+                let pMatch = await fetchAndCacheSingleSb1(codNosso);
+                if (pMatch) {
+                    return { product: pMatch, matchType: 'CODIGO_FORNECEDOR', matchedCode: clean, originalInput: clean };
+                }
+            }
+
+            // 3. Match por Código de Barras no De-Para
+            if (nossoByBarrasMap[clean]) {
+                const codNosso = nossoByBarrasMap[clean];
+                let pMatch = await fetchAndCacheSingleSb1(codNosso);
+                if (pMatch) {
+                    return { product: pMatch, matchType: 'CODIGO_BARRAS', matchedCode: clean, originalInput: clean };
+                }
+            }
+
+            // 4. Match por Código Antigo
+            if (nossoByAntigoMap[clean]) {
+                const codNosso = nossoByAntigoMap[clean];
+                let pMatch = await fetchAndCacheSingleSb1(codNosso);
+                if (pMatch) {
+                    return { product: pMatch, matchType: 'CODIGO_ANTIGO', matchedCode: clean, originalInput: clean };
+                }
+            }
+
+            // 5. Fallback SB1 direto no Supabase
+            const pDirect = await fetchAndCacheSingleSb1(clean);
+            if (pDirect) {
+                return { product: pDirect, matchType: 'CODIGO_INTERNO', originalInput: clean };
+            }
+
+            // 6. Fallback fornecedores_produtos direto no Supabase
+            try {
+                const { data: fornDirect } = await supabaseClient
+                    .from('fornecedores_produtos')
+                    .select('*')
+                    .or(`codigo_fornecedor.eq.${clean},codigo_barras.eq.${clean},codigo_antigo.eq.${clean}`)
+                    .limit(1);
+
+                if (fornDirect && fornDirect.length > 0) {
+                    const fRec = fornDirect[0];
+                    const codNosso = String(fRec.codigo_nosso).trim().toUpperCase();
+                    rawFornecedoresProdutos.push(fRec);
+                    rebuildFornecedoresMaps();
+
+                    const pMatch = await fetchAndCacheSingleSb1(codNosso);
+                    if (pMatch) {
+                        let mType = 'CODIGO_FORNECEDOR';
+                        if (String(fRec.codigo_barras).trim().toUpperCase() === clean) mType = 'CODIGO_BARRAS';
+                        else if (String(fRec.codigo_antigo).trim().toUpperCase() === clean) mType = 'CODIGO_ANTIGO';
+                        return { product: pMatch, matchType: mType, matchedCode: clean, originalInput: clean };
+                    }
+                }
+            } catch(eForn) {
+                console.warn("Aviso busca direta fornecedores_produtos:", eForn);
+            }
+
+            return null;
+        }
+
+        /**
+         * Verifica se um código de barras já está vinculado a outro material (Alerta de Repetição)
+         */
+        function checkDuplicateBarcode(newBarcode, currentProductCode) {
+            const clean = String(newBarcode).trim().toUpperCase();
+            const curr = String(currentProductCode).trim().toUpperCase();
+            if (!clean) return { isDuplicate: false };
+
+            const dupForn = rawFornecedoresProdutos.find(f => 
+                String(f.codigo_barras || '').trim().toUpperCase() === clean &&
+                String(f.codigo_nosso || '').trim().toUpperCase() !== curr
+            );
+            if (dupForn) {
+                return { isDuplicate: true, otherCode: dupForn.codigo_nosso };
+            }
+
+            const dupSb1 = rawSb1Dataset.find(p => 
+                String(p.codigo_barras || '').trim().toUpperCase() === clean &&
+                String(p.Codigo || p.codigo || '').trim().toUpperCase() !== curr
+            );
+            if (dupSb1) {
+                return { isDuplicate: true, otherCode: dupSb1.Codigo || dupSb1.codigo };
+            }
+
+            return { isDuplicate: false };
+        }
+
+        /**
+         * Verifica se um código de fornecedor já está vinculado a outro material (Alerta de Repetição)
+         */
+        function checkDuplicateSupplierCode(newFornCode, currentProductCode) {
+            const clean = String(newFornCode).trim().toUpperCase();
+            const curr = String(currentProductCode).trim().toUpperCase();
+            if (!clean) return { isDuplicate: false };
+
+            const dupForn = rawFornecedoresProdutos.find(f => 
+                String(f.codigo_fornecedor || '').trim().toUpperCase() === clean &&
+                String(f.codigo_nosso || '').trim().toUpperCase() !== curr
+            );
+            if (dupForn) {
+                return { isDuplicate: true, otherCode: dupForn.codigo_nosso };
+            }
+
+            return { isDuplicate: false };
+        }
+
+        /**
+         * Salva ou atualiza o código de barras de um produto com validação e aviso de duplicidade
+         */
+        async function saveBarcodeForProduct(productCode, newBarcode) {
+            const curr = String(productCode || '').trim().toUpperCase();
+            const bar = String(newBarcode || '').trim().toUpperCase();
+
+            if (!curr) {
+                showAlert("Código do produto inválido.", "warning");
+                return false;
+            }
+
+            // Verifica duplicidade com outro material
+            const dupCheck = checkDuplicateBarcode(bar, curr);
+            if (dupCheck.isDuplicate) {
+                const otherDesc = getProductDescription(dupCheck.otherCode);
+                const confirmed = confirm(
+                    `⚠️ ATENÇÃO: CÓDIGO DE BARRAS REPETIDO!\n\n` +
+                    `O código de barras "${bar}" já está cadastrado no material:\n` +
+                    `• Código: ${dupCheck.otherCode}\n` +
+                    `• Descrição: ${otherDesc}\n\n` +
+                    `Deseja transferir/vincular este código de barras para o material atual (${curr})?`
+                );
+                if (!confirmed) {
+                    showAlert("Vínculo cancelado pelo usuário.", "info");
+                    return false;
+                }
+
+                // Limpa o código do outro produto
+                const otherForn = rawFornecedoresProdutos.find(f => String(f.codigo_nosso).trim().toUpperCase() === dupCheck.otherCode);
+                if (otherForn && otherForn.id) {
+                    await supabaseClient.from('fornecedores_produtos').update({ codigo_barras: null, updated_at: new Date().toISOString() }).eq('id', otherForn.id);
+                    otherForn.codigo_barras = null;
+                }
+                await supabaseClient.from('sb1_comercio').update({ codigo_barras: null }).eq('codigo', dupCheck.otherCode);
+                await supabaseClient.from('sb1_industria').update({ codigo_barras: null }).eq('codigo', dupCheck.otherCode);
+            }
+
+            // Salva / Atualiza no fornecedores_produtos
+            const fornRecord = fornecedorByNossoMap[curr];
+            if (fornRecord && fornRecord.id) {
+                const { error: upErr } = await supabaseClient
+                    .from('fornecedores_produtos')
+                    .update({ codigo_barras: bar, updated_at: new Date().toISOString() })
+                    .eq('id', fornRecord.id);
+                if (upErr) throw upErr;
+                fornRecord.codigo_barras = bar;
+            } else {
+                const { data: insData, error: insErr } = await supabaseClient
+                    .from('fornecedores_produtos')
+                    .insert([{
+                        codigo_nosso: curr,
+                        codigo_barras: bar,
+                        codigo_fornecedor: '',
+                        codigo_antigo: '',
+                        updated_at: new Date().toISOString()
+                    }])
+                    .select();
+                if (insErr) throw insErr;
+                if (insData && insData.length > 0) {
+                    rawFornecedoresProdutos.push(insData[0]);
+                }
+            }
+
+            // Atualiza também nas tabelas SB1
+            await supabaseClient.from('sb1_comercio').update({ codigo_barras: bar }).eq('codigo', curr);
+            await supabaseClient.from('sb1_industria').update({ codigo_barras: bar }).eq('codigo', curr);
+
+            // Atualiza memória local
+            const pObj = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === curr);
+            if (pObj) pObj.codigo_barras = bar;
+
+            rebuildFornecedoresMaps();
+            populateProductsDatalist();
+            applyValidadeFilters();
+
+            showAlert(`Código de barras "${bar}" vinculado com sucesso ao material ${curr}!`, "success");
+            return true;
+        }
+
+        /**
+         * Salva ou atualiza o código de fornecedor de um produto com validação e aviso de duplicidade
+         */
+        async function saveSupplierCodeForProduct(productCode, newSupplierCode) {
+            const curr = String(productCode || '').trim().toUpperCase();
+            const forn = String(newSupplierCode || '').trim().toUpperCase();
+
+            if (!curr) {
+                showAlert("Código do produto inválido.", "warning");
+                return false;
+            }
+
+            // Verifica duplicidade com outro material
+            const dupCheck = checkDuplicateSupplierCode(forn, curr);
+            if (dupCheck.isDuplicate) {
+                const otherDesc = getProductDescription(dupCheck.otherCode);
+                const confirmed = confirm(
+                    `⚠️ ATENÇÃO: CÓDIGO DE FORNECEDOR REPETIDO!\n\n` +
+                    `O código de fornecedor "${forn}" já está cadastrado no material:\n` +
+                    `• Código: ${dupCheck.otherCode}\n` +
+                    `• Descrição: ${otherDesc}\n\n` +
+                    `Deseja transferir/vincular este código de fornecedor para o material atual (${curr})?`
+                );
+                if (!confirmed) {
+                    showAlert("Vínculo cancelado pelo usuário.", "info");
+                    return false;
+                }
+
+                // Limpa o código de fornecedor do outro produto
+                const otherForn = rawFornecedoresProdutos.find(f => String(f.codigo_nosso).trim().toUpperCase() === dupCheck.otherCode);
+                if (otherForn && otherForn.id) {
+                    await supabaseClient.from('fornecedores_produtos').update({ codigo_fornecedor: '', updated_at: new Date().toISOString() }).eq('id', otherForn.id);
+                    otherForn.codigo_fornecedor = '';
+                }
+            }
+
+            const fornRecord = fornecedorByNossoMap[curr];
+            if (fornRecord && fornRecord.id) {
+                const { error: upErr } = await supabaseClient
+                    .from('fornecedores_produtos')
+                    .update({ codigo_fornecedor: forn, updated_at: new Date().toISOString() })
+                    .eq('id', fornRecord.id);
+                if (upErr) throw upErr;
+                fornRecord.codigo_fornecedor = forn;
+            } else {
+                const { data: insData, error: insErr } = await supabaseClient
+                    .from('fornecedores_produtos')
+                    .insert([{
+                        codigo_nosso: curr,
+                        codigo_fornecedor: forn,
+                        codigo_barras: null,
+                        codigo_antigo: '',
+                        updated_at: new Date().toISOString()
+                    }])
+                    .select();
+                if (insErr) throw insErr;
+                if (insData && insData.length > 0) {
+                    rawFornecedoresProdutos.push(insData[0]);
+                }
+            }
+
+            rebuildFornecedoresMaps();
+            populateProductsDatalist();
+            applyValidadeFilters();
+
+            showAlert(`Código de fornecedor "${forn}" vinculado com sucesso ao material ${curr}!`, "success");
+            return true;
+        }
+
+        async function saveBarcodeFromModal() {
+            const codeInp = document.getElementById('valInputCodigo');
+            const barInp = document.getElementById('valInputCodBarras');
+            if (!codeInp || !barInp) return;
+
+            const curr = codeInp.value.trim().toUpperCase();
+            const bar = barInp.value.trim().toUpperCase();
+
+            if (!curr) {
+                showAlert("Informe o código do material primeiro.", "warning");
+                return;
+            }
+            if (!bar) {
+                showAlert("Digite ou bipe o código de barras.", "warning");
+                return;
+            }
+
+            try {
+                await saveBarcodeForProduct(curr, bar);
+            } catch(e) {
+                console.error("Erro ao salvar código de barras:", e);
+                showAlert("Erro ao salvar código de barras no Supabase.", "error");
+            }
+        }
+
+        async function saveSupplierCodeFromModal() {
+            const codeInp = document.getElementById('valInputCodigo');
+            const fornInp = document.getElementById('valInputCodFornecedor');
+            if (!codeInp || !fornInp) return;
+
+            const curr = codeInp.value.trim().toUpperCase();
+            const forn = fornInp.value.trim().toUpperCase();
+
+            if (!curr) {
+                showAlert("Informe o código do material primeiro.", "warning");
+                return;
+            }
+            if (!forn) {
+                showAlert("Informe o código de fornecedor.", "warning");
+                return;
+            }
+
+            try {
+                await saveSupplierCodeForProduct(curr, forn);
+            } catch(e) {
+                console.error("Erro ao salvar código de fornecedor:", e);
+                showAlert("Erro ao salvar código de fornecedor no Supabase.", "error");
+            }
+        }
+
+        function scanBarcodeForModalBarcodeField() {
+            openCameraScanner((decodedText) => {
+                if (!decodedText) return;
+                let scanned = String(decodedText).trim();
+                if (scanned.startsWith('AMAZON_ACO|')) {
+                    const parts = scanned.split('|');
+                    if (parts.length >= 4) scanned = parts[3].trim();
+                }
+                const cleanBar = scanned.toUpperCase();
+                const inp = document.getElementById('valInputCodBarras');
+                if (inp) {
+                    inp.value = cleanBar;
+                }
+                showAlert(`Código de barras "${cleanBar}" capturado! Clique em "Salvar" para confirmar o vínculo ao material.`, "info");
+            }, { title: "Bipar Código de Barras / QR Code" });
         }
 
         /**
@@ -634,12 +1082,23 @@
 
                 if (search) {
                     const desc = (sb1Map[v.produto] || '').toLowerCase();
+                    const fornInfo = fornecedorByNossoMap[v.produto];
+                    const fornCode = fornInfo ? String(fornInfo.codigo_fornecedor || '').toLowerCase() : '';
+                    const barCode = fornInfo ? String(fornInfo.codigo_barras || '').toLowerCase() : '';
+                    const antCode = fornInfo ? String(fornInfo.codigo_antigo || '').toLowerCase() : '';
+                    const pObj = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === v.produto);
+                    const sbBarCode = pObj ? String(pObj.codigo_barras || '').toLowerCase() : '';
+
                     const matchesCode = v.produto.toLowerCase().includes(search);
                     const matchesDesc = desc.includes(search);
+                    const matchesForn = fornCode.includes(search);
+                    const matchesBarras = barCode.includes(search) || sbBarCode.includes(search);
+                    const matchesAntigo = antCode.includes(search);
                     const matchesLote = (v.lote || '').toLowerCase().includes(search);
                     const matchesEmbalagem = (v.embalagem || '').toLowerCase().includes(search);
                     const matchesObs = (v.observacao || '').toLowerCase().includes(search);
-                    if (!matchesCode && !matchesDesc && !matchesLote && !matchesEmbalagem && !matchesObs) return false;
+
+                    if (!matchesCode && !matchesDesc && !matchesForn && !matchesBarras && !matchesAntigo && !matchesLote && !matchesEmbalagem && !matchesObs) return false;
                 }
                 return true;
             });
@@ -986,6 +1445,18 @@
                     conferenciaBadgeHtml = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-900 border border-rose-300 animate-pulse" title="Soma dos lotes excede o saldo no sistema em +${diffAbs}"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-700"></i> Excede +${diffAbs} ${unidade}</span>`;
                 }
 
+                const fornInfo = fornecedorByNossoMap[item.produto];
+                const pObj = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === item.produto);
+                const barCode = (fornInfo && fornInfo.codigo_barras) || (pObj && pObj.codigo_barras);
+
+                let externalCodesHtml = '';
+                if (fornInfo && fornInfo.codigo_fornecedor) {
+                    externalCodesHtml += `<span class="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold" title="Código do Fornecedor"><i data-lucide="tag" class="w-2.5 h-2.5"></i> Forn: ${fornInfo.codigo_fornecedor}</span>`;
+                }
+                if (barCode) {
+                    externalCodesHtml += `<span class="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-bold" title="Código de Barras / QR Code"><i data-lucide="barcode" class="w-2.5 h-2.5"></i> ${barCode}</span>`;
+                }
+
                 if (tbody) {
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-amber-50/40 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer";
@@ -996,7 +1467,10 @@
                     tr.innerHTML = `
                         <td class="px-3 py-3 text-xs font-bold text-slate-500">${item.filial}</td>
                         <td class="px-3 py-3 text-xs font-bold text-slate-700 dark:text-slate-300">${armLabel}</td>
-                        <td class="px-3 py-3 text-xs font-black font-mono text-[#002f6c] dark:text-blue-400">${item.produto}</td>
+                        <td class="px-3 py-3 text-xs font-black font-mono text-[#002f6c] dark:text-blue-400">
+                            <div>${item.produto}</div>
+                            ${externalCodesHtml ? `<div class="flex items-center gap-1 mt-1 flex-wrap">${externalCodesHtml}</div>` : ''}
+                        </td>
                         <td class="px-4 py-3 text-xs font-black text-slate-800 dark:text-slate-100">
                             <div>${desc}</div>
                             <div class="flex items-center gap-1.5 mt-1 flex-wrap">${lotChipsHtml}</div>
@@ -1047,6 +1521,7 @@
                                 <span class="text-xs font-bold text-slate-500">
                                     Filial ${item.filial} • ${armLabel}
                                 </span>
+                                ${externalCodesHtml ? `<div class="flex items-center gap-1 mt-0.5 flex-wrap w-full">${externalCodesHtml}</div>` : ''}
                             </div>
                             <div>${badgeHtml}</div>
                         </div>
@@ -2247,7 +2722,7 @@
         }
 
         function scanBarcodeForValidade() {
-            openCameraScanner((decodedText) => {
+            openCameraScanner(async (decodedText) => {
                 if (!decodedText) return;
                 let scanned = String(decodedText).trim();
                 let targetFilial = null;
@@ -2265,28 +2740,50 @@
                     }
                 }
 
-                const cleanCode = scanned.toUpperCase();
+                const cleanInput = scanned.toUpperCase();
                 
+                // Busca inteligente por código interno, código do fornecedor ou código de barras
+                const found = await findProductByAnyCode(cleanInput);
+                const finalCode = found ? String(found.product.Codigo || found.product.codigo).trim().toUpperCase() : cleanInput;
+
                 // 1. Verifica se há lotes para este material
-                const matchingLots = (rawValidadeDataset || []).filter(v => String(v.produto).trim().toUpperCase() === cleanCode);
+                const matchingLots = (rawValidadeDataset || []).filter(v => String(v.produto).trim().toUpperCase() === finalCode);
 
                 if (matchingLots.length > 0) {
                     const first = matchingLots[0];
                     const fil = targetFilial || first.filial;
                     const arm = targetArmazem || first.armazem;
-                    showAlert(`Material encontrado: ${cleanCode}. Abrindo lista de lotes...`, "success");
-                    openProductLotsModal(fil, arm, cleanCode);
-                } else {
-                    // 2. Verifica no catálogo SB1 ou abre cadastro direto
+                    let msg = `Material localizado: ${finalCode}`;
+                    if (found && found.matchType === 'CODIGO_FORNECEDOR') {
+                        msg += ` (via Cód. Fornecedor ${cleanInput})`;
+                    } else if (found && found.matchType === 'CODIGO_BARRAS') {
+                        msg += ` (via Cód. Barras ${cleanInput})`;
+                    }
+                    showAlert(`${msg}. Abrindo lista de lotes...`, "success");
+                    openProductLotsModal(fil, arm, finalCode);
+                } else if (found) {
                     const arm = targetArmazem || (rawKnownWarehouses.length > 0 ? rawKnownWarehouses[0] : '01');
-                    showAlert(`Código ${cleanCode} bipado. Abrindo novo cadastro de lote...`, "info");
-                    openNewValidadeModal(cleanCode, arm);
+                    let msg = `Material localizado: ${finalCode}`;
+                    if (found.matchType === 'CODIGO_FORNECEDOR') msg += ` (via Cód. Fornecedor ${cleanInput})`;
+                    else if (found.matchType === 'CODIGO_BARRAS') msg += ` (via Cód. Barras ${cleanInput})`;
+                    showAlert(`${msg}. Abrindo novo cadastro de lote...`, "info");
+                    openNewValidadeModal(finalCode, arm);
+                } else {
+                    // Código desconhecido: pergunta se deseja vincular a um produto existente
+                    const wantLink = confirm(
+                        `Código bipado: "${cleanInput}"\n\n` +
+                        `Este código não foi localizado no cadastro como Código Interno, Fornecedor ou Código de Barras.\n\n` +
+                        `Deseja abrir a Central de Códigos para vincular este código a um material agora?`
+                    );
+                    if (wantLink) {
+                        openCodigosManagerModal(cleanInput);
+                    }
                 }
-            }, { title: "Bipar Validade / Ficha A4" });
+            }, { title: "Bipar Ficha A4, Código de Barras ou Fornecedor" });
         }
 
         function scanBarcodeIntoModalField() {
-            openCameraScanner((decodedText) => {
+            openCameraScanner(async (decodedText) => {
                 if (!decodedText) return;
                 let scanned = String(decodedText).trim();
                 if (scanned.startsWith('AMAZON_ACO|')) {
@@ -2295,14 +2792,24 @@
                         scanned = parts[3].trim();
                     }
                 }
-                const cleanCode = scanned.toUpperCase();
+                const cleanInput = scanned.toUpperCase();
+                const found = await findProductByAnyCode(cleanInput);
+                const finalCode = found ? String(found.product.Codigo || found.product.codigo).trim().toUpperCase() : cleanInput;
+
                 const inp = document.getElementById('valInputCodigo');
                 if (inp) {
-                    inp.value = cleanCode;
+                    inp.value = finalCode;
                     onValidadeCodeOrLoteChange();
                 }
-                showAlert(`Código ${cleanCode} inserido com sucesso!`, "success");
-            }, { title: "Bipar Código do Material" });
+
+                if (found && found.matchType === 'CODIGO_FORNECEDOR') {
+                    showAlert(`Código de Fornecedor "${cleanInput}" identificado ➔ Material ${finalCode}`, "success");
+                } else if (found && found.matchType === 'CODIGO_BARRAS') {
+                    showAlert(`Código de Barras "${cleanInput}" identificado ➔ Material ${finalCode}`, "success");
+                } else {
+                    showAlert(`Código ${finalCode} inserido com sucesso!`, "success");
+                }
+            }, { title: "Bipar Código do Material (Interno / Fornecedor / Barras)" });
         }
 
         function populateModalFilialSelect(chosenFilial = null) {
@@ -2485,6 +2992,17 @@
             document.getElementById('valInputValidade').value = '';
             document.getElementById('valInputObservacao').value = '';
 
+            // Preenche campos de código externo
+            const cleanCod = String(codigo || '').trim().toUpperCase();
+            const fornRecord = cleanCod ? fornecedorByNossoMap[cleanCod] : null;
+            const fornInp = document.getElementById('valInputCodFornecedor');
+            const barInp = document.getElementById('valInputCodBarras');
+            if (fornInp) fornInp.value = fornRecord ? (fornRecord.codigo_fornecedor || '') : '';
+            if (barInp) {
+                const pInfo = cleanCod ? rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === cleanCod) : null;
+                barInp.value = (fornRecord && fornRecord.codigo_barras) ? fornRecord.codigo_barras : (pInfo ? pInfo.codigo_barras || '' : '');
+            }
+
             const unit = getProductUnit(codigo);
             modalPalletRows = [{
                 id: 'row_' + Date.now(),
@@ -2507,10 +3025,20 @@
             const datalist = document.getElementById('valProductsDatalist');
             if (datalist && rawSb1Dataset) {
                 let html = '';
-                const sorted = [...rawSb1Dataset].sort((a,b) => String(a.Codigo).localeCompare(String(b.Codigo), undefined, {numeric:true}));
+                const sorted = [...rawSb1Dataset].sort((a,b) => String(a.Codigo || a.codigo).localeCompare(String(b.Codigo || b.codigo), undefined, {numeric:true}));
                 sorted.forEach(p => {
-                    const desc = p['Descr.Espec.'] || '-';
-                    html += `<option value="${p.Codigo}">${p.Codigo} - ${desc}</option>`;
+                    const cod = String(p.Codigo || p.codigo || '').trim().toUpperCase();
+                    const desc = p['Descr.Espec.'] || p.descricao || '-';
+                    html += `<option value="${cod}">${cod} - ${desc}</option>`;
+
+                    const fornInfo = fornecedorByNossoMap[cod];
+                    if (fornInfo && fornInfo.codigo_fornecedor) {
+                        html += `<option value="${fornInfo.codigo_fornecedor}">[FORNECEDOR] ${fornInfo.codigo_fornecedor} ➔ ${cod} (${desc})</option>`;
+                    }
+                    const barCode = (fornInfo && fornInfo.codigo_barras) || p.codigo_barras;
+                    if (barCode) {
+                        html += `<option value="${barCode}">[BARRAS] ${barCode} ➔ ${cod} (${desc})</option>`;
+                    }
                 });
                 datalist.innerHTML = html;
             }
@@ -2624,6 +3152,16 @@
             document.getElementById('valInputValidade').value = item.data_validade ? String(item.data_validade).slice(0, 7) : '';
             document.getElementById('valInputObservacao').value = item.observacao || '';
 
+            // Preenche códigos externos
+            const fornRecord = fornecedorByNossoMap[item.produto];
+            const fornInp = document.getElementById('valInputCodFornecedor');
+            const barInp = document.getElementById('valInputCodBarras');
+            if (fornInp) fornInp.value = fornRecord ? (fornRecord.codigo_fornecedor || '') : '';
+            if (barInp) {
+                const pInfo = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === item.produto);
+                barInp.value = (fornRecord && fornRecord.codigo_barras) ? fornRecord.codigo_barras : (pInfo ? pInfo.codigo_barras || '' : '');
+            }
+
             const unit = getProductUnit(item.produto);
             deletedPalletDbIds = [];
             modalPalletRows = [{
@@ -2645,6 +3183,9 @@
         async function onValidadeCodeInput() {
             const inp = document.getElementById('valInputCodigo');
             const preview = document.getElementById('valProductPreviewLabel');
+            const statusBadge = document.getElementById('valCodigosStatusBadge');
+            const fornInp = document.getElementById('valInputCodFornecedor');
+            const barInp = document.getElementById('valInputCodBarras');
             const btnSave = document.getElementById('btnSaveValidade');
             const btnPrint = document.getElementById('btnSaveAndPrintValidade');
             if (!inp || !preview) return;
@@ -2652,58 +3193,62 @@
             const val = inp.value.trim().toUpperCase();
             if (!val) {
                 preview.innerHTML = `<span class="text-slate-400">Digite um código ou selecione da lista para buscar...</span>`;
+                if (statusBadge) statusBadge.innerText = '';
                 if (btnSave) btnSave.disabled = false;
                 if (btnPrint) btnPrint.disabled = false;
                 updateModalSaldoComparison();
                 return;
             }
 
-            // 1. Procura no cache local
-            const match = rawSb1Dataset ? rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === val) : null;
-            if (match) {
-                preview.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${match['Descr.Espec.'] || match.descricao || 'Produto Localizado'}</span>`;
-                if (btnSave) btnSave.disabled = false;
-                if (btnPrint) btnPrint.disabled = false;
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-                updateModalSaldoComparison();
-                return;
-            }
-
-            // 2. Se não encontrou no cache local, faz busca rápida no Supabase
-            preview.innerHTML = `<span class="text-slate-400 flex items-center gap-1"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline"></i> Verificando cadastro no SB1...</span>`;
+            preview.innerHTML = `<span class="text-slate-400 flex items-center gap-1"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline"></i> Verificando código no sistema...</span>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
 
             clearTimeout(debounceValidadeTimer);
             debounceValidadeTimer = setTimeout(async () => {
-                const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
                 try {
-                    let { data: sbMatch } = await supabaseClient.from(sb1Table).select('codigo, descricao, unidade').eq('codigo', val).maybeSingle();
-                    if (!sbMatch && currentSector === 'COMERCIO') {
-                        const { data: indMatch } = await supabaseClient.from('sb1_industria').select('codigo, descricao, unidade').eq('codigo', val).maybeSingle();
-                        sbMatch = indMatch;
-                    }
+                    const found = await findProductByAnyCode(val);
 
-                    if (sbMatch && sbMatch.codigo) {
-                        const newEntry = {
-                            Codigo: String(sbMatch.codigo).trim(),
-                            codigo: String(sbMatch.codigo).trim(),
-                            'Descr.Espec.': sbMatch.descricao || '-',
-                            descricao: sbMatch.descricao || '-',
-                            Unidade: sbMatch.unidade || 'UN',
-                            unidade: sbMatch.unidade || 'UN'
-                        };
-                        rawSb1Dataset.push(newEntry);
-                        preview.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${newEntry.descricao}</span>`;
+                    if (found && found.product) {
+                        const prod = found.product;
+                        const internalCode = String(prod.Codigo || prod.codigo).trim().toUpperCase();
+                        const desc = prod['Descr.Espec.'] || prod.descricao || '-';
+                        
+                        let badgeMsg = '';
+                        if (found.matchType === 'CODIGO_FORNECEDOR') {
+                            badgeMsg = `<span class="text-blue-600 dark:text-blue-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> <b>Cód. Fornecedor: "${val}"</b> ➔ [${internalCode}] ${desc}</span>`;
+                            inp.value = internalCode;
+                        } else if (found.matchType === 'CODIGO_BARRAS') {
+                            badgeMsg = `<span class="text-purple-600 dark:text-purple-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> <b>Cód. Barras: "${val}"</b> ➔ [${internalCode}] ${desc}</span>`;
+                            inp.value = internalCode;
+                        } else {
+                            badgeMsg = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${desc}</span>`;
+                        }
+                        preview.innerHTML = badgeMsg;
+
+                        // Preenche campos de código externo
+                        const fornRecord = fornecedorByNossoMap[internalCode];
+                        if (fornInp) fornInp.value = fornRecord ? (fornRecord.codigo_fornecedor || '') : '';
+                        if (barInp) barInp.value = (fornRecord && fornRecord.codigo_barras) ? fornRecord.codigo_barras : (prod.codigo_barras || '');
+
+                        if (statusBadge) {
+                            let parts = [];
+                            if (fornRecord && fornRecord.codigo_fornecedor) parts.push(`Forn: ${fornRecord.codigo_fornecedor}`);
+                            const curBar = (fornRecord && fornRecord.codigo_barras) || prod.codigo_barras;
+                            if (curBar) parts.push(`Barras: ${curBar}`);
+                            statusBadge.innerText = parts.length > 0 ? parts.join(' | ') : 'Sem códigos externos';
+                        }
+
                         if (btnSave) btnSave.disabled = false;
                         if (btnPrint) btnPrint.disabled = false;
                     } else {
                         // PRODUTO NÃO EXISTE NO SISTEMA: BLOQUEIA
-                        preview.innerHTML = `<span class="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold"><i data-lucide="alert-circle" class="w-3.5 h-3.5 inline"></i> ❌ Código "${val}" NÃO existe no sistema (SB1). Não é permitido cadastrar.</span>`;
+                        preview.innerHTML = `<span class="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold"><i data-lucide="alert-circle" class="w-3.5 h-3.5 inline"></i> ❌ Código "${val}" NÃO existe no sistema (nem no SB1 nem por fornecedor/barras). Não é permitido cadastrar.</span>`;
+                        if (statusBadge) statusBadge.innerText = 'Não vinculado';
                         if (btnSave) btnSave.disabled = true;
                         if (btnPrint) btnPrint.disabled = true;
                     }
                 } catch(err) {
-                    console.warn("Erro ao checar código no SB1:", err);
+                    console.warn("Erro ao checar código no sistema:", err);
                 } finally {
                     if (typeof lucide !== 'undefined') lucide.createIcons();
                     updateModalSaldoComparison();
@@ -2881,6 +3426,23 @@
             const btnPrint = document.getElementById('btnSaveAndPrintValidade');
             if (btn) btn.disabled = true;
             if (btnPrint) btnPrint.disabled = true;
+
+            // Sincroniza códigos externos se foram alterados no sub-card
+            const fornInpVal = document.getElementById('valInputCodFornecedor') ? document.getElementById('valInputCodFornecedor').value.trim().toUpperCase() : '';
+            const barInpVal = document.getElementById('valInputCodBarras') ? document.getElementById('valInputCodBarras').value.trim().toUpperCase() : '';
+
+            if (fornInpVal) {
+                const currentForn = fornecedorByNossoMap[produto] ? (fornecedorByNossoMap[produto].codigo_fornecedor || '') : '';
+                if (fornInpVal !== currentForn) {
+                    saveSupplierCodeForProduct(produto, fornInpVal).catch(e => console.warn("Aviso ao salvar cód. fornecedor:", e));
+                }
+            }
+            if (barInpVal) {
+                const currentBar = (fornecedorByNossoMap[produto] && fornecedorByNossoMap[produto].codigo_barras) || (matchProd && matchProd.codigo_barras) || '';
+                if (barInpVal !== currentBar) {
+                    saveBarcodeForProduct(produto, barInpVal).catch(e => console.warn("Aviso ao salvar cód. barras:", e));
+                }
+            }
 
             try {
                 // 1. Deleta paletes removidos
@@ -3470,6 +4032,234 @@
 
         async function saveAndPrintArgoxLabel() {
             return saveAndPrintValidadeA4();
+        }
+
+        // =========================================================================
+        // GESTÃO DE CÓDIGOS DE FORNECEDORES & CÓDIGOS DE BARRAS / QR CODE (MODAL)
+        // =========================================================================
+        let codigosManagerCatalog = [];
+
+        async function openCodigosManagerModal(prefillSearch = '') {
+            const modal = document.getElementById('modalCodigosManager');
+            if (!modal) return;
+
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+            const searchInp = document.getElementById('mgrCodigosSearchInput');
+            if (searchInp) {
+                searchInp.value = prefillSearch || '';
+            }
+
+            await loadCodigosManagerCatalog();
+            filterCodigosManagerList();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeCodigosManagerModal() {
+            const modal = document.getElementById('modalCodigosManager');
+            if (modal) modal.classList.add('pointer-events-none', 'opacity-0');
+        }
+
+        async function loadCodigosManagerCatalog() {
+            const countInfo = document.getElementById('mgrCodigosCountInfo');
+            if (countInfo) countInfo.innerText = "Carregando catálogo de materiais...";
+
+            const knownCodes = new Set();
+            codigosManagerCatalog = [];
+
+            // 1. Adiciona itens do cache SB1 já carregados
+            (rawSb1Dataset || []).forEach(p => {
+                const cod = String(p.Codigo || p.codigo || '').trim().toUpperCase();
+                if (cod && !knownCodes.has(cod)) {
+                    knownCodes.add(cod);
+                    const fornInfo = fornecedorByNossoMap[cod] || {};
+                    codigosManagerCatalog.push({
+                        codigo: cod,
+                        descricao: p['Descr.Espec.'] || p.descricao || '-',
+                        codigo_fornecedor: fornInfo.codigo_fornecedor || '',
+                        codigo_barras: fornInfo.codigo_barras || p.codigo_barras || ''
+                    });
+                }
+            });
+
+            // 2. Adiciona itens mapeados em fornecedores_produtos
+            (rawFornecedoresProdutos || []).forEach(f => {
+                const cod = String(f.codigo_nosso || '').trim().toUpperCase();
+                if (cod && !knownCodes.has(cod)) {
+                    knownCodes.add(cod);
+                    codigosManagerCatalog.push({
+                        codigo: cod,
+                        descricao: f.descricao || 'Item Cadastrado em Fornecedores',
+                        codigo_fornecedor: f.codigo_fornecedor || '',
+                        codigo_barras: f.codigo_barras || ''
+                    });
+                }
+            });
+
+            // 3. Se o catálogo for pequeno, busca catálogo estendido do SB1 no Supabase
+            if (codigosManagerCatalog.length < 300) {
+                try {
+                    const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                    const { data: moreSb1 } = await supabaseClient.from(sb1Table).select('codigo, descricao, codigo_barras').limit(1500);
+                    if (moreSb1) {
+                        moreSb1.forEach(p => {
+                            const cod = String(p.codigo || '').trim().toUpperCase();
+                            if (cod && !knownCodes.has(cod)) {
+                                knownCodes.add(cod);
+                                const fornInfo = fornecedorByNossoMap[cod] || {};
+                                codigosManagerCatalog.push({
+                                    codigo: cod,
+                                    descricao: p.descricao || '-',
+                                    codigo_fornecedor: fornInfo.codigo_fornecedor || '',
+                                    codigo_barras: fornInfo.codigo_barras || p.codigo_barras || ''
+                                });
+                            }
+                        });
+                    }
+                } catch(eCatalog) {
+                    console.warn("Aviso catálogo estendido:", eCatalog);
+                }
+            }
+
+            codigosManagerCatalog.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }));
+            if (countInfo) countInfo.innerText = `${codigosManagerCatalog.length} materiais indexados`;
+        }
+
+        function filterCodigosManagerList() {
+            const tbody = document.getElementById('mgrCodigosTableBody');
+            const searchInp = document.getElementById('mgrCodigosSearchInput');
+            const filterSel = document.getElementById('mgrCodigosStatusFilter');
+            const countInfo = document.getElementById('mgrCodigosCountInfo');
+            if (!tbody) return;
+
+            const term = searchInp ? searchInp.value.trim().toLowerCase() : '';
+            const status = filterSel ? filterSel.value : 'ALL';
+
+            const filtered = (codigosManagerCatalog || []).filter(item => {
+                if (status === 'WITH_FORN' && !item.codigo_fornecedor) return false;
+                if (status === 'WITHOUT_FORN' && item.codigo_fornecedor) return false;
+                if (status === 'WITH_BARCODE' && !item.codigo_barras) return false;
+                if (status === 'WITHOUT_BARCODE' && item.codigo_barras) return false;
+
+                if (term) {
+                    const mCod = item.codigo.toLowerCase().includes(term);
+                    const mDesc = item.descricao.toLowerCase().includes(term);
+                    const mForn = (item.codigo_fornecedor || '').toLowerCase().includes(term);
+                    const mBar = (item.codigo_barras || '').toLowerCase().includes(term);
+                    if (!mCod && !mDesc && !mForn && !mBar) return false;
+                }
+                return true;
+            });
+
+            if (countInfo) {
+                countInfo.innerText = `Exibindo ${filtered.length} de ${codigosManagerCatalog.length} materiais`;
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400 font-bold">Nenhum material localizado com os termos informados.</td></tr>`;
+                return;
+            }
+
+            const displayList = filtered.slice(0, 100);
+            let html = '';
+
+            displayList.forEach(item => {
+                const cod = item.codigo;
+                html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
+                        <td class="px-3 py-2.5 font-mono font-black text-[#002f6c] dark:text-blue-400 whitespace-nowrap">${cod}</td>
+                        <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-200">
+                            <div class="line-clamp-1" title="${item.descricao}">${item.descricao}</div>
+                        </td>
+                        <td class="px-3 py-2.5">
+                            <input type="text" id="mgrFornInput_${cod}" value="${item.codigo_fornecedor || ''}" placeholder="Cód. Fornecedor" class="w-full min-w-[130px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-[#002f6c]">
+                        </td>
+                        <td class="px-3 py-2.5">
+                            <div class="flex items-center gap-1">
+                                <input type="text" id="mgrBarInput_${cod}" value="${item.codigo_barras || ''}" placeholder="Cód. Barras / QR" class="w-full min-w-[140px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-purple-500">
+                                <button type="button" onclick="scanBarcodeForManagerRow('${cod}')" class="p-1.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded-lg cursor-pointer transition-colors" title="Bipar código com a câmera">
+                                    <i data-lucide="scan" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2.5 text-center whitespace-nowrap">
+                            <button type="button" onclick="saveCodigoRow('${cod}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-black shadow-2xs transition-all cursor-pointer inline-flex items-center gap-1">
+                                <i data-lucide="save" class="w-3 h-3"></i>
+                                <span>Salvar</span>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (filtered.length > 100) {
+                html += `<tr><td colspan="5" class="px-4 py-2 text-center text-[10px] text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-800/40">+${filtered.length - 100} outros materiais. Refine sua busca acima para filtrar.</td></tr>`;
+            }
+
+            tbody.innerHTML = html;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function saveCodigoRow(codNosso) {
+            const fornInp = document.getElementById(`mgrFornInput_${codNosso}`);
+            const barInp = document.getElementById(`mgrBarInput_${codNosso}`);
+            if (!fornInp || !barInp) return;
+
+            const newForn = fornInp.value.trim().toUpperCase();
+            const newBar = barInp.value.trim().toUpperCase();
+
+            let fornSaved = true;
+            let barSaved = true;
+
+            const catItem = codigosManagerCatalog.find(c => c.codigo === codNosso);
+
+            if (newForn !== (catItem ? catItem.codigo_fornecedor : '')) {
+                fornSaved = await saveSupplierCodeForProduct(codNosso, newForn);
+                if (fornSaved && catItem) catItem.codigo_fornecedor = newForn;
+            }
+
+            if (newBar !== (catItem ? catItem.codigo_barras : '')) {
+                barSaved = await saveBarcodeForProduct(codNosso, newBar);
+                if (barSaved && catItem) catItem.codigo_barras = newBar;
+            }
+
+            if (fornSaved && barSaved) {
+                showAlert(`Códigos do material ${codNosso} atualizados com sucesso!`, "success");
+            }
+        }
+
+        function scanBarcodeForManagerRow(codNosso) {
+            openCameraScanner((decodedText) => {
+                if (!decodedText) return;
+                let scanned = String(decodedText).trim();
+                if (scanned.startsWith('AMAZON_ACO|')) {
+                    const parts = scanned.split('|');
+                    if (parts.length >= 4) scanned = parts[3].trim();
+                }
+                const clean = scanned.toUpperCase();
+                const inp = document.getElementById(`mgrBarInput_${codNosso}`);
+                if (inp) {
+                    inp.value = clean;
+                }
+                showAlert(`Código de barras "${clean}" inserido para o material ${codNosso}. Clique em "Salvar" para confirmar!`, "info");
+            }, { title: `Bipar Código de Barras para Material ${codNosso}` });
+        }
+
+        function scanToFindInCodigosManager() {
+            openCameraScanner((decodedText) => {
+                if (!decodedText) return;
+                let scanned = String(decodedText).trim();
+                if (scanned.startsWith('AMAZON_ACO|')) {
+                    const parts = scanned.split('|');
+                    if (parts.length >= 4) scanned = parts[3].trim();
+                }
+                const clean = scanned.toUpperCase();
+                const searchInp = document.getElementById('mgrCodigosSearchInput');
+                if (searchInp) {
+                    searchInp.value = clean;
+                    filterCodigosManagerList();
+                }
+                showAlert(`Filtro aplicado para o código bipado: "${clean}"`, "info");
+            }, { title: "Bipar para Localizar Material" });
         }
 
         window.onload = async function() {
