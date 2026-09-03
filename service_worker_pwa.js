@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.5-modals-header-mobile-fit';
+const CACHE_NAME = 'portal-estoques-v8.6-kardex-script-and-cards-fix';
 const STATIC_ASSETS = [
   './',
   './index.html',
