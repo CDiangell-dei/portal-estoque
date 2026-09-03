@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.7-sd2-monthly-all-months';
+const CACHE_NAME = 'portal-estoques-v8.8-sd2-exact-12-months-cutoff';
 const STATIC_ASSETS = [
   './',
   './index.html',

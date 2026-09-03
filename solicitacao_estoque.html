@@ -1865,9 +1865,12 @@
             try {
                 if (!supabaseClient) initSupabase();
 
-                const twelveMonthsAgo = new Date();
-                twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 13);
-                const dateFilterStr = twelveMonthsAgo.toISOString().split('T')[0];
+                // Regra de corte de dados: exatamente 1 ano (12 meses fechados) para trás a partir de hoje
+                const now = new Date();
+                const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                const yyyy = oneYearAgo.getFullYear();
+                const mm = String(oneYearAgo.getMonth() + 1).padStart(2, '0');
+                const dateFilterStr = `${yyyy}-${mm}-01`;
 
                 const sb1Table = currentSd2Sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
                 const saldoTable = currentSd2Sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
