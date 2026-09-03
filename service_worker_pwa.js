@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v7.5-depara-enxuto';
+const CACHE_NAME = 'portal-estoques-v7.6-depara-gestao-codigos';
 const STATIC_ASSETS = [
   './',
   './index.html',

@@ -1137,7 +1137,7 @@
 
     <!-- MODAL DE-PARA DE FORNECEDORES (CÓDIGO FABRICANTE X CÓDIGO NOSSO) -->
     <div id="modalDeParaFornecedores" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-5xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-6xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden my-auto animate-in fade-in zoom-in duration-200">
             
             <!-- HEADER DO MODAL -->
             <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-shrink-0 bg-slate-50/50 dark:bg-slate-900/40">
@@ -1150,10 +1150,14 @@
                             <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">De-Para de Fornecedores &amp; Fabricantes</h3>
                             <span class="bg-purple-100 text-purple-900 dark:bg-purple-950/60 dark:text-purple-300 text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Cruzamento de Códigos</span>
                         </div>
-                        <p class="text-xs font-semibold text-slate-400">Consulte o código do fabricante/embalagem e localize instantaneamente nosso código interno e saldo</p>
+                        <p class="text-xs font-semibold text-slate-400">Consulte, vincule ou altere códigos de fabricante com histórico de transição e trava contra duplicidades</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button type="button" onclick="openNovoVinculoModal()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs" title="Vincular ou trocar código de fornecedor">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>+ Vincular Código</span>
+                    </button>
                     <button type="button" onclick="exportDeParaToCSV()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-xs" title="Exportar para Excel / CSV">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
                         <span class="hidden sm:inline">Exportar Excel</span>
@@ -1173,7 +1177,7 @@
 
                 <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                     <select id="modalDeParaFornecedorFilter" onchange="filterDeParaUI()" class="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-600">
-                        <option value="ALL">🏢 Todos os Fornecedores (404 itens)</option>
+                        <option value="ALL">🏢 Todos os Fornecedores</option>
                     </select>
                 </div>
             </div>
@@ -1184,16 +1188,17 @@
                     <thead class="bg-slate-50 dark:bg-slate-900/60 text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 sticky top-0 border-b border-slate-100 dark:border-slate-700">
                         <tr>
                             <th class="px-4 py-3">Fornecedor / Fabricante</th>
-                            <th class="px-3 py-3 text-center">Cód. Fornecedor (Fabricante)</th>
-                            <th class="px-3 py-3 text-center">➔ Cód. Nosso (Amazon Aço)</th>
+                            <th class="px-3 py-3 text-center">Cód. Fornecedor (Atual)</th>
+                            <th class="px-3 py-3 text-center">Histórico (Antigo)</th>
+                            <th class="px-3 py-3 text-center">➔ Cód. Nosso</th>
                             <th class="px-3 py-3">Descrição do Produto</th>
                             <th class="px-3 py-3 text-center">UM</th>
                             <th class="px-3 py-3 text-right">Saldo Físico</th>
-                            <th class="px-3 py-3 text-center">Ação</th>
+                            <th class="px-3 py-3 text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="modalDeParaTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 text-xs">
-                        <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando catálogo de fornecedores...</td></tr>
+                        <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando catálogo de fornecedores...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1202,6 +1207,85 @@
             <div class="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
                 <span id="modalDeParaSummaryCount">Total: 0 itens</span>
                 <button type="button" onclick="closeDeParaFornecedoresModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-black transition">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA ADICIONAR / EDITAR CÓDIGO DE FORNECEDOR -->
+    <div id="modalEditarCodigoFornecedor" class="hidden fixed inset-0 z-[220] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden my-auto animate-in fade-in zoom-in duration-150">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/60 dark:bg-slate-900/40">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+                        <i data-lucide="tag" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white" id="modalEditFormTitle">Vincular Código de Fornecedor</h3>
+                </div>
+                <button type="button" onclick="closeEditarCodigoModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="formEditarCodigoFornecedor" onsubmit="salvarCodigoFornecedorUI(event)" class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Nosso Código Interno (Amazon Aço) *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="editCodigoNosso" required oninput="buscarDescricaoMaterialAutomatico()" placeholder="Ex: 15000124" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl font-mono font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-600">
+                    </div>
+                    <p id="editDescricaoProduto" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 italic">Digite o código para identificar o material</p>
+                </div>
+
+                <div id="boxCodigoAtual" class="hidden bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
+                    <span class="block text-[10px] font-black text-slate-500 uppercase tracking-wider">Código Atual do Fabricante</span>
+                    <span id="editCodigoAtualDisplay" class="font-mono font-black text-purple-700 dark:text-purple-300 text-sm">-</span>
+                    <span id="editCodigoAntigoDisplay" class="block text-[10px] text-slate-400 font-mono mt-0.5"></span>
+                </div>
+
+                <div>
+                    <label class="block font-black text-slate-700 dark:text-slate-300 mb-1">Novo Código de Fornecedor (Fabricante) *</label>
+                    <input type="text" id="editNovoCodigoFornecedor" required placeholder="Ex: 0100300, 4FEA13370..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl font-mono font-black text-purple-700 dark:text-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-600">
+                    <p class="text-[10px] text-slate-400 mt-1">Ao alterar, o código anterior será preservado no histórico do item.</p>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100 dark:border-slate-700">
+                    <button type="button" onclick="closeEditarCodigoModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 rounded-xl font-black transition">Cancelar</button>
+                    <button type="submit" id="btnSalvarCodigo" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Salvar Código</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE ALERTA DE CONFLITO / TRANSFERÊNCIA DE CÓDIGO -->
+    <div id="modalConflitoCodigoFornecedor" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl border-2 border-amber-400 dark:border-amber-500 overflow-hidden my-auto p-5 text-xs space-y-4 animate-in fade-in zoom-in duration-150">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Código Repetido Detectado!</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-300">Este código de fabricante já está em uso por outro produto.</p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50/80 dark:bg-amber-950/40 p-3.5 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2">
+                <p id="conflitoMensagemTexto" class="text-amber-900 dark:text-amber-200 leading-relaxed font-bold">
+                    Carregando detalhes do conflito...
+                </p>
+                <div class="text-[10px] text-amber-800/80 dark:text-amber-300/80">
+                    💡 <strong>O que acontecerá ao transferir:</strong> O produto anterior guardará este código no seu campo "Código Antigo" (histórico) e o código ativo passará para o seu novo item.
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" onclick="closeConflitoModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-black transition">Cancelar</button>
+                <button type="button" onclick="confirmarTransferenciaCodigo()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-black transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                    <span>Sim, Transferir Código</span>
+                </button>
             </div>
         </div>
     </div>
@@ -2564,14 +2648,18 @@
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum código correspondente encontrado.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum código correspondente encontrado.</td></tr>`;
                 return;
             }
 
             let html = '';
             data.forEach(item => {
-                const codForn = item.codigo_fornecedor && item.codigo_fornecedor !== '-' ? item.codigo_fornecedor : '<span class="text-slate-400 italic">N/D</span>';
-                const hasFornCod = item.codigo_fornecedor && item.codigo_fornecedor !== '-';
+                const codForn = item.codigo_fornecedor && item.codigo_fornecedor !== '-' ? item.codigo_fornecedor : '<span class="text-slate-400 italic font-normal">N/D</span>';
+                const codAntigo = item.codigo_antigo && item.codigo_antigo !== '-' 
+                    ? `<span class="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600" title="Código anterior no histórico">${item.codigo_antigo}</span>`
+                    : '<span class="text-slate-300 dark:text-slate-600 font-mono text-[10px]">-</span>';
+
+                const safeDesc = (item.descricao || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                 html += `
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
@@ -2582,6 +2670,9 @@
                         </td>
                         <td class="px-3 py-3 text-center font-mono font-black text-purple-700 dark:text-purple-300">
                             ${codForn}
+                        </td>
+                        <td class="px-3 py-3 text-center font-mono">
+                            ${codAntigo}
                         </td>
                         <td class="px-3 py-3 text-center">
                             <span class="font-mono font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -2598,9 +2689,14 @@
                             ${Number(item.saldo_fisico || 0).toLocaleString('pt-BR')}
                         </td>
                         <td class="px-3 py-3 text-center">
-                            <button type="button" onclick="navigator.clipboard.writeText('${item.codigo_nosso}'); showAlert('Código ${item.codigo_nosso} copiado!', 'success');" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 rounded-lg transition cursor-pointer" title="Copiar nosso código">
-                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            </button>
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" onclick="navigator.clipboard.writeText('${item.codigo_nosso}'); showAlert('Código ${item.codigo_nosso} copiado!', 'success');" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 rounded-lg transition cursor-pointer" title="Copiar nosso código">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button type="button" onclick="openEditarCodigoModal('${item.codigo_nosso}', '${item.codigo_fornecedor}', '${item.codigo_antigo}', '${safeDesc}')" class="p-1.5 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-lg transition cursor-pointer" title="Alterar / Trocar código do fornecedor">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -2610,15 +2706,171 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
+        // =========================================================================
+        // GESTÃO DE VÍNCULO, HISTÓRICO E PREVENÇÃO DE CÓDIGO REPETIDO
+        // =========================================================================
+        let pendingCodigoTransferencia = null;
+
+        function openNovoVinculoModal() {
+            document.getElementById('modalEditFormTitle').innerText = "Vincular Código de Fornecedor";
+            const inputNosso = document.getElementById('editCodigoNosso');
+            inputNosso.value = '';
+            inputNosso.readOnly = false;
+            document.getElementById('editDescricaoProduto').innerText = "Digite o código para identificar o material";
+            document.getElementById('editNovoCodigoFornecedor').value = '';
+            document.getElementById('boxCodigoAtual').classList.add('hidden');
+            document.getElementById('modalEditarCodigoFornecedor').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function openEditarCodigoModal(codigoNosso, codigoFornecedor, codigoAntigo, descricao) {
+            document.getElementById('modalEditFormTitle').innerText = "Alterar / Atualizar Código de Fornecedor";
+            const inputNosso = document.getElementById('editCodigoNosso');
+            inputNosso.value = codigoNosso;
+            inputNosso.readOnly = true;
+
+            document.getElementById('editDescricaoProduto').innerText = descricao || "Material identificado";
+
+            const codAtual = (codigoFornecedor && codigoFornecedor !== '-') ? codigoFornecedor : 'Nenhum código ativo';
+            document.getElementById('editCodigoAtualDisplay').innerText = codAtual;
+
+            const boxAntigo = document.getElementById('editCodigoAntigoDisplay');
+            if (codigoAntigo && codigoAntigo !== '-') {
+                boxAntigo.innerText = `Histórico anterior: ${codigoAntigo}`;
+            } else {
+                boxAntigo.innerText = '';
+            }
+            document.getElementById('boxCodigoAtual').classList.remove('hidden');
+
+            document.getElementById('editNovoCodigoFornecedor').value = (codigoFornecedor && codigoFornecedor !== '-') ? codigoFornecedor : '';
+            document.getElementById('modalEditarCodigoFornecedor').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function closeEditarCodigoModal() {
+            document.getElementById('modalEditarCodigoFornecedor').classList.add('hidden');
+        }
+
+        function closeConflitoModal() {
+            document.getElementById('modalConflitoCodigoFornecedor').classList.add('hidden');
+            pendingCodigoTransferencia = null;
+        }
+
+        async function buscarDescricaoMaterialAutomatico() {
+            const cod = document.getElementById('editCodigoNosso')?.value.trim();
+            const descEl = document.getElementById('editDescricaoProduto');
+            if (!cod || cod.length < 3) {
+                if (descEl) descEl.innerText = "Digite o código para identificar o material";
+                return;
+            }
+
+            // Procura primeiro no cache local de produtos
+            const local = globalDeParaData.find(d => d.codigo_nosso === cod);
+            if (local && local.descricao) {
+                descEl.innerText = `✓ ${local.descricao} (${local.fornecedor})`;
+                descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                return;
+            }
+
+            // Busca no Supabase (sb1_comercio ou sb1_industria)
+            try {
+                const { data } = await supabaseClient.from('sb1_comercio').select('descricao, fornecedores').eq('codigo', cod).maybeSingle();
+                if (data && data.descricao) {
+                    descEl.innerText = `✓ ${data.descricao} (${data.fornecedores || 'Fornecedor N/D'})`;
+                    descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                } else {
+                    const { data: dataInd } = await supabaseClient.from('sb1_industria').select('descricao, fornecedores').eq('codigo', cod).maybeSingle();
+                    if (dataInd && dataInd.descricao) {
+                        descEl.innerText = `✓ ${dataInd.descricao} (${dataInd.fornecedores || 'Indústria'})`;
+                        descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                    } else {
+                        descEl.innerText = "⚠️ Código não localizado no cadastro SB1";
+                        descEl.className = "text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1";
+                    }
+                }
+            } catch (err) {
+                console.warn("Erro ao buscar descrição:", err);
+            }
+        }
+
+        async function salvarCodigoFornecedorUI(event) {
+            if (event) event.preventDefault();
+            const codNosso = document.getElementById('editCodigoNosso')?.value.trim();
+            const codForn = document.getElementById('editNovoCodigoFornecedor')?.value.trim();
+
+            if (!codNosso) {
+                showAlert("Informe o código interno do material.", "warning");
+                return;
+            }
+            if (!codForn) {
+                showAlert("Informe o código do fabricante/fornecedor.", "warning");
+                return;
+            }
+
+            await executarGravacaoCodigo(codNosso, codForn, false);
+        }
+
+        async function executarGravacaoCodigo(codNosso, codForn, forcarTransferencia) {
+            const btn = document.getElementById('btnSalvarCodigo');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Salvando...</span>`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+
+            try {
+                const { data, error } = await supabaseClient.rpc('salvar_codigo_fornecedor', {
+                    p_codigo_nosso: codNosso,
+                    p_codigo_fornecedor: codForn,
+                    p_forcar_transferencia: forcarTransferencia
+                });
+
+                if (error) throw error;
+
+                if (data && data.status === 'DUPLICADO') {
+                    // Abre o modal de conflito
+                    pendingCodigoTransferencia = { codigo_nosso: codNosso, codigo_fornecedor: codForn };
+                    document.getElementById('conflitoMensagemTexto').innerText = data.mensagem;
+                    document.getElementById('modalConflitoCodigoFornecedor').classList.remove('hidden');
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    return;
+                }
+
+                if (data && data.sucesso) {
+                    closeEditarCodigoModal();
+                    closeConflitoModal();
+                    showAlert(data.mensagem || "Código de fornecedor salvo com sucesso!", "success");
+                    await loadDeParaFornecedoresData();
+                } else {
+                    showAlert(data?.mensagem || "Não foi possível salvar o código.", "danger");
+                }
+            } catch (err) {
+                console.error("Erro ao salvar código:", err);
+                showAlert("Erro ao salvar código: " + (err.message || err), "danger");
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>Salvar Código</span>`;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            }
+        }
+
+        async function confirmarTransferenciaCodigo() {
+            if (!pendingCodigoTransferencia) return;
+            const { codigo_nosso, codigo_fornecedor } = pendingCodigoTransferencia;
+            await executarGravacaoCodigo(codigo_nosso, codigo_fornecedor, true);
+        }
+
         function exportDeParaToCSV() {
             if (!globalDeParaData || globalDeParaData.length === 0) {
                 showAlert("Sem dados para exportar.", "warning");
                 return;
             }
 
-            let csv = "\uFEFFFornecedor;Codigo_Fornecedor_Fabricante;Codigo_Nosso_Amazon_Aco;Descricao;UM;Saldo_Fisico\n";
+            let csv = "\uFEFFFornecedor;Codigo_Fornecedor_Fabricante;Codigo_Antigo_Historico;Codigo_Nosso_Amazon_Aco;Descricao;UM;Saldo_Fisico\n";
             globalDeParaData.forEach(it => {
-                csv += `"${it.fornecedor}";"${it.codigo_fornecedor || ''}";"${it.codigo_nosso}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.unidade || 'UN'}";${it.saldo_fisico || 0}\n`;
+                csv += `"${it.fornecedor}";"${it.codigo_fornecedor || ''}";"${it.codigo_antigo || ''}";"${it.codigo_nosso}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.unidade || 'UN'}";${it.saldo_fisico || 0}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
