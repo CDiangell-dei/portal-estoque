@@ -958,31 +958,33 @@
         <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
             
             <!-- CABEÇALHO DO PRODUTO -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span id="plModalCodigo" class="text-xl font-black font-mono text-[#002f6c] dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-xl border border-blue-200 dark:border-blue-800">39000016</span>
-                        <span id="plModalFilialArmazem" class="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-xl">Filial 01 • Armazém 50</span>
-                        <span id="plModalStatusGeralBadge" class="text-xs font-black"></span>
+            <div class="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="space-y-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="plModalCodigo" class="text-lg sm:text-xl font-black font-mono text-[#002f6c] dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-xl border border-blue-200 dark:border-blue-800">39000016</span>
+                            <span id="plModalFilialArmazem" class="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-xl">Filial 01 • Armazém 50</span>
+                            <span id="plModalStatusGeralBadge" class="text-xs font-black"></span>
+                        </div>
+                        <h3 id="plModalDescricao" class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">Descrição do Produto</h3>
                     </div>
-                    <h3 id="plModalDescricao" class="text-base font-black text-slate-900 dark:text-white leading-tight">Descrição do Produto</h3>
+                    <button type="button" onclick="closeProductLotsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex-shrink-0">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
                 </div>
 
-                <div class="flex items-center gap-2 self-end sm:self-center flex-wrap">
-                    <button type="button" onclick="openItemAuditHistoryModal(currentProductLotsData.produto, currentProductLotsData.descricao, currentProductLotsData.filial, currentProductLotsData.armazem)" class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-2.5 rounded-xl text-xs font-black shadow-xs transition-all flex items-center space-x-1.5 touch-active cursor-pointer" title="Ver Trilha de Auditoria e Histórico do Material">
-                        <i data-lucide="history" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
-                        <span>Histórico</span>
-                    </button>
-                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="bg-[#002f6c] hover:bg-blue-900 text-white px-3.5 py-2.5 rounded-xl text-xs font-black shadow-md transition-all flex items-center space-x-1.5 touch-active cursor-pointer" title="Imprimir Ficha A4 para identificar o Palete / Material">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
-                        <span>Imprimir Ficha A4</span>
-                    </button>
-                    <button type="button" onclick="openNewValidadeModalForCurrentProduct()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-3.5 py-2.5 rounded-xl text-xs font-black shadow-md transition-all flex items-center space-x-1.5 touch-active cursor-pointer">
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <button type="button" onclick="openNewValidadeModalForCurrentProduct()" class="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600 text-slate-900 px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                        <span>+ Novo Lote / Palete</span>
+                        <span>+ Novo Lote</span>
                     </button>
-                    <button type="button" onclick="closeProductLotsModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="flex-1 sm:flex-initial bg-[#002f6c] hover:bg-blue-900 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap" title="Imprimir Ficha A4 para identificar o Palete / Material">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        <span>Imprimir A4</span>
+                    </button>
+                    <button type="button" onclick="openItemAuditHistoryModal(currentProductLotsData.produto, currentProductLotsData.descricao, currentProductLotsData.filial, currentProductLotsData.armazem)" class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer" title="Ver Trilha de Auditoria e Histórico do Material">
+                        <i data-lucide="history" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                        <span class="hidden sm:inline">Histórico</span>
                     </button>
                 </div>
             </div>
@@ -1208,17 +1210,17 @@
     <div id="modalCodigosManager" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
         <div class="bg-white dark:bg-[#111C38] w-full max-w-4xl rounded-3xl border border-slate-200 dark:border-slate-700 p-5 sm:p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
             
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-2xl bg-[#002f6c]/10 text-[#002f6c] dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+            <div class="flex items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#002f6c]/10 text-[#002f6c] dark:text-blue-400 flex items-center justify-center flex-shrink-0">
                         <i data-lucide="scan-barcode" class="w-5 h-5"></i>
                     </div>
-                    <div>
-                        <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">Central de Códigos: Fornecedores &amp; Barras / QR Code</h3>
-                        <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Vincule ou atualize códigos de barras (EAN/QR) e de fornecedores para cada material do catálogo</p>
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">Central de Códigos &amp; Barras</h3>
+                        <p class="hidden sm:block text-[11px] font-medium text-slate-500 dark:text-slate-400">Vincule ou atualize códigos de barras (EAN/QR) e fornecedores</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeCodigosManagerModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                <button type="button" onclick="closeCodigosManagerModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex-shrink-0">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
