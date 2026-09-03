@@ -1618,6 +1618,30 @@
             if (elDesc) elDesc.innerText = desc;
             if (elFilArm) elFilArm.innerText = `Filial ${filial} • Armazém ${armazem}`;
 
+            // Renderiza abas de troca rápida caso o produto tenha múltiplos armazéns
+            const tabsContainer = document.getElementById('plModalArmazemTabsContainer');
+            const tabsList = document.getElementById('plModalArmazemTabsList');
+            if (tabsContainer && tabsList) {
+                const availableLocations = getMaterialWarehousesForScan(produto, filial);
+                if (availableLocations && availableLocations.length > 1) {
+                    tabsContainer.classList.remove('hidden');
+                    let tabsHtml = `<span class="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1"><i data-lucide="layers" class="w-3 h-3"></i> Outros Armazéns:</span>`;
+                    availableLocations.forEach(loc => {
+                        const isCurrent = isArmMatch(loc.armazem, armazem);
+                        tabsHtml += `
+                            <button type="button" onclick="openProductLotsModal('${loc.filial}', '${loc.armazem}', '${produto}')" class="px-2.5 py-1 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${isCurrent ? 'bg-[#002f6c] text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'}">
+                                <span>Arm. ${loc.armazem.padStart(2, '0')}</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded-md ${isCurrent ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300'} font-mono">${loc.qtdLotes} lotes</span>
+                            </button>
+                        `;
+                    });
+                    tabsList.innerHTML = tabsHtml;
+                } else {
+                    tabsContainer.classList.add('hidden');
+                    tabsList.innerHTML = '';
+                }
+            }
+
             let worstStatus = 'OK';
             matchingLots.forEach(l => {
                 const st = getValidadeStatus(l.data_validade);
@@ -2769,6 +2793,183 @@
             showAlert(`Divisão calculada com sucesso: ${totalPallets} paletes gerados!`, "success");
         }
 
+        function getMaterialWarehousesForScan(finalCode, defaultFilial = null) {
+            const isGlobal = isGlobalFilial(currentUser);
+            const assignedFil = getTargetFilialForSector();
+            const filterFil = document.getElementById('valFilterFilial') ? document.getElementById('valFilterFilial').value : 'ALL';
+            
+            let targetFil = defaultFilial;
+            if (!targetFil) {
+                if (!isGlobal && assignedFil && assignedFil !== '00') targetFil = assignedFil;
+                else if (filterFil && filterFil !== 'ALL' && filterFil !== '00') targetFil = filterFil;
+                else targetFil = '01';
+            }
+            targetFil = String(targetFil).padStart(2, '0');
+
+            const prod = String(finalCode || '').trim().toUpperCase();
+
+            // Mapeia todos os armazéns onde o material tem lotes cadastrados
+            const lotsInFilial = (rawValidadeDataset || []).filter(v => 
+                String(v.produto || '').trim().toUpperCase() === prod &&
+                (isGlobal && filterFil === 'ALL' && !defaultFilial ? true : isFilialMatch(v.filial, targetFil))
+            );
+
+            // Mapeia todos os armazéns onde o material tem saldo no ERP
+            const saldosInFilial = (rawSaldoDataset || []).filter(s => 
+                String(s.produto || '').trim().toUpperCase() === prod &&
+                (isGlobal && filterFil === 'ALL' && !defaultFilial ? true : isFilialMatch(s.filial, targetFil)) &&
+                parseFloat(s.quantidade || 0) > 0
+            );
+
+            // Mapa único de pares (filial, armazém)
+            const locationsMap = new Map();
+
+            lotsInFilial.forEach(l => {
+                const f = String(l.filial || targetFil).padStart(2, '0');
+                const a = String(l.armazem || '01').padStart(2, '0');
+                const key = `${f}_${a}`;
+                if (!locationsMap.has(key)) {
+                    locationsMap.set(key, { filial: f, armazem: a });
+                }
+            });
+
+            saldosInFilial.forEach(s => {
+                const f = String(s.filial || targetFil).padStart(2, '0');
+                const a = String(s.armazem || '01').padStart(2, '0');
+                const key = `${f}_${a}`;
+                if (!locationsMap.has(key)) {
+                    locationsMap.set(key, { filial: f, armazem: a });
+                }
+            });
+
+            if (locationsMap.size === 0) {
+                return [];
+            }
+
+            const result = [];
+            locationsMap.forEach(loc => {
+                const batches = (rawValidadeDataset || []).filter(v => 
+                    isFilialMatch(v.filial, loc.filial) &&
+                    isArmMatch(v.armazem, loc.armazem) &&
+                    String(v.produto || '').trim().toUpperCase() === prod
+                );
+                const saldoERP = getSystemBalance(loc.filial, loc.armazem, prod);
+                let somaLotes = 0;
+                let worstStatus = 'OK';
+                batches.forEach(b => {
+                    somaLotes += parseFloat(b.quantidade || 0);
+                    const st = getValidadeStatus(b.data_validade);
+                    if (st === 'VENCIDO') worstStatus = 'VENCIDO';
+                    else if (st === 'AVENCER' && worstStatus !== 'VENCIDO') worstStatus = 'AVENCER';
+                });
+
+                let statusBadge = '';
+                if (batches.length > 0) {
+                    if (worstStatus === 'VENCIDO') {
+                        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">🔴 Vencido</span>`;
+                    } else if (worstStatus === 'AVENCER') {
+                        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">🟡 A Vencer</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">🟢 No Prazo</span>`;
+                    }
+                }
+
+                const armNum = parseInt(loc.armazem, 10);
+                let armName = `Armazém ${loc.armazem.padStart(2, '0')}`;
+                if (armNum === 1) armName = `Armazém 01 - Almoxarifado Principal`;
+                else if (armNum === 2) armName = `Armazém 02 - Loja / Comercial`;
+                else if (armNum === 50) armName = `Armazém 50 - Validades / Segregação`;
+                else if (armNum === 51) armName = `Armazém 51 - Quarentena / Avaria`;
+                else if (armNum === 12) armName = `Armazém 12 - Depósito`;
+
+                result.push({
+                    filial: loc.filial,
+                    armazem: loc.armazem,
+                    produto: prod,
+                    armazemNome: armName,
+                    qtdLotes: batches.length,
+                    somaLotes: somaLotes,
+                    saldoERP: saldoERP,
+                    statusBadge: statusBadge
+                });
+            });
+
+            // Ordena: armazéns com mais lotes primeiro, depois menor número de armazém
+            result.sort((a, b) => {
+                if (b.qtdLotes !== a.qtdLotes) return b.qtdLotes - a.qtdLotes;
+                return parseInt(a.armazem, 10) - parseInt(b.armazem, 10);
+            });
+
+            return result;
+        }
+
+        function openEscolhaArmazemModal(locations, finalCode, cleanInput, matchInfo = null) {
+            const modal = document.getElementById('modalEscolhaArmazemBipagem');
+            const listEl = document.getElementById('scanArmazensList');
+            const codBadge = document.getElementById('scanArmCodigoBadge');
+            const descEl = document.getElementById('scanArmDescricao');
+            if (!modal || !listEl) return;
+
+            const sbMatch = rawSb1Dataset ? rawSb1Dataset.find(item => String(item.Codigo).trim().toUpperCase() === finalCode) : null;
+            const desc = sbMatch ? (sbMatch['Descr.Espec.'] || finalCode) : finalCode;
+
+            if (codBadge) codBadge.innerText = finalCode;
+            if (descEl) descEl.innerText = desc;
+
+            let html = '';
+            locations.forEach(loc => {
+                html += `
+                    <button type="button" onclick="selectScannedWarehouse('${loc.filial}', '${loc.armazem}', '${loc.produto}')" class="w-full text-left p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-[#002f6c] dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-all flex items-center justify-between group cursor-pointer">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-[#002f6c] dark:text-blue-400 flex items-center justify-center font-black text-sm font-mono group-hover:bg-[#002f6c] group-hover:text-white transition-colors flex-shrink-0">
+                                ${loc.armazem.padStart(2, '0')}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-xs font-black text-slate-800 dark:text-white">${loc.armazemNome}</span>
+                                    ${loc.qtdLotes > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#002f6c] dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">${loc.qtdLotes} lote(s)</span>` : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400">Sem lotes</span>`}
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Filial ${loc.filial} • Saldo ERP: <b class="font-mono text-slate-700 dark:text-slate-300">${loc.saldoERP.toLocaleString('pt-BR')}</b>
+                                    ${loc.somaLotes > 0 ? ` • Soma lotes: <b class="font-mono text-emerald-600">${loc.somaLotes.toLocaleString('pt-BR')}</b>` : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                            ${loc.statusBadge}
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-[#002f6c] group-hover:translate-x-0.5 transition-all"></i>
+                        </div>
+                    </button>
+                `;
+            });
+
+            // Opção extra: Cadastrar em novo armazém
+            html += `
+                <div class="pt-2">
+                    <button type="button" onclick="closeEscolhaArmazemModal(); openNewValidadeModal('${finalCode}');" class="w-full text-center py-2.5 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-xs font-bold text-slate-600 dark:text-slate-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-amber-500"></i>
+                        <span>Cadastrar lote em outro Armazém...</span>
+                    </button>
+                </div>
+            `;
+
+            listEl.innerHTML = html;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            modal.classList.remove('pointer-events-none', 'opacity-0');
+        }
+
+        function closeEscolhaArmazemModal() {
+            const modal = document.getElementById('modalEscolhaArmazemBipagem');
+            if (modal) modal.classList.add('pointer-events-none', 'opacity-0');
+        }
+
+        function selectScannedWarehouse(filial, armazem, produto) {
+            closeEscolhaArmazemModal();
+            showAlert(`Abrindo Armazém ${armazem} para o material ${produto}...`, "success");
+            openProductLotsModal(filial, armazem, produto);
+        }
+
         function scanBarcodeForValidade() {
             openCameraScanner(async (decodedText) => {
                 if (!decodedText) return;
@@ -2794,28 +2995,36 @@
                 const found = await findProductByAnyCode(cleanInput);
                 const finalCode = found ? String(found.product.Codigo || found.product.codigo).trim().toUpperCase() : cleanInput;
 
-                // 1. Verifica se há lotes para este material
-                const matchingLots = (rawValidadeDataset || []).filter(v => String(v.produto).trim().toUpperCase() === finalCode);
+                // Se o código bipado especificou armazém via QR de Palete (AMAZON_ACO|filial|armazem|produto|lote)
+                if (targetArmazem) {
+                    const fil = targetFilial || '01';
+                    showAlert(`Palete bipado: Armazém ${targetArmazem} • Material ${finalCode}`, "success");
+                    openProductLotsModal(fil, targetArmazem, finalCode);
+                    return;
+                }
 
-                if (matchingLots.length > 0) {
-                    const first = matchingLots[0];
-                    const fil = targetFilial || first.filial;
-                    const arm = targetArmazem || first.armazem;
-                    let msg = `Material localizado: ${finalCode}`;
-                    if (found && found.matchType === 'CODIGO_FORNECEDOR') {
-                        msg += ` (via Cód. Fornecedor ${cleanInput})`;
-                    } else if (found && found.matchType === 'CODIGO_BARRAS') {
-                        msg += ` (via Cód. Barras ${cleanInput})`;
-                    }
+                // Obtém todos os armazéns onde o material possui lotes ou saldo
+                const locations = getMaterialWarehousesForScan(finalCode, targetFilial);
+
+                if (locations.length > 1) {
+                    // MÚLTIPLOS ARMAZÉNS ENCONTRADOS (Ex: Armazém 02 e Armazém 50) -> Abre seleção interativa
+                    openEscolhaArmazemModal(locations, finalCode, cleanInput, found);
+                } else if (locations.length === 1) {
+                    // Apenas 1 armazém -> abre diretamente
+                    const loc = locations[0];
+                    let msg = `Material localizado: ${finalCode} no Armazém ${loc.armazem}`;
+                    if (found && found.matchType === 'CODIGO_FORNECEDOR') msg += ` (via Cód. Fornecedor ${cleanInput})`;
+                    else if (found && found.matchType === 'CODIGO_BARRAS') msg += ` (via Cód. Barras ${cleanInput})`;
                     showAlert(`${msg}. Abrindo lista de lotes...`, "success");
-                    openProductLotsModal(fil, arm, finalCode);
+                    openProductLotsModal(loc.filial, loc.armazem, finalCode);
                 } else if (found) {
-                    const arm = targetArmazem || (rawKnownWarehouses.length > 0 ? rawKnownWarehouses[0] : '01');
+                    // Material existe no catálogo mas ainda não tem lotes nem saldo no armazém atual
+                    const defaultArm = rawKnownWarehouses.length > 0 ? rawKnownWarehouses[0] : '50';
                     let msg = `Material localizado: ${finalCode}`;
                     if (found.matchType === 'CODIGO_FORNECEDOR') msg += ` (via Cód. Fornecedor ${cleanInput})`;
                     else if (found.matchType === 'CODIGO_BARRAS') msg += ` (via Cód. Barras ${cleanInput})`;
                     showAlert(`${msg}. Abrindo novo cadastro de lote...`, "info");
-                    openNewValidadeModal(finalCode, arm);
+                    openNewValidadeModal(finalCode, defaultArm);
                 } else {
                     // Código desconhecido: pergunta se deseja vincular a um produto existente
                     const wantLink = confirm(

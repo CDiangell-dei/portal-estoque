@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.8-sd2-exact-12-months-cutoff';
+const CACHE_NAME = 'portal-estoques-v8.9-multi-warehouse-scan-selector';
 const STATIC_ASSETS = [
   './',
   './index.html',
