@@ -39,40 +39,47 @@
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f8fafc;
             color: #0f172a;
             -webkit-tap-highlight-color: transparent;
+            letter-spacing: -0.01em;
         }
         :root {
             --amazon-navy: #002f6c;
-            --amazon-red: #9c0e25;
-            --amazon-red-hover: #800b1d;
+            --amazon-navy-dark: #0A192F;
+            --amazon-red: #B40D15;
+            --amazon-red-hover: #8C0A10;
+            --steel-surface: #ffffff;
+            --steel-border: #e2e8f0;
         }
-        .touch-active:active { transform: scale(0.97); }
+        .touch-active:active { transform: scale(0.985); }
+
+        .tabular-nums { font-variant-numeric: tabular-nums; }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .dark body { background-color: #0f172a !important; color: #ffffff !important; }
-        .dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
-        .dark .bg-[#f8fafc] { background-color: #0f172a !important; }
-        .dark .text-slate-900, .dark .text-slate-800 { color: #ffffff !important; }
-        .dark .text-slate-700, .dark .text-slate-600 { color: #f1f5f9 !important; }
-        .dark .text-slate-500, .dark .text-slate-400 { color: #cbd5e1 !important; }
-        .dark .bg-slate-50, .dark .bg-slate-100 { background-color: #334155 !important; border-color: #475569 !important; color: #ffffff !important; }
-        .dark .border-slate-200, .dark .border-slate-300 { border-color: #334155 !important; }
-        .dark .border-slate-100 { border-color: #1e293b !important; }
-        .dark input, .dark select, .dark textarea { background-color: #334155 !important; color: #ffffff !important; border-color: #475569 !important; }
-        .dark table th { background-color: #334155 !important; color: #cbd5e1 !important; border-color: #475569 !important; }
-        .dark table tr:hover { background-color: #334155 !important; }
-        .dark .shadow-sm, .dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
-        .dark .text-[#9c0e25] { color: #f87171 !important; }
-        .dark .bg-[#9c0e25] { background-color: #dc2626 !important; }
+        /* MODO ESCURO SIDERÚRGICO / GRAFITE AÇO NAVAL */
+        .dark body { background-color: #0B132B !important; color: #f8fafc !important; }
+        .dark .bg-white { background-color: #111C38 !important; border-color: #1E2D56 !important; }
+        .dark .bg-[#f8fafc] { background-color: #0B132B !important; }
+        .dark .text-slate-900, .dark .text-slate-800 { color: #f8fafc !important; }
+        .dark .text-slate-700, .dark .text-slate-600 { color: #cbd5e1 !important; }
+        .dark .text-slate-500, .dark .text-slate-400 { color: #94a3b8 !important; }
+        .dark .bg-slate-50, .dark .bg-slate-100 { background-color: #162447 !important; border-color: #1E2D56 !important; color: #f8fafc !important; }
+        .dark .border-slate-200, .dark .border-slate-300 { border-color: #1E2D56 !important; }
+        .dark .border-slate-100 { border-color: #162447 !important; }
+        .dark input, .dark select, .dark textarea { background-color: #111C38 !important; color: #ffffff !important; border-color: #1E2D56 !important; }
+        .dark table th { background-color: #162447 !important; color: #94a3b8 !important; border-color: #1E2D56 !important; }
+        .dark table tr:hover { background-color: #162447 !important; }
+        .dark .shadow-sm, .dark .shadow-md { box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4) !important; }
+        .dark .text-[#B40D15], .dark .text-[#9c0e25] { color: #f87171 !important; }
+        .dark .bg-[#B40D15], .dark .bg-[#9c0e25] { background-color: #b40d15 !important; }
         .dark .text-[#002f6c] { color: #60a5fa !important; }
-        .dark .bg-[#002f6c] { background-color: #2563eb !important; }
+        .dark .bg-[#002f6c] { background-color: #002f6c !important; }
         .dark img[alt="Amazon Aço"] { filter: brightness(0) invert(1) !important; }
     </style>
 </head>
@@ -247,72 +254,80 @@
     <!-- ========================================== -->
     <div id="appContainer" class="hidden flex-col flex-1 min-h-screen">
         
-        <!-- HEADER PRINCIPAL DO PORTAL -->
-        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-                <a href="index.html" class="flex items-center space-x-3 cursor-pointer">
-                    <img src="https://amazonaco.com.br/wp-content/uploads/2024/02/IMG_4689.png" alt="Amazon Aço" fetchpriority="high" loading="eager" class="h-10 w-auto flex-shrink-0 object-contain drop-shadow-sm">
-                    <div class="border-l border-slate-200 pl-3 hidden sm:block">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <span>Portal de Controle de Estoques</span>
-                            <span class="bg-emerald-100 text-emerald-800 text-[9px] px-2 py-0.5 rounded-full font-black border border-emerald-200 shadow-xs">Módulos</span>
-                        </p>
+        <!-- FAIXA DE IDENTIDADE VISUAL AMAZON AÇO (AZUL E CARMIM) -->
+        <div class="h-1 w-full bg-gradient-to-r from-[#002f6c] via-[#B40D15] to-[#002f6c]"></div>
+
+        <!-- HEADER PRINCIPAL DO PORTAL (PADRÃO CORPORATIVO AMAZON AÇO) -->
+        <header class="bg-white/95 dark:bg-[#0B132B]/95 border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-40 backdrop-blur-md shadow-xs">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+                <a href="index.html" class="flex items-center space-x-3 cursor-pointer group">
+                    <img src="https://amazonaco.com.br/wp-content/uploads/2024/02/IMG_4689.png" alt="Amazon Aço" fetchpriority="high" loading="eager" class="h-9 w-auto flex-shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-102">
+                    <div class="border-l border-slate-200 dark:border-slate-800 pl-3 hidden sm:block">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase">WMS Almoxarifado</span>
+                            <span class="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#B40D15]/20 uppercase tracking-wider">Enterprise</span>
+                        </div>
+                        <p class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Portal de Controle de Estoques</p>
                     </div>
                 </a>
 
-                <!-- NAV DESKTOP -->
-                <div class="hidden md:flex items-center space-x-2">
+                <!-- NAV DESKTOP (ESTILO ABAS TÉCNICAS DE PRECISÃO) -->
+                <div class="hidden md:flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
                     <!-- BOTÃO INÍCIO (ATIVO) -->
-                    <a href="index.html" id="desktopBtnHome" class="px-3.5 py-2 rounded-2xl text-xs font-black transition-all inline-flex items-center space-x-1.5 bg-white text-[#002f6c] shadow-sm border border-slate-200 cursor-pointer">
-                        <i data-lucide="home" class="w-4 h-4"></i>
+                    <a href="index.html" id="desktopBtnHome" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center space-x-1.5 bg-white text-[#002f6c] dark:bg-[#111C38] dark:text-blue-300 shadow-xs border border-slate-200/80 dark:border-slate-700 cursor-pointer">
+                        <i data-lucide="home" class="w-3.5 h-3.5"></i>
                         <span>Início</span>
                     </a>
 
                     <!-- BOTÃO SOLICITAÇÃO DE ESTOQUE -->
-                    <a href="solicitacao_estoque.html" class="px-3.5 py-2 rounded-2xl text-xs font-black transition-all inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-[#002f6c] dark:bg-blue-950 dark:text-blue-200 border border-blue-200 dark:border-blue-800 shadow-sm cursor-pointer">
-                        <i data-lucide="shopping-cart" class="w-4 h-4 text-blue-600"></i>
-                        <span>Solicitação de Estoque</span>
+                    <a href="solicitacao_estoque.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 cursor-pointer">
+                        <i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+                        <span>Solicitação</span>
                     </a>
 
                     <!-- GRUPO ESTOQUE -->
                     <div class="relative">
-                        <button onclick="toggleDesktopSubmenu('estoque')" id="desktopBtnEstoqueGroup" class="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 px-3.5 py-2 rounded-2xl text-xs font-black inline-flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer">
-                            <i data-lucide="boxes" class="w-4 h-4 text-[#002f6c]"></i>
+                        <button onclick="toggleDesktopSubmenu('estoque')" id="desktopBtnEstoqueGroup" class="px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all cursor-pointer">
+                            <i data-lucide="boxes" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
                             <span>Estoque</span>
-                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
                         </button>
 
-                        <div id="desktopEstoqueSubmenu" class="hidden absolute top-12 left-0 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl z-50 p-2 space-y-1">
-                            <a href="inventario.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+                        <div id="desktopEstoqueSubmenu" class="hidden absolute top-10 left-0 w-64 bg-white dark:bg-[#111C38] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5">
+                            <a href="inventario.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Inventário Rotativo</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Inventário Rotativo</p>
+                                    <p class="text-[10px] text-slate-400">Contagens físicas e conciliação</p>
                                 </div>
                             </a>
-                            <a href="transferencia.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                            <a href="transferencia.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="truck" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Transferência entre Armazéns</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Transferência entre Armazéns</p>
+                                    <p class="text-[10px] text-slate-400">QR Code e separação física</p>
                                 </div>
                             </a>
-                            <a href="kardex.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                            <a href="kardex.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="history" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Kardex de Contagem</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Kardex de Contagem</p>
+                                    <p class="text-[10px] text-slate-400">Histórico de lançamentos</p>
                                 </div>
                             </a>
-                            <a href="validade.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <a href="validade.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Controle de Validade</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Controle de Validade</p>
+                                    <p class="text-[10px] text-slate-400">Lotes FEFO e Armazém 50</p>
                                 </div>
                             </a>
                         </div>
@@ -320,60 +335,63 @@
 
                     <!-- GRUPO ALMOXARIFADO -->
                     <div id="desktopAlmoxGroupContainer" class="relative hidden">
-                        <button onclick="toggleDesktopSubmenu('almox')" id="desktopBtnAlmoxGroup" class="bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 px-3.5 py-2 rounded-2xl text-xs font-black inline-flex items-center space-x-1.5 shadow-sm transition-all cursor-pointer">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                        <button onclick="toggleDesktopSubmenu('almox')" id="desktopBtnAlmoxGroup" class="px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all cursor-pointer">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
                             <span>Almoxarifado</span>
-                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
                         </button>
 
-                        <div id="desktopAlmoxSubmenu" class="hidden absolute top-12 left-0 w-64 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl z-50 p-2 space-y-1">
-                            <a href="luvas.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <div id="desktopAlmoxSubmenu" class="hidden absolute top-10 left-0 w-64 bg-white dark:bg-[#111C38] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5">
+                            <a href="luvas.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="shield" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Consumo de EPIs (Luvas)</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Consumo de EPIs</p>
+                                    <p class="text-[10px] text-slate-400">Entrega de luvas por matrícula</p>
                                 </div>
                             </a>
-                            <a href="minutas.html" class="w-full flex items-center space-x-3 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700 text-left transition-colors">
-                                <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <a href="minutas.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                                <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                                     <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs font-black text-slate-800 dark:text-slate-200">Minutas & Recebimento</p>
+                                    <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Minutas & Recebimento</p>
+                                    <p class="text-[10px] text-slate-400">Entrada de NFs e canhotos</p>
                                 </div>
                             </a>
                         </div>
                     </div>
 
                     <!-- BOTÃO ADMIN -->
-                    <a href="admin.html" id="desktopBtnAdmin" class="hidden px-3.5 py-2 rounded-2xl text-xs font-black transition-all inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-700 hover:text-amber-900 border border-amber-500/20 cursor-pointer">
-                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    <a href="admin.html" id="desktopBtnAdmin" class="hidden px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 cursor-pointer">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
                         <span>Admin</span>
                     </a>
                 </div>
 
                 <!-- PERFIL E CONTROLES -->
-                <div class="flex items-center space-x-3">
-                    <div id="offlineSyncBadge" onclick="processOfflineQueue()" title="Itens aguardando sincronização offline." class="hidden items-center space-x-1 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-sm cursor-pointer transition-colors">
+                <div class="flex items-center space-x-2.5">
+                    <div id="offlineSyncBadge" onclick="processOfflineQueue()" title="Itens aguardando sincronização offline." class="hidden items-center space-x-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition-colors">
                         <i data-lucide="cloud-off" class="w-3.5 h-3.5 mr-1"></i>
-                        <span id="offlineSyncCount">0</span> pendente(s)
+                        <span id="offlineSyncCount">0</span>
                     </div>
 
-                    <div title="Status da Conexão com o Servidor" class="p-2 bg-slate-100 rounded-xl flex items-center space-x-1">
-                        <span id="appStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <div title="Status da Conexão com o Servidor" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center space-x-1.5 border border-slate-200/60 dark:border-slate-700/60">
+                        <span id="appStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 hidden sm:inline">Online</span>
                     </div>
 
-                    <div class="flex flex-col text-right">
-                        <span id="headerUserName" class="text-xs font-black text-slate-900">Usuário</span>
-                        <span id="headerUserFilial" class="text-[10px] font-bold text-[#9c0e25] uppercase tracking-wider">Filial</span>
+                    <div class="flex flex-col text-right pl-1">
+                        <span id="headerUserName" class="text-xs font-bold text-slate-900 dark:text-white">Usuário</span>
+                        <span id="headerUserFilial" class="text-[10px] font-bold text-[#B40D15] dark:text-rose-400 uppercase tracking-wider">Filial</span>
                     </div>
 
-                    <button onclick="toggleDarkMode()" title="Modo Escuro" id="darkModeBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 dark:border-slate-600 p-2.5 rounded-xl border border-slate-200 transition-all touch-active">
+                    <button onclick="toggleDarkMode()" title="Modo Escuro" id="darkModeBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 transition-all touch-active cursor-pointer">
                         <i data-lucide="moon" class="w-4 h-4"></i>
                     </button>
 
-                    <button onclick="confirmLogout()" title="Sair da Sessão" class="bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-[#9c0e25] p-2.5 rounded-xl border border-slate-200 transition-all touch-active">
+                    <button onclick="confirmLogout()" title="Sair da Sessão" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-[#B40D15] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-rose-950/50 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 transition-all touch-active cursor-pointer">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -383,39 +401,38 @@
         <!-- CONTEÚDO PRINCIPAL: HUB DE MÓDULOS -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 w-full flex flex-col">
             
-            <!-- HERO BANNER COM DEGRADÊ EXECUTIVO AMAZON AÇO E KPIS -->
-            <div class="bg-gradient-to-r from-[#002f6c] via-[#002454] to-[#001738] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-                <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
-                    <i data-lucide="boxes" class="w-64 h-64 text-white"></i>
-                </div>
+            <!-- HERO BANNER SIDERÚRGICO AMAZON AÇO -->
+            <div class="bg-gradient-to-br from-[#0A192F] via-[#0D1F3D] to-[#071120] rounded-2xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden border border-slate-800">
+                <!-- Efeito sutil de textura industrial metálica -->
+                <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none"></div>
 
                 <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div class="space-y-1.5">
-                        <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/15">
+                    <div class="space-y-2">
+                        <div class="inline-flex items-center space-x-2 bg-blue-950/80 border border-blue-800/80 px-3 py-1 rounded-full text-xs font-semibold text-blue-200 backdrop-blur-xs">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span id="homeUserFilialBadge" class="text-blue-100 font-extrabold uppercase">Filial 01 - Salmo Alvorada</span>
+                            <span id="homeUserFilialBadge" class="uppercase tracking-wide">Filial 01 - Matriz Manaus</span>
                         </div>
-                        <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
-                            Olá, <span id="homeUserName" class="text-amber-400">Usuário</span>! 👋
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">
+                            Olá, <span id="homeUserName" class="text-white border-b-2 border-[#B40D15]">Usuário</span>
                         </h2>
-                        <p class="text-xs sm:text-sm text-blue-100/80 font-semibold max-w-xl">
-                            Selecione o módulo operacional abaixo para iniciar seus lançamentos e análises.
+                        <p class="text-xs sm:text-sm text-slate-300 font-normal max-w-xl">
+                            Painel de Controle de Estoques &amp; Almoxarifado Central da Amazon Aço.
                         </p>
                     </div>
 
                     <!-- 3 MINI KPIS DA HOME -->
-                    <div class="grid grid-cols-3 gap-2 sm:gap-3 bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/15 text-center min-w-[280px]">
+                    <div class="grid grid-cols-3 gap-2 sm:gap-3 bg-white/[0.04] backdrop-blur-md p-3 rounded-xl border border-white/10 text-center min-w-[280px]">
                         <div class="p-1">
-                            <span class="block text-[9px] font-bold text-blue-200 uppercase tracking-wider">Catálogo</span>
-                            <span id="homeKpiTotalProds" class="text-lg sm:text-xl font-black text-white">---</span>
+                            <span class="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Catálogo Ativo</span>
+                            <span id="homeKpiTotalProds" class="text-lg font-mono font-black text-white tabular-nums">---</span>
                         </div>
                         <div class="p-1 border-x border-white/10">
-                            <span class="block text-[9px] font-bold text-blue-200 uppercase tracking-wider">Acuracidade</span>
-                            <span id="homeKpiAccuracy" class="text-lg sm:text-xl font-black text-emerald-400">---%</span>
+                            <span class="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Acuracidade</span>
+                            <span id="homeKpiAccuracy" class="text-lg font-mono font-black text-emerald-400 tabular-nums">---%</span>
                         </div>
                         <div class="p-1">
-                            <span class="block text-[9px] font-bold text-blue-200 uppercase tracking-wider">Hoje</span>
-                            <span id="homeKpiCountsToday" class="text-lg sm:text-xl font-black text-amber-400">---</span>
+                            <span class="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Lotes Hoje</span>
+                            <span id="homeKpiCountsToday" class="text-lg font-mono font-black text-amber-400 tabular-nums">---</span>
                         </div>
                     </div>
                 </div>
@@ -424,226 +441,244 @@
             <!-- SEÇÃO DOS MÓDULOS DE ATALHO -->
             <div class="space-y-3">
                 <div class="flex items-center justify-between px-1">
-                    <h3 class="text-xs font-black uppercase text-slate-400 tracking-wider">Módulos Operacionais</h3>
+                    <h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider">Módulos Operacionais</h3>
                 </div>
 
-                <div id="homeGridCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                <div id="homeGridCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 w-full">
                     
                     <!-- CARD SOLICITAÇÃO DE ESTOQUE -->
-                    <a id="btnHubSolicitacaoEstoque" href="solicitacao_estoque.html" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 group-hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="shopping-cart" class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubSolicitacaoEstoque" href="solicitacao_estoque.html" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Solicitação de Estoque</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Vendas, Cobertura &amp; Diluição</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Solicitação de Estoque</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Vendas, Cobertura &amp; Diluição</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD INVENTÁRIO -->
-                    <a id="btnHubInventario" href="inventario.html" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-teal-500/10 group-hover:bg-teal-500 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="boxes" class="w-6 h-6 text-teal-600 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubInventario" href="inventario.html" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="boxes" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Inventário Rotativo</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Contagem física e saldos ERP</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Inventário Rotativo</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Contagem física e conciliação ERP</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD TRANSFERÊNCIA ENTRE ARMAZÉNS -->
-                    <a id="btnHubTransferencia" href="transferencia.html" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 group-hover:bg-[#002f6c] transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="truck" class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubTransferencia" href="transferencia.html" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="truck" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Transferência</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">QR Code, separação e ERP</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Transferência</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">QR Code, separação e ERP</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD KARDEX DE CONTAGEM -->
-                    <a id="btnHubKardex" href="kardex.html" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 group-hover:bg-indigo-500 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="history" class="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubKardex" href="kardex.html" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="history" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Kardex de Contagem</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Histórico cronológico de contagens</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Kardex de Contagem</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Histórico cronológico e trilha</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD CONTROLE DE VALIDADE -->
-                    <a id="btnHubValidade" href="validade.html" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 group-hover:bg-amber-500 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="calendar-clock" class="w-6 h-6 text-amber-600 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubValidade" href="validade.html" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="calendar-clock" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Controle de Validade</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Ano/Mês e Armazém de Vencidos</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Controle de Validade</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Lotes FEFO e Armazém 50</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD DE-PARA FORNECEDORES -->
-                    <button type="button" onclick="openDeParaFornecedoresModal()" class="bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active cursor-pointer">
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 group-hover:bg-purple-600 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="scan-barcode" class="w-6 h-6 text-purple-600 group-hover:text-white transition-colors duration-300"></i>
+                    <button type="button" onclick="openDeParaFornecedoresModal()" class="bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden cursor-pointer">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="scan-barcode" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">De-Para Fornecedores</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Cruzamento Cód. Fabricante ➔ Nosso</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">De-Para Fornecedores</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Cód. Fabricante ➔ Nosso Código</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </button>
 
                     <!-- CARD LUVAS / EPIS -->
-                    <a id="btnHubLuvas" href="luvas.html" class="hidden bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-[#002f6c]/10 group-hover:bg-[#002f6c] transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="shield" class="w-6 h-6 text-[#002f6c] group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubLuvas" href="luvas.html" class="hidden bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="shield" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Consumo de EPIs</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Entrega de luvas por matrícula</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Consumo de EPIs</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Entrega de luvas por matrícula</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD MINUTAS -->
-                    <a id="btnHubMinutas" href="minutas.html" class="hidden bg-white hover:bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-[#9c0e25]/10 group-hover:bg-[#9c0e25] transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="file-text" class="w-6 h-6 text-[#9c0e25] group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubMinutas" href="minutas.html" class="hidden bg-white dark:bg-[#111C38] border border-slate-200/90 dark:border-slate-800 rounded-xl p-4.5 hover:border-[#002f6c] dark:hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#002f6c] to-[#B40D15] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 group-hover:bg-[#002f6c] group-hover:text-white dark:group-hover:bg-blue-600 dark:group-hover:text-white transition-all flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-slate-900 leading-tight">Minutas & Recebimento</h3>
-                            <p class="text-[11px] text-slate-500 font-bold">Entrada de NFs e canhotos</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 transition-colors leading-tight">Minutas &amp; Recebimento</h3>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">Entrada de NFs e conferência</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-[#002f6c] dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                     <!-- CARD ADMIN -->
-                    <a id="btnHubAdmin" href="admin.html" class="hidden bg-slate-900 hover:bg-slate-800 p-5 rounded-2xl border border-slate-700 shadow-sm hover:shadow-md transition-all flex items-center space-x-4 text-left group touch-active">
-                        <div class="w-12 h-12 rounded-xl bg-amber-500/10 group-hover:bg-amber-500 transition-colors duration-300 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="settings" class="w-6 h-6 text-amber-500 group-hover:text-white transition-colors duration-300"></i>
+                    <a id="btnHubAdmin" href="admin.html" class="hidden bg-slate-900 hover:bg-slate-800 dark:bg-slate-800/90 border border-slate-700/80 rounded-xl p-4.5 hover:border-amber-500/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex items-center space-x-3.5 text-left group touch-active relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-0.5 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="w-11 h-11 rounded-lg bg-slate-800 text-amber-400 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all flex items-center justify-center flex-shrink-0 border border-slate-700 shadow-2xs">
+                            <i data-lucide="settings" class="w-5 h-5"></i>
                         </div>
-                        <div class="space-y-0.5">
-                            <h3 class="text-sm font-black text-white leading-tight">Painel Admin</h3>
-                            <p class="text-[11px] text-slate-400 font-bold">Gestão de contas e senhas</p>
+                        <div class="space-y-0.5 min-w-0 flex-1">
+                            <h3 class="text-sm font-bold text-white group-hover:text-amber-300 transition-colors leading-tight">Painel Admin</h3>
+                            <p class="text-[11px] text-slate-400 font-medium truncate">Gestão de contas e filiais</p>
                         </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all flex-shrink-0"></i>
                     </a>
 
                 </div>
             </div>
 
             <!-- PAINEL EXECUTIVO: AGING DE VALIDADES & RISCO DE ESTOQUE -->
-            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="bg-white dark:bg-[#111C38] p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                            <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+                        <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="calendar-clock" class="w-4 h-4"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="text-sm font-black text-slate-900 leading-tight">Aging & Riscos de Validade</h3>
-                                <span class="bg-amber-100 text-amber-900 text-[9px] px-2 py-0.5 rounded-full font-black">FEFO</span>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">Aging &amp; Risco de Validade de Lotes</h3>
+                                <span class="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/40 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-bold border border-[#B40D15]/20 uppercase tracking-wider">FEFO</span>
                             </div>
-                            <p class="text-[10px] font-bold text-slate-400">Visão preventiva dos lotes e prazos de validade da filial</p>
+                            <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Visão preventiva dos lotes e prazos de validade da filial</p>
                         </div>
                     </div>
-                    <a href="validade.html" class="text-xs font-bold text-[#002f6c] hover:underline flex items-center space-x-1 self-start sm:self-auto">
-                        <span>Gerenciar Validades</span>
+                    <a href="validade.html" class="text-xs font-semibold text-[#002f6c] dark:text-blue-400 hover:underline flex items-center space-x-1 self-start sm:self-auto">
+                        <span>Abrir Controle de Validade</span>
                         <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                     </a>
                 </div>
 
-                <!-- 5 CARDS CLICÁVEIS DE AGING -->
+                <!-- 5 CARDS DE AGING COM SEMÁFORO INDUSTRIAL -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <!-- VENCIDOS -->
-                    <a href="validade.html?filtro=vencidos" class="bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 p-3.5 rounded-2xl transition-all block group touch-active">
+                    <a href="validade.html?filtro=vencidos" class="border border-rose-300 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-3 rounded-xl transition-all block group touch-active hover:shadow-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase tracking-wider text-rose-600">Vencidos</span>
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">Vencidos</span>
+                            <span class="w-2 h-2 rounded-full bg-rose-600"></span>
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
-                            <span id="homeValVencidos" class="text-xl sm:text-2xl font-black text-rose-900">0</span>
-                            <span class="text-[10px] font-bold text-rose-600 group-hover:underline">Arm. 50 &rarr;</span>
+                            <span id="homeValVencidos" class="text-xl sm:text-2xl font-mono font-bold tabular-nums text-rose-950 dark:text-rose-200">0</span>
+                            <span class="text-[10px] font-semibold text-rose-600 dark:text-rose-400 group-hover:underline">Arm. 50 &rarr;</span>
                         </div>
-                        <p class="text-[9px] font-bold text-rose-500 mt-0.5">Lotes expirados</p>
+                        <p class="text-[10px] font-medium text-rose-600/80 dark:text-rose-400/80 mt-0.5">Lotes expirados</p>
                     </a>
 
                     <!-- VENCENDO EM 30 DIAS -->
-                    <a href="validade.html?filtro=vencendo30" class="bg-orange-50/70 hover:bg-orange-100/80 border border-orange-200 p-3.5 rounded-2xl transition-all block group touch-active">
+                    <a href="validade.html?filtro=vencendo30" class="border border-amber-300 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 p-3 rounded-xl transition-all block group touch-active hover:shadow-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase tracking-wider text-orange-600">Até 30 Dias</span>
-                            <span class="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Até 30 Dias</span>
+                            <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
-                            <span id="homeValVencendo30" class="text-xl sm:text-2xl font-black text-orange-900">0</span>
-                            <span class="text-[10px] font-bold text-orange-600 group-hover:underline">Urgente &rarr;</span>
+                            <span id="homeValVencendo30" class="text-xl sm:text-2xl font-mono font-bold tabular-nums text-amber-950 dark:text-amber-200">0</span>
+                            <span class="text-[10px] font-semibold text-amber-600 dark:text-amber-400 group-hover:underline">Urgente &rarr;</span>
                         </div>
-                        <p class="text-[9px] font-bold text-orange-500 mt-0.5">Consumo imediato</p>
+                        <p class="text-[10px] font-medium text-amber-600/80 dark:text-amber-400/80 mt-0.5">Consumo imediato</p>
                     </a>
 
                     <!-- VENCENDO EM 60 DIAS -->
-                    <a href="validade.html?filtro=vencendo60" class="bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200 p-3.5 rounded-2xl transition-all block group touch-active">
+                    <a href="validade.html?filtro=vencendo60" class="border border-blue-300 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-3 rounded-xl transition-all block group touch-active hover:shadow-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase tracking-wider text-amber-700">31 a 60 Dias</span>
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">31 a 60 Dias</span>
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
-                            <span id="homeValVencendo60" class="text-xl sm:text-2xl font-black text-amber-900">0</span>
-                            <span class="text-[10px] font-bold text-amber-700 group-hover:underline">Atenção &rarr;</span>
+                            <span id="homeValVencendo60" class="text-xl sm:text-2xl font-mono font-bold tabular-nums text-blue-950 dark:text-blue-200">0</span>
+                            <span class="text-[10px] font-semibold text-blue-600 dark:text-blue-400 group-hover:underline">Atenção &rarr;</span>
                         </div>
-                        <p class="text-[9px] font-bold text-amber-600 mt-0.5">Priorizar separação</p>
+                        <p class="text-[10px] font-medium text-blue-600/80 dark:text-blue-400/80 mt-0.5">Priorizar separação</p>
                     </a>
 
                     <!-- NO PRAZO -->
-                    <a href="validade.html?filtro=noPrazo" class="bg-emerald-50/70 hover:bg-emerald-100/80 border border-emerald-200 p-3.5 rounded-2xl transition-all block group touch-active">
+                    <a href="validade.html?filtro=noPrazo" class="border border-emerald-300 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-xl transition-all block group touch-active hover:shadow-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase tracking-wider text-emerald-700">No Prazo</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">No Prazo</span>
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
-                            <span id="homeValNoPrazo" class="text-xl sm:text-2xl font-black text-emerald-900">0</span>
-                            <span class="text-[10px] font-bold text-emerald-700 group-hover:underline">Ver lotes &rarr;</span>
+                            <span id="homeValNoPrazo" class="text-xl sm:text-2xl font-mono font-bold tabular-nums text-emerald-950 dark:text-emerald-200">0</span>
+                            <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 group-hover:underline">Ver lotes &rarr;</span>
                         </div>
-                        <p class="text-[9px] font-bold text-emerald-600 mt-0.5">&gt; 60 dias seguro</p>
+                        <p class="text-[10px] font-medium text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">&gt; 60 dias regular</p>
                     </a>
 
                     <!-- DIVERGÊNCIAS SALDO X LOTES -->
-                    <a href="validade.html?filtro=divergencias" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3.5 rounded-2xl transition-all block group touch-active col-span-2 sm:col-span-1">
+                    <a href="validade.html?filtro=divergencias" class="border border-slate-300 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-xl transition-all block group touch-active hover:shadow-xs col-span-2 sm:col-span-1">
                         <div class="flex items-center justify-between">
-                            <span class="text-[9px] font-black uppercase tracking-wider text-slate-600">Divergências</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Divergências</span>
                             <span id="homeValDivDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
                         </div>
                         <div class="mt-2 flex items-baseline justify-between">
-                            <span id="homeValDivergencias" class="text-xl sm:text-2xl font-black text-slate-800">0</span>
-                            <span class="text-[10px] font-bold text-slate-600 group-hover:underline">Conferir &rarr;</span>
+                            <span id="homeValDivergencias" class="text-xl sm:text-2xl font-mono font-bold tabular-nums text-slate-900 dark:text-white">0</span>
+                            <span class="text-[10px] font-semibold text-slate-600 dark:text-slate-400 group-hover:underline">Conferir &rarr;</span>
                         </div>
-                        <p class="text-[9px] font-bold text-slate-400 mt-0.5">Físico x ERP</p>
+                        <p class="text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">Físico x ERP</p>
                     </a>
                 </div>
             </div>
 
             <!-- DASHBOARD EXECUTIVO & BI GERENCIAL -->
-            <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div class="bg-white dark:bg-[#111C38] p-5 sm:p-6 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-2xl bg-[#002f6c]/10 text-[#002f6c] dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                            <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="text-base font-black text-slate-900 leading-tight">Dashboard Executivo & BI Gerencial</h3>
-                                <span class="bg-blue-100 text-[#002f6c] text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Diretoria & Gestão</span>
+                                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight">Dashboard Executivo &amp; BI Gerencial</h3>
+                                <span class="bg-[#002f6c]/10 text-[#002f6c] dark:bg-blue-950/40 dark:text-blue-300 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-[#002f6c]/20">Diretoria &amp; Gestão</span>
                             </div>
-                            <p class="text-xs font-semibold text-slate-400">Indicadores consolidados de acuracidade, validade e produtividade operacional</p>
+                            <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Indicadores consolidados de acuracidade, validade e produtividade operacional</p>
                         </div>
                     </div>
 
                     <!-- CONTROLES DO BI -->
                     <div class="flex items-center gap-2 flex-wrap self-start md:self-auto">
-                        <select id="biFilterSector" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                        <select id="biFilterSector" onchange="loadBiDashboardData()" class="bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#002f6c]">
                             <option value="COMERCIO">🏢 Setor: Comércio</option>
                             <option value="INDUSTRIA">🏭 Setor: Indústria</option>
                         </select>
-                        <select id="biFilterFilial" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                        <select id="biFilterFilial" onchange="loadBiDashboardData()" class="bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#002f6c]">
                             <option value="ALL">🏢 Todas as Filiais</option>
                             <option value="01">📍 Filial 01 - Alvorada</option>
                             <option value="02">📍 Filial 02 - Matriz CD</option>
@@ -651,13 +686,13 @@
                             <option value="05">📍 Filial 05 - Cidade Nova</option>
                             <option value="06">📍 Filial 06 - Jorge Teixeira</option>
                         </select>
-                        <select id="biFilterPeriod" onchange="loadBiDashboardData()" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                        <select id="biFilterPeriod" onchange="loadBiDashboardData()" class="bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-[#002f6c]">
                             <option value="MES">📅 Mês Atual</option>
                             <option value="30DIAS">⏱️ Últimos 30 Dias</option>
                             <option value="TODOS">🌐 Geral Acumulado</option>
                         </select>
-                        <button type="button" onclick="loadBiDashboardData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-600"></i>
+                        <button type="button" onclick="loadBiDashboardData()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400"></i>
                             <span class="hidden sm:inline">Atualizar BI</span>
                         </button>
                     </div>
@@ -665,61 +700,61 @@
 
                 <!-- 4 CARDS ESTRATÉGICOS DO BI -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    <div class="bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl p-3.5 flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300">Acuracidade Global</span>
-                            <i data-lucide="target" class="w-4 h-4 text-blue-600"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Acuracidade Global</span>
+                            <i data-lucide="target" class="w-4 h-4 text-[#002f6c] dark:text-blue-400"></i>
                         </div>
                         <div class="my-2">
-                            <span id="biKpiAcuracidade" class="text-2xl font-black text-[#002f6c] dark:text-blue-400">--%</span>
+                            <span id="biKpiAcuracidade" class="text-2xl font-mono font-bold tabular-nums text-slate-900 dark:text-white">--%</span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-500">Acerto físico vs. sistema</span>
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Acerto físico vs. sistema</span>
                     </div>
 
-                    <div class="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl p-3.5 flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">Risco Armazém 50</span>
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Risco Armazém 50</span>
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
                         </div>
                         <div class="my-2">
-                            <span id="biKpiRiscoValidade" class="text-2xl font-black text-amber-800 dark:text-amber-400">--</span>
+                            <span id="biKpiRiscoValidade" class="text-2xl font-mono font-bold tabular-nums text-amber-900 dark:text-amber-200">--</span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-500">Lotes < 60 dias de validade</span>
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Lotes &lt; 60 dias de validade</span>
                     </div>
 
-                    <div class="bg-teal-50/60 dark:bg-teal-950/20 border border-teal-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl p-3.5 flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-300">Transferências Mês</span>
-                            <i data-lucide="truck" class="w-4 h-4 text-teal-600"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">Transferências Mês</span>
+                            <i data-lucide="truck" class="w-4 h-4 text-teal-600 dark:text-teal-400"></i>
                         </div>
                         <div class="my-2">
-                            <span id="biKpiTransferencias" class="text-2xl font-black text-teal-800 dark:text-teal-400">--</span>
+                            <span id="biKpiTransferencias" class="text-2xl font-mono font-bold tabular-nums text-teal-900 dark:text-teal-200">--</span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-500">Lotes movidos pro Arm. 01</span>
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Lotes movidos pro Arm. 01</span>
                     </div>
 
-                    <div class="bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/80 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 rounded-xl p-3.5 flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Minutas Recebidas</span>
-                            <i data-lucide="file-check" class="w-4 h-4 text-indigo-600"></i>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Minutas Recebidas</span>
+                            <i data-lucide="file-check" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         </div>
                         <div class="my-2">
-                            <span id="biKpiMinutas" class="text-2xl font-black text-indigo-800 dark:text-indigo-400">--</span>
+                            <span id="biKpiMinutas" class="text-2xl font-mono font-bold tabular-nums text-indigo-900 dark:text-indigo-200">--</span>
                         </div>
-                        <span class="text-[10px] font-bold text-slate-500">Entradas de NFs no mês</span>
+                        <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Entradas de NFs no mês</span>
                     </div>
                 </div>
 
                 <!-- LINHA DE GRÁFICOS: ACURACIDADE POR FILIAL + AGING VALIDADE -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     <!-- GRÁFICO 1: ACURACIDADE POR FILIAL (2 COLUNAS) -->
-                    <div class="lg:col-span-2 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="lg:col-span-2 bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 flex flex-col justify-between shadow-2xs">
                         <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                <i data-lucide="trending-up" class="w-3.5 h-3.5 text-[#002f6c]"></i>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <i data-lucide="trending-up" class="w-3.5 h-3.5 text-[#002f6c] dark:text-blue-400"></i>
                                 <span>Acuracidade de Estoque por Filial (%)</span>
                             </h4>
-                            <span class="text-[10px] font-bold text-slate-400">Meta: 98%</span>
+                            <span class="text-[10px] font-semibold text-slate-400">Meta: 98%</span>
                         </div>
                         <div class="relative h-60 w-full">
                             <canvas id="chartAcuracidadeFiliais"></canvas>
@@ -727,13 +762,13 @@
                     </div>
 
                     <!-- GRÁFICO 2: AGING VALIDADE (1 COLUNA) -->
-                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 flex flex-col justify-between shadow-2xs">
                         <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                                 <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-amber-600"></i>
                                 <span>Distribuição de Validades</span>
                             </h4>
-                            <span class="text-[10px] font-bold text-amber-700">Armazém 50</span>
+                            <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400">Armazém 50</span>
                         </div>
                         <div class="relative h-60 w-full flex items-center justify-center">
                             <canvas id="chartAgingValidade"></canvas>
@@ -742,15 +777,15 @@
                 </div>
 
                 <!-- LINHA 2: VOLUME OPERACIONAL + RANKING DE CONFERENTES -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     <!-- GRÁFICO 3: VOLUME OPERACIONAL -->
-                    <div class="lg:col-span-2 bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
+                    <div class="lg:col-span-2 bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
                         <div class="flex items-center justify-between mb-3">
-                            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                                 <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
                                 <span>Volume Operacional Semanal</span>
                             </h4>
-                            <span class="text-[10px] font-bold text-slate-400">Contagens, Transferências e Minutas</span>
+                            <span class="text-[10px] font-semibold text-slate-400">Contagens, Transferências e Minutas</span>
                         </div>
                         <div class="relative h-56 w-full">
                             <canvas id="chartVolumeOperacoes"></canvas>
@@ -758,14 +793,14 @@
                     </div>
 
                     <!-- TOP CONFERENTES RANKING (TOP 5 + BOTÃO GERAL) -->
-                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 flex flex-col justify-between shadow-2xs">
                         <div>
                             <div class="flex items-center justify-between mb-3">
-                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                                     <i data-lucide="award" class="w-3.5 h-3.5 text-amber-500"></i>
                                     <span>Ranking de Produtividade</span>
                                 </h4>
-                                <button type="button" onclick="openGlobalRankingModal()" class="text-[11px] font-bold text-[#002f6c] hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
+                                <button type="button" onclick="openGlobalRankingModal()" class="text-[11px] font-semibold text-[#002f6c] hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
                                     <span>Ver Geral</span>
                                     <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                                 </button>
@@ -775,7 +810,7 @@
                             </div>
                         </div>
 
-                        <button type="button" onclick="openGlobalRankingModal()" class="w-full mt-3 py-2 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                        <button type="button" onclick="openGlobalRankingModal()" class="w-full mt-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
                             <i data-lucide="users" class="w-3.5 h-3.5 text-[#002f6c] dark:text-blue-400"></i>
                             <span>Ver Todas as Unidades &amp; Colaboradores</span>
                         </button>
@@ -783,18 +818,18 @@
                 </div>
 
                 <!-- LINHA 3: MATRIZ CURVA ABC FINANCEIRA + ESTOQUE PARADO / SEM GIRO -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-1">
                     <!-- GRÁFICO 4: MATRIZ CURVA ABC FINANCEIRA -->
-                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 flex flex-col justify-between shadow-2xs">
                         <div class="flex items-center justify-between mb-3">
                             <div>
-                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                    <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    <i data-lucide="layers" class="w-3.5 h-3.5 text-[#002f6c] dark:text-blue-400"></i>
                                     <span>Matriz Curva ABC Financeira (Pareto)</span>
                                 </h4>
-                                <span class="text-[10px] font-bold text-slate-400">Distribuição do Capital em Estoque</span>
+                                <span class="text-[10px] font-medium text-slate-400">Distribuição do Capital em Estoque</span>
                             </div>
-                            <button type="button" onclick="openCurvaABCModal()" class="text-[11px] font-bold text-indigo-600 hover:underline flex items-center gap-1 cursor-pointer">
+                            <button type="button" onclick="openCurvaABCModal()" class="text-[11px] font-semibold text-[#002f6c] dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
                                 <span>Ver Detalhes ABC</span>
                                 <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                             </button>
@@ -802,33 +837,33 @@
                         <div class="relative h-60 w-full flex items-center justify-center">
                             <canvas id="chartCurvaABC"></canvas>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-200/60 text-xs">
-                            <div class="bg-indigo-50/80 p-2 rounded-xl border border-indigo-100">
-                                <span class="block text-[9px] font-black text-indigo-800 uppercase">Classe A (80%)</span>
-                                <span id="biAbcValA" class="font-black text-indigo-950 font-mono text-xs">R$ 0,00</span>
+                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-indigo-700 dark:text-indigo-400 uppercase">Classe A (80%)</span>
+                                <span id="biAbcValA" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
-                            <div class="bg-blue-50/80 p-2 rounded-xl border border-blue-100">
-                                <span class="block text-[9px] font-black text-blue-800 uppercase">Classe B (15%)</span>
-                                <span id="biAbcValB" class="font-black text-blue-950 font-mono text-xs">R$ 0,00</span>
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-blue-700 dark:text-blue-400 uppercase">Classe B (15%)</span>
+                                <span id="biAbcValB" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
-                            <div class="bg-slate-100/80 p-2 rounded-xl border border-slate-200">
-                                <span class="block text-[9px] font-black text-slate-700 uppercase">Classe C (5%)</span>
-                                <span id="biAbcValC" class="font-black text-slate-900 font-mono text-xs">R$ 0,00</span>
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase">Classe C (5%)</span>
+                                <span id="biAbcValC" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- GRÁFICO 5: ESTOQUE PARADO / SEM GIRO (AGING DE VENDAS) -->
-                    <div class="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="bg-white dark:bg-[#0B132B] p-4 sm:p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 flex flex-col justify-between shadow-2xs">
                         <div class="flex items-center justify-between mb-3">
                             <div>
-                                <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-rose-600"></i>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    <i data-lucide="archive" class="w-3.5 h-3.5 text-[#B40D15] dark:text-rose-400"></i>
                                     <span>Estoque Parado Sem Venda (Aging SD2)</span>
                                 </h4>
-                                <span class="text-[10px] font-bold text-slate-400">Capital Travado por Dias Sem Faturamento</span>
+                                <span class="text-[10px] font-medium text-slate-400">Capital Travado por Dias Sem Faturamento</span>
                             </div>
-                            <button type="button" onclick="openEstoqueParadoModal()" class="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-1 cursor-pointer">
+                            <button type="button" onclick="openEstoqueParadoModal()" class="text-[11px] font-semibold text-[#B40D15] dark:text-rose-400 hover:underline flex items-center gap-1 cursor-pointer">
                                 <span>Ver Itens Parados</span>
                                 <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
                             </button>
@@ -836,18 +871,18 @@
                         <div class="relative h-60 w-full flex items-center justify-center">
                             <canvas id="chartEstoqueParado"></canvas>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-200/60 text-xs">
-                            <div class="bg-amber-50/80 p-2 rounded-xl border border-amber-100">
-                                <span class="block text-[9px] font-black text-amber-800 uppercase">60 a 90 Dias</span>
-                                <span id="biParadoVal90" class="font-black text-amber-950 font-mono text-xs">R$ 0,00</span>
+                        <div class="grid grid-cols-3 gap-2 text-center mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase">60 a 90 Dias</span>
+                                <span id="biParadoVal90" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
-                            <div class="bg-orange-50/80 p-2 rounded-xl border border-orange-100">
-                                <span class="block text-[9px] font-black text-orange-800 uppercase">91 a 180 Dias</span>
-                                <span id="biParadoVal180" class="font-black text-orange-950 font-mono text-xs">R$ 0,00</span>
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-orange-700 dark:text-orange-400 uppercase">91 a 180 Dias</span>
+                                <span id="biParadoVal180" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
-                            <div class="bg-rose-50/80 p-2 rounded-xl border border-rose-100">
-                                <span class="block text-[9px] font-black text-rose-800 uppercase">&gt; 180 Dias</span>
-                                <span id="biParadoVal365" class="font-black text-rose-950 font-mono text-xs">R$ 0,00</span>
+                            <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+                                <span class="block text-[9px] font-bold text-rose-700 dark:text-rose-400 uppercase">&gt; 180 Dias</span>
+                                <span id="biParadoVal365" class="font-bold text-slate-900 dark:text-white font-mono tabular-nums text-xs">R$ 0,00</span>
                             </div>
                         </div>
                     </div>
@@ -855,18 +890,18 @@
             </div>
 
             <!-- FEED DE ÚLTIMAS ATIVIDADES REALIZADAS NA FILIAL -->
-            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="bg-white dark:bg-[#111C38] p-5 rounded-xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div class="flex items-center space-x-2">
-                        <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center border border-slate-200/60 dark:border-slate-700/60 shadow-2xs">
                             <i data-lucide="activity" class="w-4 h-4"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-slate-900">Últimas Contagens Realizadas</h3>
-                            <p class="text-[10px] font-bold text-slate-400">Feed em tempo real das contagens registradas</p>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Últimas Contagens Realizadas</h3>
+                            <p class="text-[10px] font-medium text-slate-400">Feed em tempo real das contagens registradas</p>
                         </div>
                     </div>
-                    <a href="kardex.html" class="text-xs font-bold text-[#002f6c] hover:underline flex items-center space-x-1">
+                    <a href="kardex.html" class="text-xs font-semibold text-[#002f6c] dark:text-blue-400 hover:underline flex items-center space-x-1">
                         <span>Ver Kardex Completo</span>
                         <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                     </a>
@@ -875,16 +910,16 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                                <th class="px-3 py-2">Data / Hora</th>
-                                <th class="px-3 py-2 text-center">Armazém</th>
-                                <th class="px-3 py-2">Produto</th>
-                                <th class="px-3 py-2 text-right">Qtd Contada</th>
-                                <th class="px-3 py-2 text-center">Conferente</th>
+                            <tr class="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/80 dark:border-slate-700 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th class="px-3 py-2.5">Data / Hora</th>
+                                <th class="px-3 py-2.5 text-center">Armazém</th>
+                                <th class="px-3 py-2.5">Produto</th>
+                                <th class="px-3 py-2.5 text-right">Qtd Contada</th>
+                                <th class="px-3 py-2.5 text-center">Conferente</th>
                             </tr>
                         </thead>
                         <tbody id="homeRecentActivityFeed">
-                            <tr><td colspan="5" class="px-4 py-6 text-center text-xs font-bold text-slate-400">Carregando atividades recentes...</td></tr>
+                            <tr><td colspan="5" class="px-4 py-6 text-center text-xs font-medium text-slate-400">Carregando atividades recentes...</td></tr>
                         </tbody>
                     </table>
                 </div>
