@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.6-kardex-script-and-cards-fix';
+const CACHE_NAME = 'portal-estoques-v8.7-sd2-monthly-all-months';
 const STATIC_ASSETS = [
   './',
   './index.html',

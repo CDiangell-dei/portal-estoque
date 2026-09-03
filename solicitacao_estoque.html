@@ -1889,11 +1889,34 @@
                 updateUIProgress(55, `Processando saídas do SD2 agregadas no Supabase (${sd2Table})...`);
                 let dbSd2 = [];
                 try {
-                    const { data: rpcSd2Data, error: rpcErr } = await supabaseClient.rpc('get_sd2_monthly_aggregation', {
-                        p_sector: currentSd2Sector,
-                        p_start_date: dateFilterStr
-                    });
-                    if (!rpcErr && rpcSd2Data && Array.isArray(rpcSd2Data) && rpcSd2Data.length > 0) {
+                    let rpcSd2Data = [];
+                    let rpcOffset = 0;
+                    const rpcStep = 1000;
+                    let hasMoreRpc = true;
+
+                    while (hasMoreRpc) {
+                        const { data: chunk, error: rpcErr } = await supabaseClient
+                            .rpc('get_sd2_monthly_aggregation', {
+                                p_sector: currentSd2Sector,
+                                p_start_date: dateFilterStr
+                            })
+                            .range(rpcOffset, rpcOffset + rpcStep - 1);
+
+                        if (rpcErr) throw rpcErr;
+                        if (!chunk || chunk.length === 0) {
+                            hasMoreRpc = false;
+                        } else {
+                            rpcSd2Data = rpcSd2Data.concat(chunk);
+                            rpcOffset += chunk.length;
+                            const pct = 55 + Math.min(35, Math.round((rpcOffset / 26000) * 35));
+                            updateUIProgress(pct, `Carregando histórico fatiado (${rpcOffset.toLocaleString('pt-BR')} registros)...`);
+                            if (chunk.length < rpcStep) {
+                                hasMoreRpc = false;
+                            }
+                        }
+                    }
+
+                    if (rpcSd2Data.length > 0) {
                         dbSd2 = rpcSd2Data.map(r => ({
                             filial: r.filial,
                             produto: r.produto,
@@ -1906,9 +1929,9 @@
                             num_documento: `${r.total_linhas || 1} lançamentos`
                         }));
                         sd2ProgressTotalCount += dbSd2.length;
-                        updateUIProgress(90, `Agregação de ${dbSd2.length} grupos de demanda processada instantaneamente pelo Supabase!`);
+                        updateUIProgress(90, `Agregação de ${dbSd2.length.toLocaleString('pt-BR')} grupos de demanda (12 meses) processada!`);
                     } else {
-                        throw (rpcErr || new Error("RPC retornou vazio"));
+                        throw new Error("RPC retornou vazio");
                     }
                 } catch (rpcFallbackErr) {
                     console.warn("RPC aggregation fallback para REST:", rpcFallbackErr);
