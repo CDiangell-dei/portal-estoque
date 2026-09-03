@@ -2121,41 +2121,39 @@
         // Funções de Cálculo e Formatação de Validade
         function getValidadeStatus(dataValidadeStr) {
             if (!dataValidadeStr) return 'OK';
+            const s = String(dataValidadeStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return 'OK';
+            
+            const parts = s.split('-');
+            const valYear = parseInt(parts[0], 10);
+            const valMonth = parseInt(parts[1], 10);
+            const valDay = (parts.length > 2 && parts[2]) 
+                ? parseInt(parts[2].slice(0, 2), 10) 
+                : new Date(valYear, valMonth, 0).getDate();
+
+            const valDate = new Date(valYear, valMonth - 1, valDay, 23, 59, 59, 999);
             const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1;
 
-            let valYear, valMonth;
-            if (/^\d{4}-\d{2}/.test(dataValidadeStr)) {
-                const parts = dataValidadeStr.split('-');
-                valYear = parseInt(parts[0], 10);
-                valMonth = parseInt(parts[1], 10);
-            } else if (/^\d{2}\/\d{4}/.test(dataValidadeStr)) {
-                const parts = dataValidadeStr.split('/');
-                valMonth = parseInt(parts[0], 10);
-                valYear = parseInt(parts[1], 10);
-            } else {
-                return 'OK';
-            }
+            const diffTime = valDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            const currentTotalMonths = currentYear * 12 + currentMonth;
-            const valTotalMonths = valYear * 12 + valMonth;
-            const diffMonths = valTotalMonths - currentTotalMonths;
-
-            if (diffMonths < 0) return 'VENCIDO';
-            if (diffMonths <= 2) return 'AVENCER';
+            if (diffTime < 0) return 'VENCIDO';
+            if (diffDays <= 60) return 'AVENCER';
             return 'OK';
         }
 
         function formatAnoMesDisplay(anoMesStr) {
             if (!anoMesStr) return '-';
-            if (/^\d{4}-\d{2}/.test(anoMesStr)) {
-                const [ano, mes] = anoMesStr.split('-');
-                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                const idx = parseInt(mes, 10) - 1;
-                return `${meses[idx] || mes}/${ano}`;
-            }
-            return anoMesStr;
+            const s = String(anoMesStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return s;
+            const parts = s.split('-');
+            const ano = parts[0];
+            const mes = parts[1];
+            const dia = (parts.length > 2 && parts[2]) ? parts[2].slice(0, 2) : null;
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const idx = parseInt(mes, 10) - 1;
+            const mesNome = meses[idx] || mes;
+            return dia ? `${dia}/${mesNome}/${ano}` : `${mesNome}/${ano}`;
         }
 
         async function loadProductLotsForOriginWarehouse(prodCode, armOrigem) {

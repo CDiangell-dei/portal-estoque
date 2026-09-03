@@ -913,27 +913,125 @@
             }
         }
 
+        /**
+         * Retorna a string YYYY-MM-DD correspondente ao último dia do mês informado (YYYY-MM).
+         * Ex: 2026-09 -> 2026-09-30, 2024-02 -> 2024-02-29
+         */
+        function getLastDayOfMonthString(monthStr) {
+            if (!monthStr) return '';
+            const s = String(monthStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return '';
+            const [yStr, mStr] = s.slice(0, 7).split('-');
+            const y = parseInt(yStr, 10);
+            const m = parseInt(mStr, 10);
+            const lastDay = new Date(y, m, 0).getDate();
+            return `${yStr}-${mStr}-${String(lastDay).padStart(2, '0')}`;
+        }
+
+        function normalizeDateToInput(dateStr) {
+            if (!dateStr) return '';
+            const s = String(dateStr).trim();
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+            if (/^\d{4}-\d{2}$/.test(s)) return getLastDayOfMonthString(s);
+            return '';
+        }
+
+        let currentValDateMode = 'day'; // 'day' (DD/MM/AAAA) ou 'month' (MM/AAAA)
+
+        function setValDateMode(mode) {
+            currentValDateMode = mode;
+            const btnDay = document.getElementById('btnValDateModeDay');
+            const btnMonth = document.getElementById('btnValDateModeMonth');
+            const inpVal = document.getElementById('valInputValidade');
+            const inpFab = document.getElementById('valInputFabricacao');
+            const btnLast = document.getElementById('btnValQuickLastDay');
+            const lblVal = document.getElementById('valLabelValidade');
+            const lblFab = document.getElementById('valLabelFabricacao');
+
+            if (mode === 'day') {
+                if (btnDay) {
+                    btnDay.className = "px-2.5 py-1 text-[10px] font-black rounded-lg transition-all bg-white dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 shadow-xs cursor-pointer";
+                }
+                if (btnMonth) {
+                    btnMonth.className = "px-2.5 py-1 text-[10px] font-black rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 cursor-pointer";
+                }
+                if (btnLast) btnLast.classList.remove('hidden');
+                if (lblVal) lblVal.innerHTML = `Validade Final (Dia/Mês/Ano) <span class="text-rose-500">*</span>`;
+                if (lblFab) lblFab.innerHTML = `Fabricação (Dia/Mês/Ano) <span class="text-slate-400 font-normal">(Opcional)</span>`;
+
+                if (inpVal && inpVal.type !== 'date') {
+                    const curVal = inpVal.value;
+                    inpVal.type = 'date';
+                    if (curVal) inpVal.value = getLastDayOfMonthString(curVal);
+                }
+                if (inpFab && inpFab.type !== 'date') {
+                    const curFab = inpFab.value;
+                    inpFab.type = 'date';
+                    if (curFab) inpFab.value = `${curFab.slice(0, 7)}-01`;
+                }
+            } else {
+                if (btnMonth) {
+                    btnMonth.className = "px-2.5 py-1 text-[10px] font-black rounded-lg transition-all bg-white dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 shadow-xs cursor-pointer";
+                }
+                if (btnDay) {
+                    btnDay.className = "px-2.5 py-1 text-[10px] font-black rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 cursor-pointer";
+                }
+                if (btnLast) btnLast.classList.add('hidden');
+                if (lblVal) lblVal.innerHTML = `Validade Final (Mês/Ano) <span class="text-rose-500">*</span>`;
+                if (lblFab) lblFab.innerHTML = `Fabricação (Mês/Ano) <span class="text-slate-400 font-normal">(Opcional)</span>`;
+
+                if (inpVal && inpVal.type !== 'month') {
+                    const curVal = inpVal.value;
+                    inpVal.type = 'month';
+                    if (curVal) inpVal.value = curVal.slice(0, 7);
+                }
+                if (inpFab && inpFab.type !== 'month') {
+                    const curFab = inpFab.value;
+                    inpFab.type = 'month';
+                    if (curFab) inpFab.value = curFab.slice(0, 7);
+                }
+            }
+        }
+
+        function setValidadeToLastDay() {
+            const inpVal = document.getElementById('valInputValidade');
+            if (!inpVal) return;
+            let val = inpVal.value;
+            if (!val) {
+                const now = new Date();
+                const curM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                val = getLastDayOfMonthString(curM);
+            } else {
+                val = getLastDayOfMonthString(val);
+            }
+            inpVal.value = val;
+            const [y, m, d] = val.split('-');
+            showAlert(`Data ajustada para o último dia do mês: ${d}/${m}/${y}`, "info");
+        }
+
         function getValidadeStatus(dataValidadeStr) {
             if (!dataValidadeStr) return 'OK';
             const s = String(dataValidadeStr).trim();
             if (!/^\d{4}-\d{2}/.test(s)) return 'OK';
             
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1;
-
             const parts = s.split('-');
             const valYear = parseInt(parts[0], 10);
             const valMonth = parseInt(parts[1], 10);
+            // Se informou dia exato, usa o dia. Se informou só Mês/Ano, vence no ÚLTIMO dia daquele mês!
+            const valDay = (parts.length > 2 && parts[2]) 
+                ? parseInt(parts[2].slice(0, 2), 10) 
+                : new Date(valYear, valMonth, 0).getDate();
 
-            const currentTotalMonths = currentYear * 12 + currentMonth;
-            const valTotalMonths = valYear * 12 + valMonth;
+            // Validade vigora até o último milissegundo do dia de vencimento (23:59:59)
+            const valDate = new Date(valYear, valMonth - 1, valDay, 23, 59, 59, 999);
+            const now = new Date();
 
-            const diffMonths = valTotalMonths - currentTotalMonths;
+            const diffTime = valDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (diffMonths < 0) {
+            if (diffTime < 0) {
                 return 'VENCIDO';
-            } else if (diffMonths <= 2) {
+            } else if (diffDays <= 60) {
                 return 'AVENCER';
             } else {
                 return 'OK';
@@ -947,7 +1045,7 @@
             const parts = s.split('-');
             const ano = parts[0];
             const mes = parts[1];
-            const dia = parts.length > 2 ? parts[2].slice(0, 2) : null;
+            const dia = (parts.length > 2 && parts[2]) ? parts[2].slice(0, 2) : null;
             const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const idx = parseInt(mes, 10) - 1;
             const mesNome = meses[idx] || mes;
@@ -3301,6 +3399,7 @@
             updateModalWarehousesForSelectedFilial();
             if (armazem) document.getElementById('valInputArmazem').value = armazem;
 
+            setValDateMode('day');
             document.getElementById('valInputLote').value = '';
             document.getElementById('valInputFabricacao').value = '';
             document.getElementById('valInputValidade').value = '';
@@ -3462,8 +3561,17 @@
             document.getElementById('valInputArmazem').value = item.armazem;
 
             document.getElementById('valInputLote').value = item.lote || '';
-            document.getElementById('valInputFabricacao').value = item.data_fabricacao ? String(item.data_fabricacao).slice(0, 7) : '';
-            document.getElementById('valInputValidade').value = item.data_validade ? String(item.data_validade).slice(0, 7) : '';
+            const valStr = item.data_validade ? String(item.data_validade).trim() : '';
+            const fabStr = item.data_fabricacao ? String(item.data_fabricacao).trim() : '';
+            if (valStr.length === 7 && /^\d{4}-\d{2}$/.test(valStr)) {
+                setValDateMode('month');
+                document.getElementById('valInputFabricacao').value = fabStr ? fabStr.slice(0, 7) : '';
+                document.getElementById('valInputValidade').value = valStr;
+            } else {
+                setValDateMode('day');
+                document.getElementById('valInputFabricacao').value = fabStr ? fabStr.slice(0, 10) : '';
+                document.getElementById('valInputValidade').value = normalizeDateToInput(valStr);
+            }
             document.getElementById('valInputObservacao').value = item.observacao || '';
 
             // Preenche códigos externos
@@ -3722,8 +3830,19 @@
             }
 
             if (!validade) {
-                showAlert("Por favor, informe a Data de Validade Final (Mês/Ano).", "warning");
+                showAlert("Por favor, informe a Data de Validade Final.", "warning");
                 return false;
+            }
+
+            // Normaliza data de validade: se foi informado apenas Mês/Ano (sem dia), calcula o ÚLTIMO dia daquele mês!
+            let finalValidade = validade;
+            if (finalValidade && /^\d{4}-\d{2}$/.test(finalValidade)) {
+                finalValidade = getLastDayOfMonthString(finalValidade);
+            }
+
+            let finalFabricacao = fabricacao;
+            if (finalFabricacao && /^\d{4}-\d{2}$/.test(finalFabricacao)) {
+                finalFabricacao = `${finalFabricacao}-01`;
             }
 
             const validRows = modalPalletRows.filter(r => (parseFloat(r.qtd) || 0) > 0);
@@ -3778,8 +3897,8 @@
                         lote: lote || null,
                         quantidade: parseFloat(r.qtd) || 0,
                         embalagem: (r.nome || getProductUnit(produto)).trim().toUpperCase(),
-                        data_fabricacao: fabricacao || null,
-                        data_validade: validade,
+                        data_fabricacao: finalFabricacao || null,
+                        data_validade: finalValidade,
                         quem_registrou: currentUser ? currentUser.nome : 'SISTEMA',
                         observacao: obs || null
                     };

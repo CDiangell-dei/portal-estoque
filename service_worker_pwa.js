@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.1-shorthand-product-codes';
+const CACHE_NAME = 'portal-estoques-v9.2-exact-date-and-month-end';
 const STATIC_ASSETS = [
   './',
   './index.html',

@@ -798,14 +798,33 @@
                     </div>
                 </div>
 
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Formato da Data</span>
+                        <div class="flex items-center bg-slate-100 dark:bg-slate-700 p-0.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <button type="button" id="btnValDateModeDay" onclick="setValDateMode('day')" class="px-2.5 py-1 text-[10px] font-black rounded-lg transition-all bg-white dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 shadow-xs cursor-pointer">
+                                🗓️ Com Dia (DD/MM/AAAA)
+                            </button>
+                            <button type="button" id="btnValDateModeMonth" onclick="setValDateMode('month')" class="px-2.5 py-1 text-[10px] font-black rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 cursor-pointer">
+                                📅 Só Mês/Ano (Fim do Mês)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fabricação (Mês/Ano) <span class="text-slate-400 font-normal">(Opcional)</span></label>
-                        <input type="month" id="valInputFabricacao" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <label id="valLabelFabricacao" class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fabricação <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                        <input type="date" id="valInputFabricacao" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Validade Final (Mês/Ano) <span class="text-rose-500">*</span></label>
-                        <input type="month" id="valInputValidade" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <div class="flex items-center justify-between mb-1">
+                            <label id="valLabelValidade" class="block text-[10px] font-bold text-slate-400 uppercase">Validade Final <span class="text-rose-500">*</span></label>
+                            <button type="button" id="btnValQuickLastDay" onclick="setValidadeToLastDay()" class="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline cursor-pointer" title="Preenche automaticamente com o último dia do mês selecionado">
+                                Fim do Mês
+                            </button>
+                        </div>
+                        <input type="date" id="valInputValidade" required class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
                 </div>
 
