@@ -2765,10 +2765,12 @@
             }
 
             // Procura primeiro no cache local de produtos
+            const btnSalvar = document.getElementById('btnSalvarCodigo');
             const local = globalDeParaData.find(d => d.codigo_nosso === cod);
             if (local && local.descricao) {
                 descEl.innerText = `✓ ${local.descricao} (${local.fornecedor})`;
                 descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                if (btnSalvar) btnSalvar.disabled = false;
                 return;
             }
 
@@ -2778,14 +2780,17 @@
                 if (data && data.descricao) {
                     descEl.innerText = `✓ ${data.descricao} (${data.fornecedores || 'Fornecedor N/D'})`;
                     descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                    if (btnSalvar) btnSalvar.disabled = false;
                 } else {
                     const { data: dataInd } = await supabaseClient.from('sb1_industria').select('descricao, fornecedores').eq('codigo', cod).maybeSingle();
                     if (dataInd && dataInd.descricao) {
                         descEl.innerText = `✓ ${dataInd.descricao} (${dataInd.fornecedores || 'Indústria'})`;
                         descEl.className = "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1";
+                        if (btnSalvar) btnSalvar.disabled = false;
                     } else {
-                        descEl.innerText = "⚠️ Código não localizado no cadastro SB1";
-                        descEl.className = "text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1";
+                        descEl.innerText = "❌ Código inexistente no cadastro de materiais (SB1). Não é permitido vincular.";
+                        descEl.className = "text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1";
+                        if (btnSalvar) btnSalvar.disabled = true;
                     }
                 }
             } catch (err) {
@@ -2826,6 +2831,11 @@
                 });
 
                 if (error) throw error;
+
+                if (data && data.status === 'NAO_ENCONTRADO') {
+                    showAlert(data.mensagem || "Código não existe no cadastro SB1.", "danger");
+                    return;
+                }
 
                 if (data && data.status === 'DUPLICADO') {
                     // Abre o modal de conflito

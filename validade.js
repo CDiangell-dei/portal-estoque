@@ -1,4 +1,4 @@
-﻿        let currentSector = 'COMERCIO';
+        let currentSector = 'COMERCIO';
         let rawValidadeDataset = [];
         let filteredValidadeDataset = [];
         let rawSb1Dataset = [];
@@ -2641,26 +2641,74 @@
             if (modal) modal.classList.remove('pointer-events-none', 'opacity-0');
         }
 
-        function onValidadeCodeInput() {
+        let debounceValidadeTimer = null;
+        async function onValidadeCodeInput() {
             const inp = document.getElementById('valInputCodigo');
             const preview = document.getElementById('valProductPreviewLabel');
+            const btnSave = document.getElementById('btnSaveValidade');
+            const btnPrint = document.getElementById('btnSaveAndPrintValidade');
             if (!inp || !preview) return;
 
             const val = inp.value.trim().toUpperCase();
             if (!val) {
                 preview.innerHTML = `<span class="text-slate-400">Digite um código ou selecione da lista para buscar...</span>`;
+                if (btnSave) btnSave.disabled = false;
+                if (btnPrint) btnPrint.disabled = false;
                 updateModalSaldoComparison();
                 return;
             }
 
-            const match = rawSb1Dataset ? rawSb1Dataset.find(p => String(p.Codigo).trim().toUpperCase() === val) : null;
+            // 1. Procura no cache local
+            const match = rawSb1Dataset ? rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === val) : null;
             if (match) {
-                preview.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${match['Descr.Espec.'] || 'Produto Localizado'}</span>`;
-            } else {
-                preview.innerHTML = `<span class="text-amber-600 dark:text-amber-400 flex items-center gap-1 font-bold"><i data-lucide="info" class="w-3.5 h-3.5 inline"></i> Código ${val} (Produto Novo / Personalizado)</span>`;
+                preview.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${match['Descr.Espec.'] || match.descricao || 'Produto Localizado'}</span>`;
+                if (btnSave) btnSave.disabled = false;
+                if (btnPrint) btnPrint.disabled = false;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                updateModalSaldoComparison();
+                return;
             }
+
+            // 2. Se não encontrou no cache local, faz busca rápida no Supabase
+            preview.innerHTML = `<span class="text-slate-400 flex items-center gap-1"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline"></i> Verificando cadastro no SB1...</span>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
-            updateModalSaldoComparison();
+
+            clearTimeout(debounceValidadeTimer);
+            debounceValidadeTimer = setTimeout(async () => {
+                const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                try {
+                    let { data: sbMatch } = await supabaseClient.from(sb1Table).select('codigo, descricao, unidade').eq('codigo', val).maybeSingle();
+                    if (!sbMatch && currentSector === 'COMERCIO') {
+                        const { data: indMatch } = await supabaseClient.from('sb1_industria').select('codigo, descricao, unidade').eq('codigo', val).maybeSingle();
+                        sbMatch = indMatch;
+                    }
+
+                    if (sbMatch && sbMatch.codigo) {
+                        const newEntry = {
+                            Codigo: String(sbMatch.codigo).trim(),
+                            codigo: String(sbMatch.codigo).trim(),
+                            'Descr.Espec.': sbMatch.descricao || '-',
+                            descricao: sbMatch.descricao || '-',
+                            Unidade: sbMatch.unidade || 'UN',
+                            unidade: sbMatch.unidade || 'UN'
+                        };
+                        rawSb1Dataset.push(newEntry);
+                        preview.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 inline"></i> ${newEntry.descricao}</span>`;
+                        if (btnSave) btnSave.disabled = false;
+                        if (btnPrint) btnPrint.disabled = false;
+                    } else {
+                        // PRODUTO NÃO EXISTE NO SISTEMA: BLOQUEIA
+                        preview.innerHTML = `<span class="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold"><i data-lucide="alert-circle" class="w-3.5 h-3.5 inline"></i> ❌ Código "${val}" NÃO existe no sistema (SB1). Não é permitido cadastrar.</span>`;
+                        if (btnSave) btnSave.disabled = true;
+                        if (btnPrint) btnPrint.disabled = true;
+                    }
+                } catch(err) {
+                    console.warn("Erro ao checar código no SB1:", err);
+                } finally {
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    updateModalSaldoComparison();
+                }
+            }, 300);
         }
 
         function updateModalSaldoComparison() {
@@ -2781,6 +2829,39 @@
                 showAlert("Por favor, informe o código do produto.", "warning");
                 return false;
             }
+
+            // --- VALIDAÇÃO ESTRITA: O PRODUTO DEVE EXISTIR NO CADASTRO DO SB1 ---
+            let matchProd = rawSb1Dataset ? rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === produto) : null;
+            if (!matchProd) {
+                const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                let { data: dbCheck } = await supabaseClient.from(sb1Table).select('codigo, descricao, unidade').eq('codigo', produto).maybeSingle();
+                if (!dbCheck && currentSector === 'COMERCIO') {
+                    const { data: indCheck } = await supabaseClient.from('sb1_industria').select('codigo, descricao, unidade').eq('codigo', produto).maybeSingle();
+                    dbCheck = indCheck;
+                }
+
+                if (dbCheck && dbCheck.codigo) {
+                    matchProd = {
+                        Codigo: String(dbCheck.codigo).trim(),
+                        codigo: String(dbCheck.codigo).trim(),
+                        'Descr.Espec.': dbCheck.descricao || '-',
+                        descricao: dbCheck.descricao || '-',
+                        Unidade: dbCheck.unidade || 'UN',
+                        unidade: dbCheck.unidade || 'UN'
+                    };
+                    rawSb1Dataset.push(matchProd);
+                }
+            }
+
+            if (!matchProd) {
+                showAlert(`❌ O código "${produto}" NÃO existe no cadastro de materiais do sistema (SB1). Não é permitido cadastrar lotes para itens inexistentes.`, "error");
+                const btn = document.getElementById('btnSaveValidade');
+                const btnPrint = document.getElementById('btnSaveAndPrintValidade');
+                if (btn) btn.disabled = false;
+                if (btnPrint) btnPrint.disabled = false;
+                return false;
+            }
+
             if (!validade) {
                 showAlert("Por favor, informe a Data de Validade Final (Mês/Ano).", "warning");
                 return false;
@@ -2959,7 +3040,7 @@
             document.getElementById('importFileNameLabel').innerText = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -3017,13 +3098,14 @@
                             filial: targetFilial,
                             armazem: defaultArm,
                             produto: cod,
-                            descricao: sb1Map[cod] || 'Material SB1',
+                            descricao: sb1Map[cod] || null,
                             lote: lote,
                             quantidade: qtd,
                             embalagem: embalagem,
                             data_validade: valDate,
                             quem_registrou: currentUser ? currentUser.nome : 'SISTEMA',
-                            observacao: `Importado via planilha ${file.name}`
+                            observacao: `Importado via planilha ${file.name}`,
+                            valido: true
                         });
                     }
 
@@ -3032,27 +3114,89 @@
                         return;
                     }
 
+                    // --- VALIDAÇÃO CONTRA O SB1: BUSCA CÓDIGOS NÃO PRESENTES NO CACHE ---
+                    const missingCodes = [...new Set(stagedImportRows.filter(r => !r.descricao).map(r => r.produto))];
+                    if (missingCodes.length > 0) {
+                        const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                        const { data: dbMatched } = await supabaseClient.from(sb1Table)
+                            .select('codigo, descricao')
+                            .in('codigo', missingCodes);
+
+                        const dbMap = {};
+                        if (dbMatched) {
+                            dbMatched.forEach(p => {
+                                dbMap[String(p.codigo).trim().toUpperCase()] = p.descricao;
+                            });
+                        }
+
+                        // Se estiver no comércio e faltou algum, checa indústria
+                        const stillMissing = missingCodes.filter(c => !dbMap[c]);
+                        if (stillMissing.length > 0 && currentSector === 'COMERCIO') {
+                            const { data: indMatched } = await supabaseClient.from('sb1_industria')
+                                .select('codigo, descricao')
+                                .in('codigo', stillMissing);
+                            if (indMatched) {
+                                indMatched.forEach(p => {
+                                    dbMap[String(p.codigo).trim().toUpperCase()] = p.descricao;
+                                });
+                            }
+                        }
+
+                        stagedImportRows.forEach(item => {
+                            if (!item.descricao) {
+                                if (dbMap[item.produto]) {
+                                    item.descricao = dbMap[item.produto];
+                                    item.valido = true;
+                                } else {
+                                    item.descricao = "❌ PRODUTO NÃO EXISTE NO SB1";
+                                    item.valido = false;
+                                }
+                            }
+                        });
+                    }
+
+                    const invalidCount = stagedImportRows.filter(r => !r.valido).length;
+                    const validCount = stagedImportRows.length - invalidCount;
+
                     // Renderiza prévia
                     const tbody = document.getElementById('importPreviewBody');
                     tbody.innerHTML = '';
                     stagedImportRows.forEach(item => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="p-2 font-black text-slate-900">${item.produto}</td>
-                            <td class="p-2 text-slate-600 truncate max-w-[150px]">${item.descricao}</td>
-                            <td class="p-2"><span class="px-1.5 py-0.5 bg-blue-50 text-blue-800 rounded font-black text-[10px]">${item.lote || '-'}</span></td>
-                            <td class="p-2 text-right font-black text-[#002f6c]">${item.quantidade.toLocaleString('pt-BR')}</td>
-                            <td class="p-2 text-slate-600">${item.embalagem || '-'}</td>
-                            <td class="p-2 text-center font-bold text-slate-800">${formatAnoMesDisplay(item.data_validade)}</td>
-                        `;
+                        if (!item.valido) {
+                            tr.className = "bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border-l-4 border-rose-500";
+                            tr.innerHTML = `
+                                <td class="p-2 font-black text-rose-700">${item.produto}</td>
+                                <td class="p-2 font-bold text-rose-600 truncate max-w-[150px]">${item.descricao}</td>
+                                <td class="p-2"><span class="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded font-black text-[10px]">${item.lote || '-'}</span></td>
+                                <td class="p-2 text-right font-black text-rose-700">${item.quantidade.toLocaleString('pt-BR')}</td>
+                                <td class="p-2 text-rose-600">${item.embalagem || '-'}</td>
+                                <td class="p-2 text-center font-bold text-rose-800">${formatAnoMesDisplay(item.data_validade)}</td>
+                            `;
+                        } else {
+                            tr.innerHTML = `
+                                <td class="p-2 font-black text-slate-900 dark:text-white">${item.produto}</td>
+                                <td class="p-2 text-slate-600 dark:text-slate-300 truncate max-w-[150px]">${item.descricao}</td>
+                                <td class="p-2"><span class="px-1.5 py-0.5 bg-blue-50 text-blue-800 rounded font-black text-[10px]">${item.lote || '-'}</span></td>
+                                <td class="p-2 text-right font-black text-[#002f6c] dark:text-blue-400">${item.quantidade.toLocaleString('pt-BR')}</td>
+                                <td class="p-2 text-slate-600 dark:text-slate-400">${item.embalagem || '-'}</td>
+                                <td class="p-2 text-center font-bold text-slate-800 dark:text-slate-200">${formatAnoMesDisplay(item.data_validade)}</td>
+                            `;
+                        }
                         tbody.appendChild(tr);
                     });
 
                     document.getElementById('importPreviewContainer').classList.remove('hidden');
                     const summary = document.getElementById('importSummaryBar');
                     summary.classList.remove('hidden');
-                    document.getElementById('importSummaryCount').innerText = `${stagedImportRows.length} lotes identificados para importação`;
-                    document.getElementById('btnExecuteImportValidade').disabled = false;
+                    
+                    if (invalidCount > 0) {
+                        document.getElementById('importSummaryCount').innerHTML = `<span class="text-emerald-700 font-black">${validCount} válidos</span> • <span class="text-rose-600 font-black">${invalidCount} bloqueados (inexistentes no SB1)</span>`;
+                    } else {
+                        document.getElementById('importSummaryCount').innerText = `${validCount} lotes identificados e 100% validados no SB1`;
+                    }
+
+                    document.getElementById('btnExecuteImportValidade').disabled = (validCount === 0);
 
                 } catch (err) {
                     console.error("Erro ao ler planilha:", err);
@@ -3063,8 +3207,13 @@
         }
 
         async function executeValidadeImport() {
-            if (!stagedImportRows || stagedImportRows.length === 0) {
-                showAlert("Nenhum lote para importar.", "warning");
+            const validRowsToImport = stagedImportRows.filter(r => r.valido !== false);
+            const blockedInvalidCount = stagedImportRows.length - validRowsToImport.length;
+
+            if (validRowsToImport.length === 0) {
+                showAlert("Nenhum lote válido no cadastro do SB1 para importar.", "warning");
+                if (btn) btn.disabled = false;
+                if (loader) loader.classList.add('hidden');
                 return;
             }
 
@@ -3084,7 +3233,7 @@
                 let inserted = 0;
                 let updated = 0;
 
-                for (const row of stagedImportRows) {
+                for (const row of validRowsToImport) {
                     row.armazem = defaultArm;
                     row.filial = targetFilial;
 
@@ -3109,13 +3258,14 @@
                             updated++;
                         }
                     } else {
-                        const { descricao, ...payload } = row;
+                        const { descricao, valido, ...payload } = row;
                         await supabaseClient.from(valTable).insert([payload]);
                         inserted++;
                     }
                 }
 
-                showAlert(`Importação concluída! ${inserted} lotes inseridos e ${updated} atualizados.`, "success");
+                const msgBlocked = blockedInvalidCount > 0 ? ` (${blockedInvalidCount} bloqueados por não existirem no SB1)` : '';
+                showAlert(`Importação concluída! ${inserted} lotes inseridos e ${updated} atualizados.${msgBlocked}`, "success");
                 closeImportValidadeModal();
                 await loadValidadeData();
 
