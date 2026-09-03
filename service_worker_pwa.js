@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v7.4-depara-fornecedores';
+const CACHE_NAME = 'portal-estoques-v7.5-depara-enxuto';
 const STATIC_ASSETS = [
   './',
   './index.html',
