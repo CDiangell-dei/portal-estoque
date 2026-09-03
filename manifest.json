@@ -20,7 +20,7 @@
       "purpose": "any"
     },
     {
-      "src": "https://amazonaco.com.br/wp-content/uploads/2024/02/IMG_4689.png",
+      "src": "./logo_amazon_aco.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.2-exact-date-and-month-end';
+const CACHE_NAME = 'portal-estoques-v9.3-local-branding-asset';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   './shared.js',
   './manifest.json',
   './icon.png',
+  './logo_amazon_aco.png',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
