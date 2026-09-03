@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.3-mobile-cards-bi-depara';
+const CACHE_NAME = 'portal-estoques-v8.4-rodape-institucional';
 const STATIC_ASSETS = [
   './',
   './index.html',
