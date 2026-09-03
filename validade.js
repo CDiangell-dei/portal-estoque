@@ -1069,10 +1069,15 @@
             const confFilter = document.getElementById('valFilterSaldoConferencia') ? document.getElementById('valFilterSaldoConferencia').value : 'ALL';
             const search = document.getElementById('valFilterSearch') ? document.getElementById('valFilterSearch').value.trim().toLowerCase() : '';
 
-            const sb1Map = {};
-            rawSb1Dataset.forEach(p => {
-                const c = p.Codigo;
-                if (c) sb1Map[c] = p['Descr.Espec.'] || '-';
+            // Mapas ultra-rápidos O(1) para busca e exibição sem lentidão
+            const sb1DescMap = {};
+            const sb1BarMap = {};
+            (rawSb1Dataset || []).forEach(p => {
+                const c = String(p.Codigo || p.codigo || '').trim().toUpperCase();
+                if (c) {
+                    sb1DescMap[c] = (p['Descr.Espec.'] || p.descricao || '-').toLowerCase();
+                    if (p.codigo_barras) sb1BarMap[c] = String(p.codigo_barras).trim().toLowerCase();
+                }
             });
 
             // 1. Escopo Base (Filial + Armazém + Busca) para cálculo dos cards e KPIs
@@ -1081,13 +1086,12 @@
                 if (!isArmMatch(v.armazem, armazem)) return false;
 
                 if (search) {
-                    const desc = (sb1Map[v.produto] || '').toLowerCase();
+                    const desc = sb1DescMap[v.produto] || '';
                     const fornInfo = fornecedorByNossoMap[v.produto];
                     const fornCode = fornInfo ? String(fornInfo.codigo_fornecedor || '').toLowerCase() : '';
                     const barCode = fornInfo ? String(fornInfo.codigo_barras || '').toLowerCase() : '';
                     const antCode = fornInfo ? String(fornInfo.codigo_antigo || '').toLowerCase() : '';
-                    const pObj = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === v.produto);
-                    const sbBarCode = pObj ? String(pObj.codigo_barras || '').toLowerCase() : '';
+                    const sbBarCode = sb1BarMap[v.produto] || '';
 
                     const matchesCode = v.produto.toLowerCase().includes(search);
                     const matchesDesc = desc.includes(search);
@@ -2842,6 +2846,31 @@
                 }
             });
 
+            // Se não encontrou armazéns na filial ativa, expande para todas as filiais disponíveis no dataset
+            if (locationsMap.size === 0) {
+                (rawValidadeDataset || []).forEach(v => {
+                    if (String(v.produto || '').trim().toUpperCase() === prod) {
+                        const f = String(v.filial || '01').padStart(2, '0');
+                        const a = String(v.armazem || '01').padStart(2, '0');
+                        const key = `${f}_${a}`;
+                        if (!locationsMap.has(key)) {
+                            locationsMap.set(key, { filial: f, armazem: a });
+                        }
+                    }
+                });
+
+                (rawSaldoDataset || []).forEach(s => {
+                    if (String(s.produto || '').trim().toUpperCase() === prod && parseFloat(s.quantidade || 0) > 0) {
+                        const f = String(s.filial || '01').padStart(2, '0');
+                        const a = String(s.armazem || '01').padStart(2, '0');
+                        const key = `${f}_${a}`;
+                        if (!locationsMap.has(key)) {
+                            locationsMap.set(key, { filial: f, armazem: a });
+                        }
+                    }
+                });
+            }
+
             if (locationsMap.size === 0) {
                 return [];
             }
@@ -3004,7 +3033,32 @@
                 }
 
                 // Obtém todos os armazéns onde o material possui lotes ou saldo
-                const locations = getMaterialWarehousesForScan(finalCode, targetFilial);
+                let locations = getMaterialWarehousesForScan(finalCode, targetFilial);
+
+                // Fallback: se não encontrou em memória, busca diretamente no Supabase por lotes deste material em qualquer filial
+                if (locations.length === 0 && finalCode) {
+                    try {
+                        const valTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
+                        const { data: dbLots } = await supabaseClient.from(valTable).select('*').eq('produto', finalCode);
+                        if (dbLots && dbLots.length > 0) {
+                            dbLots.forEach(d => {
+                                const lotObj = {
+                                    ...d,
+                                    filial: String(d.filial || '01').trim().padStart(2, '0'),
+                                    armazem: String(d.armazem || '01').trim().padStart(2, '0'),
+                                    produto: String(d.produto || '').trim().toUpperCase(),
+                                    lote: String(d.lote || '').trim(),
+                                    quantidade: parseFloat(d.quantidade || 0)
+                                };
+                                const exists = rawValidadeDataset.some(x => x.id === lotObj.id);
+                                if (!exists) rawValidadeDataset.push(lotObj);
+                            });
+                            locations = getMaterialWarehousesForScan(finalCode, null);
+                        }
+                    } catch(eLots) {
+                        console.warn("Aviso busca fallback lotes:", eLots);
+                    }
+                }
 
                 if (locations.length > 1) {
                     // MÚLTIPLOS ARMAZÉNS ENCONTRADOS (Ex: Armazém 02 e Armazém 50) -> Abre seleção interativa
