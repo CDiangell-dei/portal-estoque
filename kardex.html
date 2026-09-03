@@ -738,6 +738,7 @@
             const fil = document.getElementById('kardexFilialFilter') ? document.getElementById('kardexFilialFilter').value : 'ALL';
             const arm = document.getElementById('kardexArmazemFilter') ? document.getElementById('kardexArmazemFilter').value : 'Todos';
             const term = document.getElementById('kardexSearch') ? document.getElementById('kardexSearch').value.toLowerCase().trim() : '';
+            const normTerm = typeof normalizeProductCode === 'function' ? normalizeProductCode(term).toLowerCase() : term;
 
             filteredKardexDataset = rawKardexDataset.filter(item => {
                 if (fil !== 'ALL') {
@@ -747,7 +748,7 @@
                 }
                 if (arm !== 'Todos' && item.armazem !== arm) return false;
                 if (!term) return true;
-                const matchCod = item.codigo.toLowerCase().includes(term);
+                const matchCod = item.codigo.toLowerCase().includes(term) || (normTerm !== term && item.codigo.toLowerCase().includes(normTerm));
                 const matchDesc = item.descricao.toLowerCase().includes(term);
                 const matchConf = item.conferente.toLowerCase().includes(term);
                 return matchCod || matchDesc || matchConf;
@@ -780,7 +781,12 @@
 
             // Verifica se o termo digitado é um produto exato ou se há apenas 1 produto na lista filtrada
             const prodsInFiltered = [...new Set(filteredKardexDataset.map(i => i.codigo))];
-            const targetProd = (prodsInFiltered.length === 1) ? prodsInFiltered[0] : (searchTerm && prodsInFiltered.includes(searchTerm.toUpperCase()) ? searchTerm.toUpperCase() : null);
+            const normSearch = typeof normalizeProductCode === 'function' ? normalizeProductCode(searchTerm) : searchTerm;
+            const targetProd = (prodsInFiltered.length === 1) 
+                ? prodsInFiltered[0] 
+                : (normSearch && prodsInFiltered.includes(normSearch.toUpperCase()) 
+                    ? normSearch.toUpperCase() 
+                    : (searchTerm && prodsInFiltered.includes(searchTerm.toUpperCase()) ? searchTerm.toUpperCase() : null));
 
             if (targetProd) {
                 const sampleItem = filteredKardexDataset.find(i => i.codigo === targetProd);

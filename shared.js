@@ -1096,6 +1096,24 @@ function closeItemAuditHistoryModal() {
     const modal = document.getElementById('globalItemAuditHistoryModal');
     if (modal) modal.classList.add('pointer-events-none', 'opacity-0');
     currentAuditedProduct = null;
+}/**
+ * Normaliza e expande códigos encurtados de material Protheus (Amazon Aço).
+ * Padrão oficial: 8 dígitos (ex: 07000059).
+ * Permite digitação ágil encurtada cortando os zeros intermediários:
+ * Ex: 07-59 -> 07000059, 7-59 -> 07000059, 14-108 -> 14000108, 07.151 -> 07000151, 39/16 -> 39000016
+ * Suporta separadores: hífen (-), ponto (.), barra (/) ou espaço ( ).
+ */
+function normalizeProductCode(input) {
+    if (!input) return '';
+    let clean = String(input).trim();
+    if (/^\d{8}$/.test(clean)) return clean;
+    const match = clean.match(/^(\d{1,2})[-./\s](\d{1,6})$/);
+    if (match) {
+        const group = match[1].padStart(2, '0');
+        const item = match[2].padStart(6, '0');
+        return `${group}${item}`;
+    }
+    return clean;
 }
 
 window.addEventListener('online', () => {

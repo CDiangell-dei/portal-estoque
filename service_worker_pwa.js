@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.0-fix-modal-nesting-and-scan-speed';
+const CACHE_NAME = 'portal-estoques-v9.1-shorthand-product-codes';
 const STATIC_ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-﻿        let currentSector = 'COMERCIO';
+        let currentSector = 'COMERCIO';
         let rawSb1Dataset = [];
         let rawSaldoDataset = [];
         let rawConfDataset = [];
@@ -620,11 +620,12 @@
                     }
                 }
 
-                const cleanCode = scanned.toUpperCase();
+                const normCode = typeof normalizeProductCode === 'function' ? normalizeProductCode(scanned) : scanned;
+                const cleanCode = normCode.toUpperCase();
                 
                 // 1. Procura no catálogo SB1 ou no inventário carregado
                 let match = (typeof rawSb1Dataset !== 'undefined' && Array.isArray(rawSb1Dataset))
-                    ? rawSb1Dataset.find(item => String(item.codigo || item.Codigo).trim().toUpperCase() === cleanCode)
+                    ? rawSb1Dataset.find(item => String(item.codigo || item.Codigo).trim().toUpperCase() === cleanCode || String(item.codigo || item.Codigo).trim().toUpperCase() === scanned.toUpperCase())
                     : null;
 
                 if (!match && typeof filteredInventoryDataset !== 'undefined' && Array.isArray(filteredInventoryDataset)) {
@@ -1041,7 +1042,8 @@
                 if (!selectedStatuses.includes(item.status)) return false;
 
                 if (term) {
-                    const inCode = item.codigo.toLowerCase().includes(term);
+                    const normTerm = typeof normalizeProductCode === 'function' ? normalizeProductCode(term).toLowerCase() : term;
+                    const inCode = item.codigo.toLowerCase().includes(term) || (normTerm !== term && item.codigo.toLowerCase().includes(normTerm));
                     const inDesc = item.descricao.toLowerCase().includes(term);
                     const inTags = item.tags.toLowerCase().includes(term);
                     const inForn = (item.fornecedores || '').toLowerCase().includes(term);

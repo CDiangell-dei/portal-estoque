@@ -327,12 +327,14 @@
          */
         async function findProductByAnyCode(query) {
             if (!query) return null;
-            const clean = String(query).trim().toUpperCase();
+            const norm = typeof normalizeProductCode === 'function' ? normalizeProductCode(query) : String(query).trim();
+            const clean = norm.toUpperCase();
+            const rawClean = String(query).trim().toUpperCase();
 
             // 1. Match direto por código interno no cache SB1
-            let match = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === clean);
+            let match = rawSb1Dataset.find(p => String(p.Codigo || p.codigo).trim().toUpperCase() === clean || String(p.Codigo || p.codigo).trim().toUpperCase() === rawClean);
             if (match) {
-                return { product: match, matchType: 'CODIGO_INTERNO', originalInput: clean };
+                return { product: match, matchType: 'CODIGO_INTERNO', originalInput: rawClean };
             }
 
             // 2. Match por Código de Fornecedor no De-Para
@@ -1068,6 +1070,7 @@
             const statusFilter = document.getElementById('valFilterStatus') ? document.getElementById('valFilterStatus').value : 'ALL';
             const confFilter = document.getElementById('valFilterSaldoConferencia') ? document.getElementById('valFilterSaldoConferencia').value : 'ALL';
             const search = document.getElementById('valFilterSearch') ? document.getElementById('valFilterSearch').value.trim().toLowerCase() : '';
+            const normSearch = typeof normalizeProductCode === 'function' ? normalizeProductCode(search).toLowerCase() : search;
 
             // Mapas ultra-rápidos O(1) para busca e exibição sem lentidão
             const sb1DescMap = {};
@@ -1093,7 +1096,7 @@
                     const antCode = fornInfo ? String(fornInfo.codigo_antigo || '').toLowerCase() : '';
                     const sbBarCode = sb1BarMap[v.produto] || '';
 
-                    const matchesCode = v.produto.toLowerCase().includes(search);
+                    const matchesCode = v.produto.toLowerCase().includes(search) || (normSearch !== search && v.produto.toLowerCase().includes(normSearch));
                     const matchesDesc = desc.includes(search);
                     const matchesForn = fornCode.includes(search);
                     const matchesBarras = barCode.includes(search) || sbBarCode.includes(search);
