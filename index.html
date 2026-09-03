@@ -994,7 +994,8 @@
 
             <!-- TABELA DO RANKING GERAL -->
             <div class="overflow-y-auto flex-grow p-4">
-                <table class="w-full text-left border-collapse">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                             <th class="px-3 py-2.5 text-center w-12">Posição</th>
@@ -1010,6 +1011,10 @@
                         <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando dados consolidados...</td></tr>
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS) -->
+                <div id="globalRankingMobileList" class="md:hidden space-y-2.5">
+                    <!-- Preenchido via JS -->
+                </div>
             </div>
 
             <!-- FOOTER DO MODAL -->
@@ -1069,7 +1074,8 @@
 
             <!-- TABELA CURVA ABC -->
             <div class="overflow-y-auto flex-grow p-4">
-                <table class="w-full text-left border-collapse">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                             <th class="px-3 py-2.5 text-center w-16">Classe</th>
@@ -1085,6 +1091,10 @@
                         <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando curva ABC...</td></tr>
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS) -->
+                <div id="modalAbcMobileList" class="md:hidden space-y-2.5">
+                    <!-- Preenchido via JS -->
+                </div>
             </div>
 
             <!-- FOOTER DO MODAL -->
@@ -1107,7 +1117,7 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">Relatório de Estoque Parado & Sem Giro</h3>
+                            <h3 class="text-base font-black text-slate-900 dark:text-white leading-tight">Relatório de Estoque Parado &amp; Sem Giro</h3>
                             <span class="bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-black uppercase">Aging de Vendas</span>
                         </div>
                         <p class="text-xs font-semibold text-slate-400">Materiais com saldo positivo no ERP e sem registro de vendas recentes</p>
@@ -1143,7 +1153,8 @@
 
             <!-- TABELA ESTOQUE PARADO -->
             <div class="overflow-y-auto flex-grow p-4">
-                <table class="w-full text-left border-collapse">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                             <th class="px-3 py-2.5 text-center">Faixa / Alerta</th>
@@ -1160,6 +1171,10 @@
                         <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando itens sem giro...</td></tr>
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS) -->
+                <div id="modalParadoMobileList" class="md:hidden space-y-2.5">
+                    <!-- Preenchido via JS -->
+                </div>
             </div>
 
             <!-- FOOTER DO MODAL -->
@@ -1218,8 +1233,9 @@
             </div>
 
             <!-- TABELA DE RESULTADOS -->
-            <div class="overflow-x-auto flex-1 p-0">
-                <table class="w-full text-left border-collapse">
+            <div class="overflow-y-auto flex-1 p-0">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse">
                     <thead class="bg-slate-50 dark:bg-slate-900/60 text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 sticky top-0 border-b border-slate-100 dark:border-slate-700">
                         <tr>
                             <th class="px-4 py-3">Fornecedor / Fabricante</th>
@@ -1236,6 +1252,10 @@
                         <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Carregando catálogo de fornecedores...</td></tr>
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS) -->
+                <div id="modalDeParaMobileList" class="md:hidden space-y-2.5 p-3">
+                    <!-- Preenchido via JS -->
+                </div>
             </div>
 
             <!-- FOOTER DO MODAL -->
@@ -2338,8 +2358,9 @@
 
         function renderGlobalRankingTable(data) {
             const tbody = document.getElementById('globalRankingTableBody');
+            const mobileList = document.getElementById('globalRankingMobileList');
             const summarySpan = document.getElementById('modalRankingSummaryCount');
-            if (!tbody) return;
+            if (!tbody && !mobileList) return;
 
             if (summarySpan) {
                 const totalOps = data.reduce((acc, it) => acc + it.totalOps, 0);
@@ -2347,11 +2368,13 @@
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum colaborador encontrado com os filtros selecionados.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum colaborador encontrado com os filtros selecionados.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum colaborador encontrado com os filtros selecionados.</div>`;
                 return;
             }
 
-            let html = '';
+            let tableHtml = '';
+            let mobileHtml = '';
             const medalColors = ['bg-amber-400 text-amber-950 font-black', 'bg-slate-300 text-slate-900 font-black', 'bg-amber-600 text-white font-black'];
 
             data.forEach((c, idx) => {
@@ -2367,7 +2390,7 @@
                     ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black ${c.acuracia >= 95 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">${c.acuracia}%</span>`
                     : `<span class="text-slate-300 text-[10px]">---</span>`;
 
-                html += `
+                tableHtml += `
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
                         <td class="px-3 py-3 text-center">${posBadge}</td>
                         <td class="px-3 py-3">
@@ -2381,9 +2404,40 @@
                         <td class="px-3 py-3 text-center">${accBadge}</td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                            <div class="flex items-center gap-2">
+                                ${posBadge}
+                                <span class="font-black text-slate-900 dark:text-white text-xs">${c.nome}</span>
+                            </div>
+                            <div>${accBadge}</div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                            <span>${filBadge}</span>
+                            <span class="font-mono text-[10px]">Matrícula: ${c.matricula}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Contagens</span>
+                                <b class="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">${c.contagens.toLocaleString('pt-BR')}</b>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Transferências</span>
+                                <b class="text-xs font-black text-teal-700 dark:text-teal-400 font-mono">${c.transferencias.toLocaleString('pt-BR')}</b>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Total Geral</span>
+                                <b class="text-xs font-black text-[#002f6c] dark:text-blue-400 font-mono">${c.totalOps.toLocaleString('pt-BR')}</b>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
 
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = tableHtml;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function exportRankingToCSV() {
@@ -2442,8 +2496,9 @@
 
         function renderCurvaABCTable(data) {
             const tbody = document.getElementById('modalAbcTableBody');
+            const mobileList = document.getElementById('modalAbcMobileList');
             const summary = document.getElementById('modalAbcSummaryCount');
-            if (!tbody) return;
+            if (!tbody && !mobileList) return;
 
             if (summary) {
                 const valTotal = data.reduce((acc, it) => acc + it.valorTotal, 0);
@@ -2451,11 +2506,14 @@
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum item encontrado com os filtros selecionados.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum item encontrado com os filtros selecionados.</div>`;
                 return;
             }
 
-            let html = '';
+            let tableHtml = '';
+            let mobileHtml = '';
+
             data.forEach(item => {
                 let badgeClasse = '';
                 if (item.classe === 'A') {
@@ -2466,7 +2524,7 @@
                     badgeClasse = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 border border-slate-200">Classe C</span>`;
                 }
 
-                html += `
+                tableHtml += `
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
                         <td class="px-3 py-3 text-center">${badgeClasse}</td>
                         <td class="px-3 py-3 font-mono font-bold text-slate-900 dark:text-white">${item.codigo}</td>
@@ -2477,9 +2535,36 @@
                         <td class="px-3 py-3 text-right font-mono text-xs text-slate-500 font-bold">${item.pctAcumulado.toFixed(2)}%</td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                            <div class="flex items-center gap-2">
+                                ${badgeClasse}
+                                <span class="font-mono font-black text-xs text-[#002f6c] dark:text-blue-400">${item.codigo}</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400 font-mono">Acum: ${item.pctAcumulado.toFixed(1)}%</span>
+                        </div>
+                        <div class="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                            ${item.descricao}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Saldo Físico</span>
+                                <b class="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">${item.saldo.toLocaleString('pt-BR')}</b>
+                                <span class="text-[10px] text-slate-500 block font-mono">Unit: ${item.precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Valor Total Estocado</span>
+                                <b class="text-sm font-black text-indigo-900 dark:text-indigo-300 font-mono">${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
 
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = tableHtml;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function exportCurvaABCToCSV() {
@@ -2537,8 +2622,9 @@
 
         function renderEstoqueParadoTable(data) {
             const tbody = document.getElementById('modalParadoTableBody');
+            const mobileList = document.getElementById('modalParadoMobileList');
             const summary = document.getElementById('modalParadoSummaryCount');
-            if (!tbody) return;
+            if (!tbody && !mobileList) return;
 
             if (summary) {
                 const valTotal = data.reduce((acc, it) => acc + it.valorTotal, 0);
@@ -2546,13 +2632,16 @@
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum material parado encontrado com os filtros selecionados.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum material parado encontrado com os filtros selecionados.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum material parado encontrado com os filtros selecionados.</div>`;
                 return;
             }
 
-            let html = '';
+            let tableHtml = '';
+            let mobileHtml = '';
+
             data.forEach(item => {
-                html += `
+                tableHtml += `
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
                         <td class="px-3 py-3 text-center">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${item.badgeClass}">
@@ -2568,9 +2657,39 @@
                         <td class="px-3 py-3 text-center font-mono font-black text-slate-800 dark:text-slate-100">${item.diasSemGiro} dias</td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${item.badgeClass}">
+                                ${item.faixaLabel}
+                            </span>
+                            <span class="text-xs font-black text-rose-600 dark:text-rose-400 font-mono">
+                                ⏳ ${item.diasSemGiro} dias sem giro
+                            </span>
+                        </div>
+                        <div>
+                            <span class="font-mono font-black text-xs text-[#002f6c] dark:text-blue-400 mr-1.5">[${item.codigo}]</span>
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">${item.descricao}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Saldo Parado</span>
+                                <b class="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">${item.saldo.toLocaleString('pt-BR')}</b>
+                                <span class="text-[10px] text-slate-500 block font-mono">Unit: ${item.precoUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Capital Travado</span>
+                                <b class="text-sm font-black text-rose-700 dark:text-rose-400 font-mono">${item.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
+                                <span class="text-[10px] text-slate-500 block">Última Venda: ${item.ultimaVenda}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
 
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = tableHtml;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
         }
 
         function exportEstoqueParadoToCSV() {
@@ -2675,19 +2794,23 @@
 
         function renderDeParaTable(data) {
             const tbody = document.getElementById('modalDeParaTableBody');
+            const mobileList = document.getElementById('modalDeParaMobileList');
             const summary = document.getElementById('modalDeParaSummaryCount');
-            if (!tbody) return;
+            if (!tbody && !mobileList) return;
 
             if (summary) {
                 summary.innerText = `Exibindo ${data.length} de ${globalDeParaData.length} cruzamentos mapeados`;
             }
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum código correspondente encontrado.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 font-semibold">Nenhum código correspondente encontrado.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum código correspondente encontrado.</div>`;
                 return;
             }
 
-            let html = '';
+            let tableHtml = '';
+            let mobileHtml = '';
+
             data.forEach(item => {
                 const codForn = item.codigo_fornecedor && item.codigo_fornecedor !== '-' ? item.codigo_fornecedor : '<span class="text-slate-400 italic font-normal">N/D</span>';
                 const codAntigo = item.codigo_antigo && item.codigo_antigo !== '-' 
@@ -2696,7 +2819,7 @@
 
                 const safeDesc = (item.descricao || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
-                html += `
+                tableHtml += `
                     <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors">
                         <td class="px-4 py-3 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                             <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800">
@@ -2735,9 +2858,45 @@
                         </td>
                     </tr>
                 `;
+
+                mobileHtml += `
+                    <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800">
+                                🏢 ${item.fornecedor}
+                            </span>
+                            <span class="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                                Saldo: <b>${Number(item.saldo_fisico || 0).toLocaleString('pt-BR')} ${item.unidade || 'UN'}</b>
+                            </span>
+                        </div>
+                        <div class="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                            ${item.descricao}
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">Cód. Fornecedor</span>
+                                <b class="text-xs font-mono font-black text-purple-700 dark:text-purple-300 block truncate">${item.codigo_fornecedor || 'N/D'}</b>
+                                ${item.codigo_antigo ? `<span class="text-[9px] text-slate-400 font-mono line-through block mt-0.5">Ant: ${item.codigo_antigo}</span>` : ''}
+                            </div>
+                            <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[9px] uppercase font-bold text-slate-400 block">➔ Nosso Código</span>
+                                <b class="text-xs font-mono font-black text-[#002f6c] dark:text-blue-400 block">${item.codigo_nosso}</b>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+                            <button type="button" onclick="navigator.clipboard.writeText('${item.codigo_nosso}'); showAlert('Código ${item.codigo_nosso} copiado!', 'success');" class="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+                            </button>
+                            <button type="button" onclick="openEditarCodigoModal('${item.codigo_nosso}', '${item.codigo_fornecedor}', '${item.codigo_antigo}', '${safeDesc}')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Alterar Código
+                            </button>
+                        </div>
+                    </div>
+                `;
             });
 
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = tableHtml;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 

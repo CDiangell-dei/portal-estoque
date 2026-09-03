@@ -1670,24 +1670,28 @@
                 }
             }
 
-            // Renderiza linhas da tabela
+            // Renderiza linhas da tabela e cards mobile
             const tbody = document.getElementById('plModalTableBody');
+            const mobileList = document.getElementById('plModalMobileList');
             const elCount = document.getElementById('plModalLotsCount');
             if (elCount) elCount.innerText = `${matchingLots.length} lote/palete(s) cadastrado(s)`;
 
-            if (tbody) {
-                tbody.innerHTML = '';
-                if (matchingLots.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-xs font-bold text-slate-400">Nenhum lote ou palete registrado para este material neste armazém.</td></tr>`;
-                } else {
-                    matchingLots.forEach(lot => {
-                        const lotSt = getValidadeStatus(lot.data_validade);
-                        let badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">No Prazo</span>`;
-                        if (lotSt === 'VENCIDO') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">Vencido</span>`;
-                        else if (lotSt === 'AVENCER') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">A Vencer</span>`;
+            if (tbody) tbody.innerHTML = '';
+            if (mobileList) mobileList.innerHTML = '';
 
-                        const palletDisplay = lot.embalagem ? lot.embalagem : unidade;
+            if (matchingLots.length === 0) {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-xs font-bold text-slate-400">Nenhum lote ou palete registrado para este material neste armazém.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum lote ou palete registrado para este material neste armazém.</div>`;
+            } else {
+                matchingLots.forEach(lot => {
+                    const lotSt = getValidadeStatus(lot.data_validade);
+                    let badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">No Prazo</span>`;
+                    if (lotSt === 'VENCIDO') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">Vencido</span>`;
+                    else if (lotSt === 'AVENCER') badge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">A Vencer</span>`;
 
+                    const palletDisplay = lot.embalagem ? lot.embalagem : unidade;
+
+                    if (tbody) {
                         const tr = document.createElement('tr');
                         tr.className = "hover:bg-slate-50 dark:hover:bg-slate-700/60 border-b border-slate-100 dark:border-slate-700";
                         tr.innerHTML = `
@@ -1717,8 +1721,52 @@
                             </td>
                         `;
                         tbody.appendChild(tr);
-                    });
-                }
+                    }
+
+                    if (mobileList) {
+                        const mCard = document.createElement('div');
+                        mCard.className = "bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5";
+                        mCard.innerHTML = `
+                            <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-lg text-xs font-mono font-black">
+                                        Lote: ${lot.lote || 'S/ LOTE'}
+                                    </span>
+                                    <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                                        📦 ${palletDisplay}
+                                    </span>
+                                </div>
+                                <div>${badge}</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span class="text-[9px] uppercase font-bold text-slate-400 block">Quantidade</span>
+                                    <b class="text-sm font-black text-[#002f6c] dark:text-blue-400">${Number(lot.quantidade || 0).toLocaleString('pt-BR')} ${unidade}</b>
+                                </div>
+                                <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span class="text-[9px] uppercase font-bold text-slate-400 block">Validade Final</span>
+                                    <b class="text-sm font-black text-slate-800 dark:text-slate-100">${formatAnoMesDisplay(lot.data_validade)}</b>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                                <span>Fabricação: <b>${formatAnoMesDisplay(lot.data_fabricacao)}</b></span>
+                                ${lot.observacao ? `<span class="italic truncate max-w-[150px] font-semibold">"${lot.observacao}"</span>` : ''}
+                            </div>
+                            <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                <button type="button" onclick="openEditValidadeModal(${lot.id})" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Editar
+                                </button>
+                                <button type="button" onclick="openTransferValidadeModal(${lot.id})" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-600 text-amber-800 hover:text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all">
+                                    <i data-lucide="truck" class="w-3.5 h-3.5"></i> Vencidos
+                                </button>
+                                <button type="button" onclick="deleteValidadeEntry(${lot.id})" class="p-2 bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white rounded-xl text-xs font-bold transition-all">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        `;
+                        mobileList.appendChild(mCard);
+                    }
+                });
             }
 
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -4124,12 +4172,27 @@
             if (countInfo) countInfo.innerText = `${codigosManagerCatalog.length} materiais indexados`;
         }
 
+        function syncMgrInput(cod, type, val) {
+            if (type === 'forn') {
+                const d = document.getElementById(`mgrFornInput_${cod}`);
+                const m = document.getElementById(`mgrFornInputMob_${cod}`);
+                if (d && d.value !== val) d.value = val;
+                if (m && m.value !== val) m.value = val;
+            } else {
+                const d = document.getElementById(`mgrBarInput_${cod}`);
+                const m = document.getElementById(`mgrBarInputMob_${cod}`);
+                if (d && d.value !== val) d.value = val;
+                if (m && m.value !== val) m.value = val;
+            }
+        }
+
         function filterCodigosManagerList() {
             const tbody = document.getElementById('mgrCodigosTableBody');
+            const mobileList = document.getElementById('mgrCodigosMobileList');
             const searchInp = document.getElementById('mgrCodigosSearchInput');
             const filterSel = document.getElementById('mgrCodigosStatusFilter');
             const countInfo = document.getElementById('mgrCodigosCountInfo');
-            if (!tbody) return;
+            if (!tbody && !mobileList) return;
 
             const term = searchInp ? searchInp.value.trim().toLowerCase() : '';
             const status = filterSel ? filterSel.value : 'ALL';
@@ -4155,27 +4218,30 @@
             }
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400 font-bold">Nenhum material localizado com os termos informados.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-xs text-slate-400 font-bold">Nenhum material localizado com os termos informados.</td></tr>`;
+                if (mobileList) mobileList.innerHTML = `<div class="p-6 text-center text-xs font-bold text-slate-400">Nenhum material localizado com os termos informados.</div>`;
                 return;
             }
 
             const displayList = filtered.slice(0, 100);
-            let html = '';
+            let tableHtml = '';
+            let mobileHtml = '';
 
             displayList.forEach(item => {
                 const cod = item.codigo;
-                html += `
+                // Linha da Tabela Desktop
+                tableHtml += `
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                         <td class="px-3 py-2.5 font-mono font-black text-[#002f6c] dark:text-blue-400 whitespace-nowrap">${cod}</td>
                         <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-200">
                             <div class="line-clamp-1" title="${item.descricao}">${item.descricao}</div>
                         </td>
                         <td class="px-3 py-2.5">
-                            <input type="text" id="mgrFornInput_${cod}" value="${item.codigo_fornecedor || ''}" placeholder="Cód. Fornecedor" class="w-full min-w-[130px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-[#002f6c]">
+                            <input type="text" id="mgrFornInput_${cod}" oninput="syncMgrInput('${cod}', 'forn', this.value)" value="${item.codigo_fornecedor || ''}" placeholder="Cód. Fornecedor" class="w-full min-w-[130px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-[#002f6c]">
                         </td>
                         <td class="px-3 py-2.5">
                             <div class="flex items-center gap-1">
-                                <input type="text" id="mgrBarInput_${cod}" value="${item.codigo_barras || ''}" placeholder="Cód. Barras / QR" class="w-full min-w-[140px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-purple-500">
+                                <input type="text" id="mgrBarInput_${cod}" oninput="syncMgrInput('${cod}', 'bar', this.value)" value="${item.codigo_barras || ''}" placeholder="Cód. Barras / QR" class="w-full min-w-[140px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-mono font-bold uppercase focus:ring-1 focus:ring-purple-500">
                                 <button type="button" onclick="scanBarcodeForManagerRow('${cod}')" class="p-1.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded-lg cursor-pointer transition-colors" title="Bipar código com a câmera">
                                     <i data-lucide="scan" class="w-3.5 h-3.5"></i>
                                 </button>
@@ -4189,19 +4255,54 @@
                         </td>
                     </tr>
                 `;
+
+                // Card Móvel Vertical (Sem Barra de Rolagem Horizontal)
+                mobileHtml += `
+                    <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2.5">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-2">
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-black text-[#002f6c] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800">
+                                ${cod}
+                            </span>
+                            <button type="button" onclick="saveCodigoRow('${cod}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-2xs transition-all cursor-pointer inline-flex items-center gap-1.5 touch-active">
+                                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                                <span>Salvar</span>
+                            </button>
+                        </div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
+                            ${item.descricao}
+                        </div>
+                        <div class="space-y-2 pt-0.5">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Cód. Fornecedor</label>
+                                <input type="text" id="mgrFornInputMob_${cod}" oninput="syncMgrInput('${cod}', 'forn', this.value)" value="${item.codigo_fornecedor || ''}" placeholder="Informe o código do fornecedor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-[#002f6c]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Cód. Barras / QR Code</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="mgrBarInputMob_${cod}" oninput="syncMgrInput('${cod}', 'bar', this.value)" value="${item.codigo_barras || ''}" placeholder="Informe ou bipe o código de barras" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-purple-500">
+                                    <button type="button" onclick="scanBarcodeForManagerRow('${cod}')" class="p-2.5 bg-purple-100 hover:bg-purple-200 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 rounded-xl cursor-pointer transition-colors flex-shrink-0 touch-active" title="Bipar código com a câmera">
+                                        <i data-lucide="scan" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
 
             if (filtered.length > 100) {
-                html += `<tr><td colspan="5" class="px-4 py-2 text-center text-[10px] text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-800/40">+${filtered.length - 100} outros materiais. Refine sua busca acima para filtrar.</td></tr>`;
+                tableHtml += `<tr><td colspan="5" class="px-4 py-2 text-center text-[10px] text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-800/40">+${filtered.length - 100} outros materiais. Refine sua busca acima para filtrar.</td></tr>`;
+                mobileHtml += `<div class="p-3 text-center text-[10px] text-slate-400 font-bold bg-slate-50/50 dark:bg-slate-800/40 rounded-xl">+${filtered.length - 100} outros materiais. Refine sua busca acima.</div>`;
             }
 
-            tbody.innerHTML = html;
+            if (tbody) tbody.innerHTML = tableHtml;
+            if (mobileList) mobileList.innerHTML = mobileHtml;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         async function saveCodigoRow(codNosso) {
-            const fornInp = document.getElementById(`mgrFornInput_${codNosso}`);
-            const barInp = document.getElementById(`mgrBarInput_${codNosso}`);
+            const fornInp = document.getElementById(`mgrFornInput_${codNosso}`) || document.getElementById(`mgrFornInputMob_${codNosso}`);
+            const barInp = document.getElementById(`mgrBarInput_${codNosso}`) || document.getElementById(`mgrBarInputMob_${codNosso}`);
             if (!fornInp || !barInp) return;
 
             const newForn = fornInp.value.trim().toUpperCase();
@@ -4237,9 +4338,9 @@
                 }
                 const clean = scanned.toUpperCase();
                 const inp = document.getElementById(`mgrBarInput_${codNosso}`);
-                if (inp) {
-                    inp.value = clean;
-                }
+                const inpMob = document.getElementById(`mgrBarInputMob_${codNosso}`);
+                if (inp) inp.value = clean;
+                if (inpMob) inpMob.value = clean;
                 showAlert(`Código de barras "${clean}" inserido para o material ${codNosso}. Clique em "Salvar" para confirmar!`, "info");
             }, { title: `Bipar Código de Barras para Material ${codNosso}` });
         }

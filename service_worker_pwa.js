@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v8.2-codigos-fornecedor-barras';
+const CACHE_NAME = 'portal-estoques-v8.3-mobile-cards-bi-depara';
 const STATIC_ASSETS = [
   './',
   './index.html',

@@ -1007,7 +1007,8 @@
 
             <!-- TABELA DE LOTES DO MATERIAL -->
             <div class="overflow-y-auto flex-grow rounded-2xl border border-slate-200 dark:border-slate-700">
-                <table class="w-full text-left border-collapse text-xs">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 dark:border-slate-600">
                             <th class="px-3 py-2.5">Lote</th>
@@ -1024,6 +1025,10 @@
                         <!-- Linhas dos lotes inseridas via JS -->
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS SEM SCROLL HORIZONTAL) -->
+                <div id="plModalMobileList" class="md:hidden space-y-2.5 p-2">
+                    <!-- Cards preenchidos dinamicamente via JS -->
+                </div>
             </div>
 
             <!-- RODAPÉ DO MODAL DE LOTES -->
@@ -1235,7 +1240,8 @@
 
             <!-- TABELA / LISTAGEM DOS ITENS -->
             <div class="flex-grow overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/60 p-1">
-                <table class="w-full text-left border-collapse text-xs">
+                <!-- VISÃO DESKTOP (TABELA) -->
+                <table class="hidden md:table w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-xs">
                             <th class="px-3 py-2.5">Cód. SB1</th>
@@ -1249,6 +1255,10 @@
                         <!-- Linhas preenchidas dinamicamente via JS -->
                     </tbody>
                 </table>
+                <!-- VISÃO MOBILE (CARDS VERTICAIS SEM SCROLL HORIZONTAL) -->
+                <div id="mgrCodigosMobileList" class="md:hidden space-y-2.5 p-1.5">
+                    <!-- Cards preenchidos dinamicamente via JS -->
+                </div>
             </div>
 
             <!-- RODAPÉ -->
