@@ -2809,21 +2809,21 @@
                 const isTarget = (activeValidadeCalcRowId === row.id);
                 const div = document.createElement('div');
                 div.id = `palletCard_${row.id}`;
-                div.className = `flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-xl border ${isTarget ? 'border-amber-500 ring-2 ring-amber-400/30' : 'border-slate-200 dark:border-slate-700'} shadow-2xs transition-all`;
+                div.className = `flex items-center gap-1.5 sm:gap-2 bg-white dark:bg-slate-800 p-1.5 sm:p-2 rounded-xl border ${isTarget ? 'border-amber-500 ring-2 ring-amber-400/30' : 'border-slate-200 dark:border-slate-700'} shadow-2xs transition-all`;
                 
                 const rowDisplayName = row.nome || unit;
 
                 div.innerHTML = `
-                    <span class="w-6 text-center text-xs font-black text-indigo-600 dark:text-indigo-400">#${idx+1}</span>
-                    <input type="text" value="${rowDisplayName}" oninput="onModalPalletRowChange('${row.id}', 'nome', this.value.toUpperCase())" placeholder="Ex: ${unit}" class="w-2/5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-xs font-black text-slate-800 dark:text-white uppercase focus:ring-1 focus:ring-amber-500">
-                    <div class="relative w-2/5 flex items-center">
-                        <input type="text" inputmode="decimal" id="valPalletQtdInput_${row.id}" value="${row.qtd !== '' && row.qtd !== undefined ? row.qtd : ''}" onfocus="setActiveValidadeCalcTarget('${row.id}')" onclick="setActiveValidadeCalcTarget('${row.id}')" oninput="onModalPalletQtdInputChange('${row.id}', this.value)" placeholder="Qtd (${unit})" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1.5 pr-7 text-xs font-black text-indigo-700 dark:text-indigo-300 focus:ring-1 focus:ring-amber-500">
-                        <button type="button" onclick="setActiveValidadeCalcTarget('${row.id}'); toggleValidadeCalculator(true);" class="absolute right-1 text-slate-400 hover:text-amber-600 p-1 cursor-pointer" title="Abrir calculadora para esta linha">
+                    <span class="w-5 sm:w-6 text-center text-[10px] sm:text-xs font-black text-indigo-600 dark:text-indigo-400 flex-shrink-0">#${idx+1}</span>
+                    <input type="text" value="${rowDisplayName}" oninput="onModalPalletRowChange('${row.id}', 'nome', this.value.toUpperCase())" placeholder="Ex: ${unit}" class="w-2/5 min-w-0 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 text-[11px] sm:text-xs font-black text-slate-800 dark:text-white uppercase focus:ring-1 focus:ring-amber-500">
+                    <div class="relative w-2/5 min-w-0 flex items-center">
+                        <input type="text" inputmode="decimal" id="valPalletQtdInput_${row.id}" value="${row.qtd !== '' && row.qtd !== undefined ? row.qtd : ''}" onfocus="setActiveValidadeCalcTarget('${row.id}')" onclick="setActiveValidadeCalcTarget('${row.id}')" oninput="onModalPalletQtdInputChange('${row.id}', this.value)" placeholder="Qtd (${unit})" class="w-full min-w-0 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 pr-6 sm:pr-7 text-[11px] sm:text-xs font-black text-indigo-700 dark:text-indigo-300 focus:ring-1 focus:ring-amber-500">
+                        <button type="button" onclick="setActiveValidadeCalcTarget('${row.id}'); toggleValidadeCalculator(true);" class="absolute right-0.5 sm:right-1 text-slate-400 hover:text-amber-600 p-1 cursor-pointer" title="Abrir calculadora para esta linha">
                             <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
-                    <button type="button" onclick="removeModalPalletRow('${row.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer ml-auto transition-colors" title="Apagar esta linha">
-                        <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
+                    <button type="button" onclick="removeModalPalletRow('${row.id}')" class="p-1 sm:p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer ml-auto flex-shrink-0 transition-colors" title="Apagar esta linha">
+                        <i data-lucide="trash-2" class="w-3.5 sm:w-4 h-3.5 sm:h-4 text-rose-500"></i>
                     </button>
                 `;
                 container.appendChild(div);
