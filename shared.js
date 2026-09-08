@@ -921,11 +921,11 @@ function ensureAuditModalInDOM() {
 
     modal = document.createElement('div');
     modal.id = 'globalItemAuditHistoryModal';
-    modal.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print";
+    modal.className = "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print";
     modal.innerHTML = `
-        <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-200 dark:border-slate-700 p-5 sm:p-6 shadow-2xl space-y-4 flex flex-col max-h-[90vh]">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-3.5 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] h-[96dvh] sm:h-auto min-h-0 overflow-hidden">
             <!-- HEADER -->
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center">
                         <i data-lucide="history" class="w-5 h-5"></i>
@@ -944,7 +944,7 @@ function ensureAuditModalInDOM() {
             </div>
 
             <!-- FILTRO RÁPIDO DO HISTÓRICO -->
-            <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center justify-between gap-2 text-xs bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 flex-shrink-0">
                 <span id="auditModalTotalEvents" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Carregando eventos...</span>
                 <button type="button" onclick="reloadCurrentItemAuditHistory()" class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 hover:bg-slate-100 cursor-pointer shadow-xs">
                     <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
@@ -953,12 +953,12 @@ function ensureAuditModalInDOM() {
             </div>
 
             <!-- LISTA DE TIMELINE -->
-            <div id="auditTimelineContainer" class="flex-1 overflow-y-auto space-y-3 pr-1 min-h-[220px]">
+            <div id="auditTimelineContainer" class="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-3 pr-1 -webkit-overflow-scrolling-touch">
                 <!-- Preenchido dinamicamente -->
             </div>
 
             <!-- FOOTER -->
-            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <span class="text-[10px] font-bold text-slate-400">Registrado com carimbo de data, hora e matrícula</span>
                 <button type="button" onclick="closeItemAuditHistoryModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-black uppercase cursor-pointer">
                     Fechar
