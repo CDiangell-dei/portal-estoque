@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -42,12 +42,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
+        html, body {
+            -webkit-text-size-adjust: 100%;
+        }
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
             color: #0f172a;
             -webkit-tap-highlight-color: transparent;
-        }        :root {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        :root {
             --amazon-navy: #002f6c;
             --amazon-navy-dark: #0A192F;
             --amazon-red: #B40D15;
@@ -55,6 +60,11 @@
         }
         .element-hidden { display: none !important; }
         .touch-active:active { transform: scale(0.97); }
+
+        /* Suporte nativo à rolagem inercial no iOS WebKit */
+        .-webkit-overflow-scrolling-touch, .overflow-y-auto, .overflow-x-auto {
+            -webkit-overflow-scrolling: touch !important;
+        }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -574,8 +584,8 @@
     </main>
 
     <!-- MODAL NOVO REGISTRO / EDIÇÃO DE VALIDADE -->
-    <div id="newValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh] overflow-y-auto">
+    <div id="newValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-3.5 sm:p-6 shadow-2xl space-y-3.5 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="calendar-plus" class="w-5 h-5 text-amber-600"></i>
@@ -739,7 +749,7 @@
                     </div>
 
                     <!-- LISTA DINÂMICA DE PALETES / LINHAS -->
-                    <div id="multiPalletRowsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <div id="multiPalletRowsContainer" class="space-y-2 max-h-60 overflow-y-auto overscroll-contain pr-1 -webkit-overflow-scrolling-touch">
                         <!-- Linhas de paletes geradas dinamicamente -->
                     </div>
 
@@ -833,8 +843,8 @@
                     <input type="text" id="valInputObservacao" placeholder="Ex: Lançado via inventário ou conferência" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
                 </div>
 
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 flex-wrap">
-                    <button type="button" onclick="closeNewValidadeModal()" class="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Cancelar</button>
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2 flex-wrap sticky bottom-0 bg-white dark:bg-slate-800 z-10 py-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+                    <button type="button" onclick="closeNewValidadeModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Cancelar</button>
                     <button type="submit" id="btnSaveValidade" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md cursor-pointer">
                         Salvar Lotes / Paletes
                     </button>
@@ -848,42 +858,42 @@
     </div>
 
     <!-- MODAL IMPORTAR PLANILHA EXCEL -->
-    <div id="importValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white w-full max-w-2xl rounded-3xl border border-slate-200 p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div id="importValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-2xl space-y-3.5 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5 text-indigo-600"></i>
-                    <h3 class="text-sm font-black text-slate-900">Importar Planilha de Lotes & Validades</h3>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Importar Planilha de Lotes & Validades</h3>
                 </div>
-                <button type="button" onclick="closeImportValidadeModal()" class="p-1 text-slate-400 hover:text-slate-700">
+                <button type="button" onclick="closeImportValidadeModal()" class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <!-- Seleção / Arrastar Arquivo -->
-            <div id="importDropZone" onclick="document.getElementById('importValidadeFileInput').click()" class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/50 hover:bg-indigo-50 p-6 rounded-2xl text-center cursor-pointer transition-all">
+            <div id="importDropZone" onclick="document.getElementById('importValidadeFileInput').click()" class="border-2 border-dashed border-indigo-200 dark:border-slate-600 hover:border-indigo-500 bg-indigo-50/50 dark:bg-slate-900/50 hover:bg-indigo-50 p-4 sm:p-6 rounded-2xl text-center cursor-pointer transition-all">
                 <input type="file" id="importValidadeFileInput" accept=".xlsx, .xls, .csv" onchange="handleValidadeFileSelected(this)" class="hidden">
-                <i data-lucide="file-spreadsheet" class="w-10 h-10 text-indigo-600 mx-auto mb-2"></i>
-                <p class="text-xs font-black text-slate-800" id="importFileNameLabel">Clique aqui ou arraste a planilha Excel (.xlsx, .csv)</p>
-                <p class="text-[10px] text-slate-500 font-semibold mt-1">Colunas aceitas: Código, Lote, Quantidade, Validade, Palete/Caixa/Unidade</p>
+                <i data-lucide="file-spreadsheet" class="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600 mx-auto mb-2"></i>
+                <p class="text-xs font-black text-slate-800 dark:text-white" id="importFileNameLabel">Clique aqui ou arraste a planilha Excel (.xlsx, .csv)</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold mt-1">Colunas aceitas: Código, Lote, Quantidade, Validade, Palete/Caixa/Unidade</p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 text-xs">
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filial de Destino</label>
-                    <select id="importValidadeFilial" onchange="updateImportWarehousesForFilial()" class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+                    <select id="importValidadeFilial" onchange="updateImportWarehousesForFilial()" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
                         <!-- Preenchido dinamicamente via JS -->
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Armazém Padrão de Destino</label>
-                    <select id="importDefaultArmazem" class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+                    <select id="importDefaultArmazem" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
                         <!-- Preenchido dinamicamente via saldo -->
                     </select>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Regra para Lotes Já Existentes</label>
-                    <select id="importDuplicateRule" class="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500">
+                    <select id="importDuplicateRule" class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
                         <option value="UPDATE">Atualizar dados do Lote Existente</option>
                         <option value="SKIP">Ignorar se já existir</option>
                     </select>
@@ -891,9 +901,9 @@
             </div>
 
             <!-- Tabela Prévia de Linhas Identificadas -->
-            <div id="importPreviewContainer" class="hidden flex-1 overflow-y-auto border border-slate-200 rounded-2xl max-h-60">
+            <div id="importPreviewContainer" class="hidden flex-1 overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-700 rounded-2xl max-h-60 -webkit-overflow-scrolling-touch">
                 <table class="w-full text-left border-collapse text-[11px]">
-                    <thead class="bg-slate-100 text-slate-600 font-black sticky top-0 uppercase text-[9px]">
+                    <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-black sticky top-0 uppercase text-[9px]">
                         <tr>
                             <th class="p-2">Código</th>
                             <th class="p-2">Descrição</th>
@@ -903,19 +913,19 @@
                             <th class="p-2 text-center">Validade</th>
                         </tr>
                     </thead>
-                    <tbody id="importPreviewBody" class="divide-y divide-slate-100 font-bold text-slate-700">
+                    <tbody id="importPreviewBody" class="divide-y divide-slate-100 dark:divide-slate-700 font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800">
                     </tbody>
                 </table>
             </div>
 
-            <div id="importSummaryBar" class="hidden text-xs font-bold text-slate-600 flex items-center justify-between">
+            <div id="importSummaryBar" class="hidden text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between">
                 <span id="importSummaryCount">0 linhas prontas para importação</span>
-                <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Formato compatível</span>
+                <span class="text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">Formato compatível</span>
             </div>
 
-            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button type="button" onclick="closeImportValidadeModal()" class="bg-slate-100 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-xs">Cancelar</button>
-                <button type="button" id="btnExecuteImportValidade" onclick="executeValidadeImport()" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md">
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2 flex-shrink-0">
+                <button type="button" onclick="closeImportValidadeModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Cancelar</button>
+                <button type="button" id="btnExecuteImportValidade" onclick="executeValidadeImport()" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md cursor-pointer">
                     Confirmar Importação
                 </button>
             </div>
@@ -923,14 +933,14 @@
     </div>
 
     <!-- MODAL TRANSFERIR DATAS PARA ARMAZÉM DE VENCIDOS -->
-    <div id="transferValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white w-full max-w-md rounded-3xl border border-slate-200 p-6 shadow-2xl space-y-4 flex flex-col">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div id="transferValidadeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-2xl space-y-3.5 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="truck" class="w-5 h-5 text-amber-600"></i>
-                    <h3 class="text-sm font-black text-slate-900">Mover Datas para Armazém de Vencidos</h3>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Mover Datas para Armazém de Vencidos</h3>
                 </div>
-                <button type="button" onclick="closeTransferValidadeModal()" class="p-1 text-slate-400 hover:text-slate-700">
+                <button type="button" onclick="closeTransferValidadeModal()" class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -973,39 +983,39 @@
     <!-- ========================================== -->
     <!-- MODAL GERENCIADOR DE LOTES DO MATERIAL      -->
     <!-- ========================================== -->
-    <div id="productLotsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
+    <div id="productLotsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-3 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] h-[96dvh] sm:h-auto min-h-0 overflow-hidden">
             
             <!-- CABEÇALHO DO PRODUTO -->
-            <div class="flex flex-col gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+            <div class="flex flex-col gap-2.5 sm:gap-3 border-b border-slate-100 dark:border-slate-700 pb-3 sm:pb-4 flex-shrink-0">
                 <div class="flex items-start justify-between gap-2">
                     <div class="space-y-1 min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span id="plModalCodigo" class="text-lg sm:text-xl font-black font-mono text-[#002f6c] dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2.5 py-0.5 rounded-xl border border-blue-200 dark:border-blue-800">39000016</span>
-                            <span id="plModalFilialArmazem" class="text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-xl">Filial 01 • Armazém 50</span>
-                            <span id="plModalStatusGeralBadge" class="text-xs font-black"></span>
+                        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span id="plModalCodigo" class="text-base sm:text-xl font-black font-mono text-[#002f6c] dark:text-blue-400 bg-blue-50 dark:bg-blue-950 px-2 sm:px-2.5 py-0.5 rounded-xl border border-blue-200 dark:border-blue-800">39000016</span>
+                            <span id="plModalFilialArmazem" class="text-[11px] sm:text-xs font-black text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-xl">Filial 01 • Armazém 50</span>
+                            <span id="plModalStatusGeralBadge" class="text-[11px] sm:text-xs font-black"></span>
                         </div>
-                        <h3 id="plModalDescricao" class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">Descrição do Produto</h3>
+                        <h3 id="plModalDescricao" class="text-xs sm:text-base font-black text-slate-900 dark:text-white leading-tight">Descrição do Produto</h3>
                         <!-- ABAS DE TROCA RÁPIDA DE ARMAZÉM DO ITEM -->
                         <div id="plModalArmazemTabsContainer" class="hidden pt-1">
                             <div class="flex items-center gap-1.5 flex-wrap" id="plModalArmazemTabsList"></div>
                         </div>
                     </div>
-                    <button type="button" onclick="closeProductLotsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex-shrink-0">
+                    <button type="button" onclick="closeProductLotsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex-shrink-0" title="Fechar modal de lotes">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
 
                 <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    <button type="button" onclick="openNewValidadeModalForCurrentProduct()" class="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600 text-slate-900 px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap">
+                    <button type="button" onclick="openNewValidadeModalForCurrentProduct()" class="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600 text-slate-900 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>+ Novo Lote</span>
                     </button>
-                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="flex-1 sm:flex-initial bg-[#002f6c] hover:bg-blue-900 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap" title="Imprimir Ficha A4 para identificar o Palete / Material">
+                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="flex-1 sm:flex-initial bg-[#002f6c] hover:bg-blue-900 text-white px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer whitespace-nowrap" title="Imprimir Ficha A4 para identificar o Palete / Material">
                         <i data-lucide="printer" class="w-4 h-4"></i>
                         <span>Imprimir A4</span>
                     </button>
-                    <button type="button" onclick="openItemAuditHistoryModal(currentProductLotsData.produto, currentProductLotsData.descricao, currentProductLotsData.filial, currentProductLotsData.armazem)" class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-2 rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer" title="Ver Trilha de Auditoria e Histórico do Material">
+                    <button type="button" onclick="openItemAuditHistoryModal(currentProductLotsData.produto, currentProductLotsData.descricao, currentProductLotsData.filial, currentProductLotsData.armazem)" class="bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black shadow-xs transition-all flex items-center justify-center space-x-1.5 touch-active cursor-pointer" title="Ver Trilha de Auditoria e Histórico do Material">
                         <i data-lucide="history" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
                         <span class="hidden sm:inline">Histórico</span>
                     </button>
@@ -1013,64 +1023,66 @@
             </div>
 
             <!-- PAINEL COMPARATIVO: SALDO ERP X SOMA LOTES -->
-            <div id="plModalConferenciaBox" class="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700">
-                <div class="grid grid-cols-3 gap-4 text-center sm:text-left flex-grow">
+            <div id="plModalConferenciaBox" class="p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 flex-shrink-0">
+                <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center sm:text-left flex-grow">
                     <div>
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saldo ERP</span>
-                        <span id="plModalSaldoERP" class="text-lg font-black text-[#002f6c] dark:text-blue-400">0</span>
+                        <span class="block text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Saldo ERP</span>
+                        <span id="plModalSaldoERP" class="text-sm sm:text-lg font-black text-[#002f6c] dark:text-blue-400">0</span>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Soma dos Lotes</span>
-                        <span id="plModalSomaLotes" class="text-lg font-black text-emerald-600">0</span>
+                        <span class="block text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Soma dos Lotes</span>
+                        <span id="plModalSomaLotes" class="text-sm sm:text-lg font-black text-emerald-600">0</span>
                     </div>
                     <div>
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diferença</span>
-                        <span id="plModalDiferenca" class="text-lg font-black">0</span>
+                        <span class="block text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diferença</span>
+                        <span id="plModalDiferenca" class="text-sm sm:text-lg font-black">0</span>
                     </div>
                 </div>
                 <div id="plModalFillRemainingBtnContainer" class="hidden">
-                    <button type="button" onclick="fillRemainingBalanceFromModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-3.5 py-2 rounded-xl text-xs font-black shadow-sm flex items-center gap-1.5 touch-active cursor-pointer">
+                    <button type="button" onclick="fillRemainingBalanceFromModal()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-900 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-1.5 touch-active cursor-pointer">
                         <i data-lucide="zap" class="w-3.5 h-3.5"></i>
                         <span id="plModalFillRemainingLabel">Preencher Saldo Restante</span>
                     </button>
                 </div>
             </div>
 
-            <!-- TABELA DE LOTES DO MATERIAL -->
-            <div class="overflow-y-auto flex-grow rounded-2xl border border-slate-200 dark:border-slate-700">
-                <!-- VISÃO DESKTOP (TABELA) -->
-                <table class="hidden md:table w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 dark:border-slate-600">
-                            <th class="px-3 py-2.5">Lote</th>
-                            <th class="px-3 py-2.5">Palete / Embalagem</th>
-                            <th class="px-3 py-2.5 text-right">Quantidade</th>
-                            <th class="px-3 py-2.5 text-center">Fabricação</th>
-                            <th class="px-3 py-2.5 text-center">Validade (Mês/Ano)</th>
-                            <th class="px-3 py-2.5 text-center">Status</th>
-                            <th class="px-3 py-2.5">Observação</th>
-                            <th class="px-3 py-2.5 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="plModalTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 font-bold text-slate-700 dark:text-slate-200">
-                        <!-- Linhas dos lotes inseridas via JS -->
-                    </tbody>
-                </table>
+            <!-- TABELA E CARDS DE LOTES DO MATERIAL (COM ROLAGEM INDEPENDENTE E MIN-H-0 PARA IOS) -->
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 my-1 -webkit-overflow-scrolling-touch">
+                <!-- VISÃO DESKTOP / MODO COMPUTADOR (TABELA COM ROLAGEM HORIZONTAL SEGURA) -->
+                <div class="hidden md:block overflow-x-auto min-w-full">
+                    <table class="w-full text-left border-collapse text-xs min-w-[700px]">
+                        <thead>
+                            <tr class="bg-slate-100 dark:bg-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-300 uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200 dark:border-slate-600 shadow-xs">
+                                <th class="px-3 py-2.5">Lote</th>
+                                <th class="px-3 py-2.5">Palete / Embalagem</th>
+                                <th class="px-3 py-2.5 text-right">Quantidade</th>
+                                <th class="px-3 py-2.5 text-center">Fabricação</th>
+                                <th class="px-3 py-2.5 text-center">Validade (Mês/Ano)</th>
+                                <th class="px-3 py-2.5 text-center">Status</th>
+                                <th class="px-3 py-2.5">Observação</th>
+                                <th class="px-3 py-2.5 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="plModalTableBody" class="divide-y divide-slate-100 dark:divide-slate-700 font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800">
+                            <!-- Linhas dos lotes inseridas via JS -->
+                        </tbody>
+                    </table>
+                </div>
                 <!-- VISÃO MOBILE (CARDS EMPILHADOS VERTICAIS SEM SCROLL HORIZONTAL) -->
-                <div id="plModalMobileList" class="md:hidden space-y-2.5 p-2">
+                <div id="plModalMobileList" class="md:hidden space-y-2 p-2">
                     <!-- Cards preenchidos dinamicamente via JS -->
                 </div>
             </div>
 
             <!-- RODAPÉ DO MODAL DE LOTES -->
-            <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 font-bold">
-                <span id="plModalLotsCount">0 lote/palete(s) cadastrado(s)</span>
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500 font-bold flex-shrink-0">
+                <span id="plModalLotsCount" class="text-[11px] sm:text-xs">0 lote/palete(s) cadastrado(s)</span>
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white px-3.5 py-2 rounded-xl font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer" title="Imprimir Ficha de Identificação de Palete A4">
-                        <i data-lucide="printer" class="w-4 h-4"></i>
-                        <span>Imprimir Ficha A4</span>
+                    <button type="button" onclick="openA4PalletPrintModalFromProductLots()" class="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-600 text-indigo-700 dark:text-indigo-300 hover:text-white px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer" title="Imprimir Ficha de Identificação de Palete A4">
+                        <i data-lucide="printer" class="w-3.5 sm:w-4 h-3.5 sm:h-4"></i>
+                        <span>Imprimir A4</span>
                     </button>
-                    <button type="button" onclick="closeProductLotsModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl font-bold cursor-pointer">Fechar</button>
+                    <button type="button" onclick="closeProductLotsModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold cursor-pointer">Fechar</button>
                 </div>
             </div>
         </div>
@@ -1079,10 +1091,10 @@
     <!-- ========================================== -->
     <!-- MODAL IMPRESSÃO DE FICHA DE PALETE (FOLHA A4) -->
     <!-- ========================================== -->
-    <div id="a4PrintModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-3xl border border-slate-200 dark:border-slate-700 p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh] overflow-y-auto">
+    <div id="a4PrintModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-3.5 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
             
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-9 h-9 rounded-2xl bg-[#002f6c]/10 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
                         <i data-lucide="file-text" class="w-5 h-5"></i>
@@ -1217,7 +1229,7 @@
             </div>
 
             <!-- BOTÕES DE AÇÃO -->
-            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2">
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-end gap-2 flex-shrink-0">
                 <button type="button" onclick="closeA4PrintModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer">Cancelar</button>
                 <button type="button" onclick="printA4PalletSheet()" class="bg-[#002f6c] hover:bg-blue-900 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider shadow-md flex items-center gap-1.5 touch-active cursor-pointer">
                     <i data-lucide="printer" class="w-4 h-4"></i>
@@ -1230,10 +1242,10 @@
     <!-- ========================================== -->
     <!-- MODAL GERENCIADOR DE CÓDIGOS & BARRAS / FORNECEDOR -->
     <!-- ========================================== -->
-    <div id="modalCodigosManager" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white dark:bg-[#111C38] w-full max-w-4xl rounded-3xl border border-slate-200 dark:border-slate-700 p-5 sm:p-6 shadow-2xl space-y-4 flex flex-col max-h-[92vh]">
+    <div id="modalCodigosManager" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-[#111C38] w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-3.5 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] h-[96dvh] sm:h-auto min-h-0 overflow-hidden">
             
-            <div class="flex items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-2.5 min-w-0">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#002f6c]/10 text-[#002f6c] dark:text-blue-400 flex items-center justify-center flex-shrink-0">
                         <i data-lucide="scan-barcode" class="w-5 h-5"></i>
@@ -1249,7 +1261,7 @@
             </div>
 
             <!-- CONTROLES DE BUSCA E LEITURA -->
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 flex-shrink-0">
                 <div class="sm:col-span-8 relative">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
                     <input type="text" id="mgrCodigosSearchInput" oninput="filterCodigosManagerList()" placeholder="Buscar por código interno, cód. fornecedor, barras ou descrição..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
@@ -1270,22 +1282,24 @@
             </div>
 
             <!-- TABELA / LISTAGEM DOS ITENS -->
-            <div class="flex-grow overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/60 p-1">
-                <!-- VISÃO DESKTOP (TABELA) -->
-                <table class="hidden md:table w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-xs">
-                            <th class="px-3 py-2.5">Cód. SB1</th>
-                            <th class="px-3 py-2.5">Descrição do Material</th>
-                            <th class="px-3 py-2.5">Cód. Fornecedor</th>
-                            <th class="px-3 py-2.5">Cód. Barras / QR</th>
-                            <th class="px-3 py-2.5 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="mgrCodigosTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                        <!-- Linhas preenchidas dinamicamente via JS -->
-                    </tbody>
-                </table>
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/60 p-1 -webkit-overflow-scrolling-touch">
+                <!-- VISÃO DESKTOP (TABELA COM SCROLL HORIZONTAL SEGURO) -->
+                <div class="hidden md:block overflow-x-auto min-w-full">
+                    <table class="w-full text-left border-collapse text-xs min-w-[700px]">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-xs">
+                                <th class="px-3 py-2.5">Cód. SB1</th>
+                                <th class="px-3 py-2.5">Descrição do Material</th>
+                                <th class="px-3 py-2.5">Cód. Fornecedor</th>
+                                <th class="px-3 py-2.5">Cód. Barras / QR</th>
+                                <th class="px-3 py-2.5 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mgrCodigosTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                            <!-- Linhas preenchidas dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
                 <!-- VISÃO MOBILE (CARDS VERTICAIS SEM SCROLL HORIZONTAL) -->
                 <div id="mgrCodigosMobileList" class="md:hidden space-y-2.5 p-1.5">
                     <!-- Cards preenchidos dinamicamente via JS -->
@@ -1293,7 +1307,7 @@
             </div>
 
             <!-- RODAPÉ -->
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 font-bold">
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 font-bold flex-shrink-0">
                 <span id="mgrCodigosCountInfo">Carregando catálogo...</span>
                 <button type="button" onclick="closeCodigosManagerModal()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl font-bold cursor-pointer">Fechar</button>
             </div>
@@ -1301,10 +1315,10 @@
     </div>
 
     <!-- MODAL DE SELEÇÃO DE ARMAZÉM APÓS BIPAGEM -->
-    <div id="modalEscolhaArmazemBipagem" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[170] flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
-        <div class="bg-white dark:bg-[#111C38] w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-700 p-5 sm:p-6 shadow-2xl space-y-4 flex flex-col animate-in fade-in zoom-in duration-200">
+    <div id="modalEscolhaArmazemBipagem" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[170] flex items-center justify-center p-1.5 sm:p-4 opacity-0 pointer-events-none transition-opacity duration-300 no-print">
+        <div class="bg-white dark:bg-[#111C38] w-full max-w-lg rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-2xl space-y-3.5 sm:space-y-4 flex flex-col max-h-[96dvh] max-h-[94vh] overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch animate-in fade-in zoom-in duration-200">
             
-            <div class="flex items-start justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div class="flex items-start justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3 flex-shrink-0">
                 <div class="flex items-center space-x-3 min-w-0">
                     <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
                         <i data-lucide="map-pin" class="w-5 h-5"></i>
@@ -1327,11 +1341,11 @@
             </p>
 
             <!-- LISTA DE ARMAZÉNS DISPONÍVEIS -->
-            <div id="scanArmazensList" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div id="scanArmazensList" class="space-y-2 max-h-72 overflow-y-auto overscroll-contain pr-1 -webkit-overflow-scrolling-touch">
                 <!-- Preenchido dinamicamente com cards selecionáveis -->
             </div>
 
-            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <button type="button" onclick="closeEscolhaArmazemModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer">
                     Cancelar
                 </button>
