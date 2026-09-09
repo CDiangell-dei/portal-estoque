@@ -252,23 +252,41 @@
                     }
                 } catch(eVal) { console.warn("Erro validades:", eVal); }
 
-                // 4. Carrega Catálogo SB1 (Apenas produtos ativos com saldo/contagem/validade para velocidade máxima)
+                // 4. Carrega Catálogo Completo do SB1 em paralelo ultra-rápido (garante busca e exibição de itens com saldo 0)
                 let sb1All = [];
-                const activeCodesSet = new Set([
-                    ...saldoAll.map(s => String(s.produto).trim()),
-                    ...confAll.map(c => String(c.produto).trim()),
-                    ...valAll.map(v => String(v.produto).trim())
-                ]);
-                const activeCodes = Array.from(activeCodesSet).filter(Boolean);
-
-                if (activeCodes.length > 0) {
-                    const chunkSize = 500;
-                    for (let i = 0; i < activeCodes.length; i += chunkSize) {
-                        const chunk = activeCodes.slice(i, i + chunkSize);
-                        const { data, error } = await supabaseClient.from(sb1Table)
-                            .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-                            .in('codigo', chunk);
-                        if (data) sb1All = sb1All.concat(data);
+                try {
+                    const { count: totalSb1 } = await supabaseClient.from(sb1Table).select('codigo', { count: 'exact', head: true });
+                    const totalRows = totalSb1 || 14000;
+                    const chunkSize = 1000;
+                    const totalChunks = Math.ceil(totalRows / chunkSize);
+                    const sb1Promises = [];
+                    for (let i = 0; i < totalChunks; i++) {
+                        const fromIdx = i * chunkSize;
+                        sb1Promises.push(
+                            supabaseClient.from(sb1Table)
+                                .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+                                .range(fromIdx, fromIdx + chunkSize - 1)
+                                .then(res => res.data || [])
+                        );
+                    }
+                    const results = await Promise.all(sb1Promises);
+                    sb1All = results.flat();
+                } catch (errSb1) {
+                    console.warn("Aviso ao carregar catálogo completo, usando fallback por códigos ativos:", errSb1);
+                    const activeCodesSet = new Set([
+                        ...saldoAll.map(s => String(s.produto).trim()),
+                        ...confAll.map(c => String(c.produto).trim()),
+                        ...valAll.map(v => String(v.produto).trim())
+                    ]);
+                    const activeCodes = Array.from(activeCodesSet).filter(Boolean);
+                    if (activeCodes.length > 0) {
+                        for (let i = 0; i < activeCodes.length; i += 500) {
+                            const chunk = activeCodes.slice(i, i + 500);
+                            const { data } = await supabaseClient.from(sb1Table)
+                                .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+                                .in('codigo', chunk);
+                            if (data) sb1All = sb1All.concat(data);
+                        }
                     }
                 }
 
@@ -378,10 +396,10 @@
             } catch (e) {}
 
             try {
-                const savedZero = localStorage.getItem('amazon_show_zero_saldo');
-                const cbZero = document.getElementById('invShowZeroSaldo');
-                if (savedZero !== null && cbZero) {
-                    cbZero.checked = (savedZero === 'true');
+                const savedMode = localStorage.getItem('amazon_saldo_filter_mode');
+                const selMode = document.getElementById('invSaldoFilterMode');
+                if (savedMode && selMode) {
+                    selMode.value = savedMode;
                 }
             } catch (e) {}
 
@@ -796,8 +814,9 @@
                 }
             }
 
-            const showZeroSaldo = document.getElementById('invShowZeroSaldo') ? document.getElementById('invShowZeroSaldo').checked : false;
-            try { localStorage.setItem('amazon_show_zero_saldo', String(showZeroSaldo)); } catch(e) {}
+            const selSaldoEl = document.getElementById('invSaldoFilterMode');
+            const saldoFilterMode = selSaldoEl ? selSaldoEl.value : (document.getElementById('invShowZeroSaldo')?.checked ? 'SALDO_ZERO' : 'COM_SALDO');
+            try { localStorage.setItem('amazon_saldo_filter_mode', saldoFilterMode); } catch(e) {}
 
             const selFilial = document.getElementById('invFilterFilial');
             let selectedFilial = (isGlobalFilial(currentUser) && selFilial) ? (selFilial.value || 'ALL') : getTargetFilialForSector();
@@ -938,13 +957,20 @@
                 };
             });
 
-            // 1. Aplica primeiro os filtros de escopo do usuário (Tags, Fornecedores, Saldo Zero)
+            // 1. Aplica primeiro os filtros de escopo do usuário (Tags, Fornecedores, Saldo)
             const userScopedItems = allMapped.filter(item => {
-                if (!showZeroSaldo) {
-                    if (Math.abs(item.quantidade) < 0.0001 && item.status !== 'GANHO' && item.status !== 'PERDA') {
+                if (saldoFilterMode === 'COM_SALDO') {
+                    // Se o usuário digitou uma busca específica, permite que o item apareça mesmo com saldo 0 para que possa ser contado!
+                    if (!term && Math.abs(item.quantidade) < 0.0001 && item.status !== 'GANHO' && item.status !== 'PERDA') {
+                        return false;
+                    }
+                } else if (saldoFilterMode === 'SALDO_ZERO') {
+                    // Exibe estritamente os itens que estão com saldo zerado no sistema
+                    if (Math.abs(item.quantidade) >= 0.0001) {
                         return false;
                     }
                 }
+                // Se 'TODOS', inclui itens com saldo e zerados
 
                 if (selectedTags.length > 0) {
                     const itemTags = item.tags ? item.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean) : [];

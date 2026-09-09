@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.4-mobile-anti-flicker';
+const CACHE_NAME = 'portal-estoques-v9.5-saldo-zero-full-catalog';
 const STATIC_ASSETS = [
   './',
   './index.html',

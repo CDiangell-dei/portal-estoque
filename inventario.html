@@ -503,13 +503,15 @@
                     </div>
                 </div>
 
-                <!-- FILTRO EXIBIR SALDO ZERADO -->
+                <!-- FILTRO DE SALDO -->
                 <div class="w-full sm:w-auto">
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Saldo Zerado</label>
-                    <label class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-100 transition-colors h-[38px] select-none">
-                        <input type="checkbox" id="invShowZeroSaldo" onchange="applyInventoryFilters()" class="w-4 h-4 text-[#002f6c] rounded border-slate-300 focus:ring-[#002f6c] cursor-pointer">
-                        <span>Exibir Saldo 0</span>
-                    </label>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Filtro de Saldo</label>
+                    <select id="invSaldoFilterMode" onchange="applyInventoryFilters(true)" class="w-full sm:w-auto bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 rounded-xl px-3 py-2 h-[38px] cursor-pointer focus:ring-2 focus:ring-[#002f6c] focus:outline-none transition-colors">
+                        <option value="COM_SALDO">Apenas Com Saldo (> 0)</option>
+                        <option value="SALDO_ZERO">Apenas Saldo Zerado (= 0)</option>
+                        <option value="TODOS">Todos (Com e Sem Saldo)</option>
+                    </select>
+                    <input type="checkbox" id="invShowZeroSaldo" class="hidden">
                 </div>
 
                 <div class="w-full sm:w-auto flex-1 flex flex-col sm:flex-row items-end gap-2.5">
