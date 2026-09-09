@@ -1134,3 +1134,38 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 });
+
+// --- OTIMIZAÇÃO GLOBAL MOBILE: PREVENÇÃO DE FLICKER / PISCAR DA TELA AO DIGITAR ---
+(function injectMobileAntiFlickerStyles() {
+    if (typeof document === 'undefined') return;
+    const styleId = 'mobile-anti-flicker-styles';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+        /* 1. Previne auto-zoom e tremulação de layout no mobile ao focar e digitar */
+        @media (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important; /* Padrão mínimo iOS/Android para evitar zoom e tremor de tela */
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+            /* 2. Remove filtros de backdrop-blur em elementos fixos e sticky no mobile (eliminam o flash da GPU ao repintar) */
+            header, .sticky, .fixed, [class*="backdrop-blur"] {
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+            }
+            /* 3. Estabilização de scroll no mobile */
+            html, body {
+                overscroll-behavior-y: none;
+            }
+        }
+    `;
+    const target = document.head || document.documentElement;
+    if (target) target.appendChild(style);
+})();
+

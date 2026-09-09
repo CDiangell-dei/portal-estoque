@@ -1162,6 +1162,14 @@
             });
         }
 
+        let validadeSearchDebounceTimer = null;
+        function handleValidadeSearchDebounce() {
+            if (validadeSearchDebounceTimer) clearTimeout(validadeSearchDebounceTimer);
+            validadeSearchDebounceTimer = setTimeout(() => {
+                applyValidadeFilters();
+            }, 250);
+        }
+
         function applyValidadeFilters() {
             const filial = document.getElementById('valFilterFilial') ? document.getElementById('valFilterFilial').value : 'ALL';
             const armazem = document.getElementById('valFilterArmazem') ? document.getElementById('valFilterArmazem').value : 'ALL';

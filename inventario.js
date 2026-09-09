@@ -1531,7 +1531,10 @@
                 }
             }
 
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                if (tbody) lucide.createIcons({ root: tbody });
+                if (mobileList) lucide.createIcons({ root: mobileList });
+            }
         }
 
         // --- CONTAGEM FÍSICA MODAL & CALCULADORA & VALIDADE POR ARMAZÉM ---
