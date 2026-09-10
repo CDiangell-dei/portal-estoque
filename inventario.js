@@ -1638,9 +1638,62 @@
             document.getElementById('countInputObs').value = (lastProdCount && lastProdCount.observacao) ? lastProdCount.observacao : '';
             toggleAppCalculator(false);
 
+            const btnToggleCalc = document.getElementById('btnToggleCalc');
+            if (btnToggleCalc) {
+                if (isDesktopDevice()) {
+                    btnToggleCalc.classList.add('hidden');
+                } else {
+                    btnToggleCalc.classList.remove('hidden');
+                }
+            }
+
             const modal = document.getElementById('countModal');
             if (modal) modal.classList.remove('pointer-events-none', 'opacity-0');
             if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            if (isDesktopDevice()) {
+                setTimeout(() => {
+                    const firstInput = document.querySelector('.count-warehouse-input');
+                    if (firstInput) {
+                        firstInput.focus();
+                        firstInput.select();
+                    }
+                }, 80);
+            }
+        }
+
+        function isDesktopDevice() {
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+            const isWideScreen = window.innerWidth >= 768;
+            return !isMobileUA && (hasFinePointer || isWideScreen);
+        }
+
+        function onArmazemInputDesktopFocus(armazemCode) {
+            setActiveCalcTarget(armazemCode);
+        }
+
+        function handleCountDesktopKeydown(e, armazemCode) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const inp = document.getElementById(`countInput_${armazemCode}`);
+                if (inp && inp.value.trim()) {
+                    const prevCount = parseFloat(inp.getAttribute('data-prev-count')) || 0;
+                    const val = parseSmartMathExpression(inp.value, prevCount);
+                    if (val !== null && !isNaN(val) && val >= 0) {
+                        inp.value = String(val);
+                        updateCountPreview(armazemCode);
+                    }
+                }
+                const form = document.querySelector('#countModal form');
+                if (form) {
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                    } else {
+                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }
+                }
+            }
         }
 
         function renderWarehouseCountCard(armazemCode, sysQty, factor, codigo, filStr) {
@@ -1723,6 +1776,7 @@
 
             const sysQtyDisplay = `<span class="text-slate-700">${sysQty.toLocaleString('pt-BR')}</span>`;
             const armAddress = getProductAddressForArmazem(codigo, armazemCode, false);
+            const isDesktop = isDesktopDevice();
 
             const cardHtml = `
                 <div id="armCard_${armazemCode}" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
@@ -1737,8 +1791,12 @@
                             </div>
                             <p class="text-[10px] font-bold text-slate-400 mt-0.5">Saldo Sis: ${sysQtyDisplay}</p>
                         </div>
-                        <div class="w-40 text-right">
-                            <input type="text" inputmode="none" readonly data-armazem="${armazemCode}" data-factor="${factor}" data-mode="peso" data-prev-count="${sessionQty !== null ? sessionQty : 0}" id="countInput_${armazemCode}" onclick="this.blur(); onArmazemInputClick('${armazemCode}')" onfocus="this.blur(); onArmazemInputClick('${armazemCode}')" oninput="updateCountPreview('${armazemCode}')" class="count-warehouse-input w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 text-right cursor-pointer" placeholder="Toque para contar">
+                        <div class="w-44 text-right">
+                            ${isDesktop ? `
+                                <input type="text" data-armazem="${armazemCode}" data-factor="${factor}" data-mode="peso" data-prev-count="${sessionQty !== null ? sessionQty : 0}" id="countInput_${armazemCode}" onfocus="onArmazemInputDesktopFocus('${armazemCode}')" oninput="updateCountPreview('${armazemCode}')" onkeydown="handleCountDesktopKeydown(event, '${armazemCode}')" class="count-warehouse-input w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 text-right cursor-text" placeholder="Digite qtd ou conta">
+                            ` : `
+                                <input type="text" inputmode="none" readonly data-armazem="${armazemCode}" data-factor="${factor}" data-mode="peso" data-prev-count="${sessionQty !== null ? sessionQty : 0}" id="countInput_${armazemCode}" onclick="this.blur(); onArmazemInputClick('${armazemCode}')" onfocus="this.blur(); onArmazemInputClick('${armazemCode}')" oninput="updateCountPreview('${armazemCode}')" class="count-warehouse-input w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 text-right cursor-pointer" placeholder="Toque para contar">
+                            `}
                         </div>
                     </div>
                     
@@ -1774,7 +1832,9 @@
             }
             setActiveCalcTarget(armazemCode);
             updateCountPreview(armazemCode);
-            toggleAppCalculator(true);
+            if (!isDesktopDevice()) {
+                toggleAppCalculator(true);
+            }
         }
 
         function promptAddExtraWarehouseCard() {
@@ -1812,6 +1872,7 @@
         }
 
         function toggleAppCalculator(show = null) {
+            if (isDesktopDevice() && show === true) return;
             const keypad = document.getElementById('appCalculatorKeypad');
             const label = document.getElementById('labelToggleCalc');
             if (!keypad) return;
@@ -1819,7 +1880,7 @@
             const isHidden = keypad.classList.contains('hidden');
             const shouldShow = (show !== null) ? show : isHidden;
 
-            if (shouldShow) {
+            if (shouldShow && !isDesktopDevice()) {
                 keypad.classList.remove('hidden');
                 if (label) label.innerText = 'Fechar Calculadora';
             } else {
@@ -1831,7 +1892,9 @@
 
         function onArmazemInputClick(armazemCode) {
             setActiveCalcTarget(armazemCode);
-            toggleAppCalculator(true);
+            if (!isDesktopDevice()) {
+                toggleAppCalculator(true);
+            }
         }
 
         function setActiveCalcTarget(armazemCode) {

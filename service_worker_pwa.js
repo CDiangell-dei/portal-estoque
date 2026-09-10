@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.7-falso-saldo-zero';
+const CACHE_NAME = 'portal-estoques-v9.8-desktop-keyboard-calc';
 const STATIC_ASSETS = [
   './',
   './index.html',
