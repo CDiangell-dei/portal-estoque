@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-estoques-v9.5-saldo-zero-full-catalog';
+const CACHE_NAME = 'portal-estoques-v9.6-auto-acurado-zero-saldo';
 const STATIC_ASSETS = [
   './',
   './index.html',

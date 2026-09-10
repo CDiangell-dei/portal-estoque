@@ -894,12 +894,13 @@
                 const cod = prod.codigo || prod.Codigo ? String(prod.codigo || prod.Codigo).trim() : '';
                 const sysQty = saldoMap[cod] || 0;
                 
-                const hasCount = hasCountMap[cod] === true;
+                const hasRealCount = hasCountMap[cod] === true;
+                let hasCount = hasRealCount;
                 let countedQty = null;
                 let diff = 0;
                 let status = 'PENDENTE';
 
-                if (hasCount) {
+                if (hasRealCount) {
                     countedQty = productCountsMap[cod] || 0;
                     diff = countedQty - sysQty;
                     if (Math.abs(diff) < 0.0001) {
@@ -909,6 +910,14 @@
                     } else {
                         status = 'PERDA';
                     }
+                } else if (sysQty <= 0.0001) {
+                    // Item sem contagem física registrada e com saldo 0 (ou sem saldo) no sistema:
+                    // Atribui contagem virtual de 0 e status ACURADO (saldo 0 = contagem 0, acurácia 100%).
+                    // Dessa forma, quando o usuário desmarcar "Acurado" nos filtros de status, esses itens somem automaticamente!
+                    hasCount = true;
+                    countedQty = 0;
+                    diff = 0;
+                    status = 'ACURADO';
                 }
 
                 const lastDate = productLastDateMap[cod] || null;
@@ -960,13 +969,14 @@
             // 1. Aplica primeiro os filtros de escopo do usuário (Tags, Fornecedores, Saldo)
             const userScopedItems = allMapped.filter(item => {
                 if (saldoFilterMode === 'COM_SALDO') {
-                    // Se o usuário digitou uma busca específica, permite que o item apareça mesmo com saldo 0 para que possa ser contado!
-                    if (!term && Math.abs(item.quantidade) < 0.0001 && item.status !== 'GANHO' && item.status !== 'PERDA') {
+                    // Quando o filtro é "Apenas Com Saldo (> 0)", itens com saldo <= 0 são estritamente excluídos,
+                    // a menos que tenham uma contagem física com sobra (GANHO)
+                    if (item.quantidade <= 0.0001 && item.status !== 'GANHO') {
                         return false;
                     }
                 } else if (saldoFilterMode === 'SALDO_ZERO') {
-                    // Exibe estritamente os itens que estão com saldo zerado no sistema
-                    if (Math.abs(item.quantidade) >= 0.0001) {
+                    // Exibe estritamente os itens que estão com saldo zerado ou negativo no sistema
+                    if (item.quantidade > 0.0001) {
                         return false;
                     }
                 }
@@ -1224,6 +1234,7 @@
                     const data = prods[cod];
                     if (data.count === null) {
                         if (data.sys > 0.0001) armazemStats[arm].pendente++;
+                        else armazemStats[arm].ok++;
                     } else {
                         const diff = data.count - data.sys;
                         if (Math.abs(diff) < 0.0001) armazemStats[arm].ok++;
