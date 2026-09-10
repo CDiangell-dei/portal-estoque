@@ -59,14 +59,14 @@ O **Portal de Controle de Estoques da Amazon Aço** foi desenvolvido para atende
 
 O sistema gerencia os estoques de forma individualizada para cada loja da rede, permitindo alternância ágil e controle setorial:
 
-| Código | Loja / Unidade | Localização | Descrição |
+| Código | Loja / Unidade | Localização | Endereço Oficial |
 | :---: | :--- | :--- | :--- |
-| **01** | **Loja Alvorada** | Manaus - AM | Loja física e atendimento comercial |
-| **02** | **Loja Matriz CD** | Manaus - AM | Loja Matriz e Centro de Distribuição |
-| **04** | **Loja Raiz** | Manaus - AM | Loja física e atendimento ao cliente |
-| **05** | **Loja Cidade Nova** | Manaus - AM | Loja física (Zona Norte) |
-| **06** | **Loja Jorge Teixeira** | Manaus - AM | Loja física (Zona Leste) |
-| **12** | **Loja Boa Vista** | Boa Vista - RR | Loja física e operação regional Roraima |
+| **01** | **Loja Alvorada** | Manaus - AM | Rua Prof. Abílio Alencar, 1337 – Alvorada I |
+| **02** | **Loja Matriz CD** | Manaus - AM | Av. Puraquequara, 5328 – Puraquequara |
+| **04** | **Loja Raiz** | Manaus - AM | Av. Costa e Silva, 1257 – Raiz |
+| **05** | **Loja Cidade Nova** | Manaus - AM | Av. Timbiras, 350 – Cidade Nova |
+| **06** | **Loja Jorge Teixeira** | Manaus - AM | Av. Itaúba, 38 – Jorge Teixeira |
+| **12** | **Loja Boa Vista** | Boa Vista - RR | Av. Venezuela, 1173 – Pricumã, CEP 69309-690 |
 
 > [!NOTE]
 > **Código 00 — Visualização Geral:** O código `00` não representa uma loja física. Ele é utilizado no sistema exclusivamente para **visualização geral e relatórios consolidados**, permitindo a gestores e auditores consultar os dados consolidados de todas as lojas simultaneamente.
