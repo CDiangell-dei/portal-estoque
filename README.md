@@ -26,7 +26,7 @@
 
 ## 📌 Visão Geral
 
-O **Portal de Controle de Estoques da Amazon Aço** foi desenvolvido para atender à demanda de conferência, acuracidade e controle operacional das 7 unidades/filiais do grupo. A aplicação opera diretamente na nuvem, com suporte offline/PWA de alta performance para coletores de dados, smartphones de campo e computadores de almoxarifado e auditoria.
+O **Portal de Controle de Estoques da Amazon Aço** foi desenvolvido para atender à demanda de conferência, acuracidade e controle operacional das lojas da rede Amazon Aço. A aplicação opera diretamente na nuvem, com suporte offline/PWA de alta performance para coletores de dados, smartphones de campo e computadores de almoxarifado e auditoria.
 
 ### 🌟 Destaques da Plataforma
 - **Zero Instalação de Servidor Local:** Funciona 100% no navegador (Web & Mobile), sem necessidade de instalação de dependências locais (Node.js/Git) nas estações de trabalho.
@@ -55,19 +55,21 @@ O **Portal de Controle de Estoques da Amazon Aço** foi desenvolvido para atende
 
 ---
 
-## 🏢 Unidades Operacionais (Filiais)
+## 🏪 Lojas Atendidas (Filiais)
 
-O sistema suporta segregação e visualização unificada de dados entre as unidades:
+O sistema gerencia os estoques de forma individualizada para cada loja da rede, permitindo alternância ágil e controle setorial:
 
-```
-[00] Matriz Manaus        ─── Almoxarifado Central & Vendas
-[01] Centro de Distribuição─── Pulmão Logístico & Carregamento Pesado
-[02] Unidade Fabril       ─── Perfilados, Telhas e Chapas
-[04] Filial Distribuição  ─── Varejo & Atacado Regional
-[05] Beneficiamento & Corte── Almoxarifado Técnico & Insumos Especiais
-[06] Filial Estratégica   ─── Apoio Logístico Integrado
-[12] Nova Unidade         ─── Expansão Operacional
-```
+| Código | Loja / Unidade | Localização | Descrição |
+| :---: | :--- | :--- | :--- |
+| **01** | **Loja Alvorada** | Manaus - AM | Loja física e atendimento comercial |
+| **02** | **Loja Matriz CD** | Manaus - AM | Loja Matriz e Centro de Distribuição |
+| **04** | **Loja Raiz** | Manaus - AM | Loja física e atendimento ao cliente |
+| **05** | **Loja Cidade Nova** | Manaus - AM | Loja física (Zona Norte) |
+| **06** | **Loja Jorge Teixeira** | Manaus - AM | Loja física (Zona Leste) |
+| **12** | **Loja Boa Vista** | Boa Vista - RR | Loja física e operação regional Roraima |
+
+> [!NOTE]
+> **Código 00 — Visualização Geral:** O código `00` não representa uma loja física. Ele é utilizado no sistema exclusivamente para **visualização geral e relatórios consolidados**, permitindo a gestores e auditores consultar os dados consolidados de todas as lojas simultaneamente.
 
 ---
 
