@@ -9,7 +9,7 @@ echo                     AMAZON ACO
 echo ============================================================
 echo.
 
-set "REPO_URL=https://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@github.com/CDiangell-dei/portal-estoque.git"
+set "REPO_URL=https://github.com/CDiangell-dei/portal-estoque.git"
 set "DEFAULT_DIR=C:\Antigravity\Controle de Estoque"
 
 :: 1. Se o script estiver sendo executado dentro de uma pasta que ja eh um repositorio Git do projeto, usa ela mesma
