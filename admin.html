@@ -435,12 +435,12 @@
                         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filial</label>
                         <select id="auditFilterFilial" onchange="renderAdminAuditLogs()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800">
                             <option value="ALL">Todas as Filiais</option>
-                            <option value="01">Filial 01 - Matriz</option>
-                            <option value="02">Filial 02 - Eletrodo</option>
-                            <option value="03">Filial 03 - Telhas</option>
-                            <option value="04">Filial 04 - Tubos</option>
-                            <option value="05">Filial 05 - Perfis</option>
-                            <option value="06">Filial 06 - Jorge Teixeira</option>
+                            <option value="01">01 - Alvorada</option>
+                            <option value="02">02 - Matriz CD</option>
+                            <option value="04">04 - Raiz</option>
+                            <option value="05">05 - Cidade Nova</option>
+                            <option value="06">06 - Jorge Teixeira</option>
+                            <option value="12">12 - Boa Vista</option>
                         </select>
                     </div>
                 </div>
@@ -690,16 +690,8 @@
             filtered.sort((a, b) => (parseInt(a.matricula, 10) || 0) - (parseInt(b.matricula, 10) || 0));
 
             const filiaisList = getCachedFiliaisList();
-
-            const indList = [
-                { num: '00', name: '00 - Geral' },
-                { num: '01', name: '01 - Telhas' },
-                { num: '02', name: '02 - Tubos' },
-                { num: '03', name: '03 - Perfis' },
-                { num: '04', name: '04 - Matéria Prima' },
-                { num: '05', name: '05 - Sucata' },
-                { num: '06', name: '06 - Jorge Teixeira' }
-            ];
+            const indFiliaisNums = filiaisList.map(f => String(f.num_filial).padStart(2, '0'));
+            const allIndList = [...new Set(['00', '01', '02', '04', '05', '06', '12', ...indFiliaisNums])].sort((a,b) => parseInt(a,10) - parseInt(b,10));
 
             filtered.forEach(u => {
                 const tr = document.createElement('tr');
@@ -724,13 +716,14 @@
 
                 const userIndFilial = String(u.filial_industria || '06').padStart(2, '0');
                 let userIndFound = false;
-                indList.forEach(f => {
-                    const isInd = f.num === userIndFilial;
+                allIndList.forEach(fNum => {
+                    const isInd = fNum === userIndFilial;
                     if (isInd) userIndFound = true;
-                    filialIndOptionsHtml += `<option value="${f.num}" ${isInd ? 'selected' : ''}>${f.num}</option>`;
+                    const label = fNum === '00' ? '00 - Geral' : `Filial ${fNum}`;
+                    filialIndOptionsHtml += `<option value="${fNum}" ${isInd ? 'selected' : ''}>${label}</option>`;
                 });
                 if (!userIndFound && userIndFilial) {
-                    filialIndOptionsHtml += `<option value="${userIndFilial}" selected>${userIndFilial}</option>`;
+                    filialIndOptionsHtml += `<option value="${userIndFilial}" selected>Filial ${userIndFilial}</option>`;
                 }
 
                 const temSenha = u.tem_senha === true || (u.senha && String(u.senha).trim() !== '');

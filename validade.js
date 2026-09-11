@@ -821,7 +821,7 @@
                     selFilial.className = "w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 cursor-pointer";
 
                     const filials = [...new Set(rawValidadeDataset.map(v => v.filial))].sort();
-                    const allAvailable = currentSector === 'INDUSTRIA' ? ['01', '02', '03', '04', '05', '06'] : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+                    const allAvailable = getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
                     const merged = [...new Set([...allAvailable, ...filials])].sort();
 
                     const curVal = selFilial.value || 'ALL';
@@ -3239,7 +3239,7 @@
             const userAssigned = getTargetFilialForSector();
 
             const filials = [...new Set(rawValidadeDataset.map(v => v.filial))].sort();
-            const allAvailable = currentSector === 'INDUSTRIA' ? ['01', '02', '03', '04', '05', '06'] : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+            const allAvailable = getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
             const merged = [...new Set([...allAvailable, ...filials])].filter(f => f && f !== '00' && f !== 'ALL').sort();
 
             let defaultFilial = chosenFilial;
@@ -3320,7 +3320,7 @@
             const userAssigned = getTargetFilialForSector();
 
             const filials = [...new Set(rawValidadeDataset.map(v => v.filial))].sort();
-            const allAvailable = currentSector === 'INDUSTRIA' ? ['01', '02', '03', '04', '05', '06'] : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+            const allAvailable = getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
             const merged = [...new Set([...allAvailable, ...filials])].filter(f => f && f !== '00' && f !== 'ALL').sort();
 
             let defaultFilial = chosenFilial;

@@ -1165,7 +1165,7 @@
 
             if (isGlobal) {
                 const list = currentSector === 'INDUSTRIA'
-                    ? [ { num: '01', name: '01 - Telhas' }, { num: '02', name: '02 - Tubos' }, { num: '03', name: '03 - Perfis' }, { num: '04', name: '04 - Matéria Prima' }, { num: '05', name: '05 - Sucata' }, { num: '06', name: '06 - Jorge Teixeira' } ]
+                    ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
                     : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
                 
                 let opts = '';
@@ -1305,7 +1305,7 @@
                 '01': sector === 'INDUSTRIA' ? 'Frente Loja / Venda' : 'Frente de Loja / Principal',
                 '02': sector === 'INDUSTRIA' ? 'Almoxarifado Geral' : 'Almoxarifado CD / Pulmão',
                 '03': 'Perfis / Depósito',
-                '04': sector === 'INDUSTRIA' ? 'Telhas' : 'Almoxarifado Secundário',
+                '04': sector === 'INDUSTRIA' ? 'Almoxarifado Produção' : 'Almoxarifado Secundário',
                 '05': 'Sucata / Acessórios',
                 '06': sector === 'INDUSTRIA' ? 'Jorge Teixeira' : 'Depósito Externo',
                 '09': 'Matéria Prima Especial',
@@ -1402,7 +1402,7 @@
 
             if (isGlobal) {
                 const list = currentSector === 'INDUSTRIA'
-                    ? [ { num: '01', name: '01 - Telhas' }, { num: '02', name: '02 - Tubos' }, { num: '03', name: '03 - Perfis' }, { num: '04', name: '04 - Matéria Prima' }, { num: '05', name: '05 - Sucata' }, { num: '06', name: '06 - Jorge Teixeira' } ]
+                    ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
                     : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
 
                 let opts = '';
@@ -2801,7 +2801,7 @@
 
             const isGlobal = isGlobalFilial(currentUser);
             const list = currentSector === 'INDUSTRIA'
-                ? [ { num: '01', name: '01 - Telhas' }, { num: '02', name: '02 - Tubos' }, { num: '03', name: '03 - Perfis' }, { num: '04', name: '04 - Matéria Prima' }, { num: '05', name: '05 - Sucata' }, { num: '06', name: '06 - Jorge Teixeira' } ]
+                ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
                 : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
 
             let html = `<option value="ALL">Todas as Filiais</option>`;

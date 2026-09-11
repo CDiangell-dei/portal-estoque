@@ -60,20 +60,13 @@
                 if (currentVal === '00') currentVal = 'ALL';
 
                 let opts = `<option value="ALL">Todas as Filiais</option>`;
-                if (currentSector === 'INDUSTRIA') {
-                    const indList = ['01', '02', '03', '04', '05', '06'];
-                    indList.forEach(f => {
-                        const label = getFilialDisplayName(f, 'industria');
-                        opts += `<option value="${f}">${label}</option>`;
-                    });
-                } else {
-                    const comList = getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
-                    const allCom = [...new Set(['01', '02', '04', '05', '06', '12', ...comList])].sort((a,b) => parseInt(a,10) - parseInt(b,10));
-                    allCom.forEach(f => {
-                        const label = getFilialDisplayName(f, 'comercio');
-                        opts += `<option value="${f}">${label}</option>`;
-                    });
-                }
+                const comList = getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => String(f.num_filial).padStart(2, '0'));
+                const allFiliaisList = [...new Set(['01', '02', '04', '05', '06', '12', ...comList])].sort((a,b) => parseInt(a,10) - parseInt(b,10));
+                
+                allFiliaisList.forEach(f => {
+                    const label = getFilialDisplayName(f, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                    opts += `<option value="${f}">${label}</option>`;
+                });
                 selFilial.innerHTML = opts;
                 selFilial.value = currentVal;
                 if (!selFilial.value) {
@@ -111,6 +104,13 @@
                 if (btnC) btnC.className = "px-4 py-2 rounded-xl text-xs font-black transition-all text-slate-600 hover:text-slate-900 flex items-center gap-1.5";
                 if (btnI) btnI.className = "px-4 py-2 rounded-xl text-xs font-black transition-all bg-[#002f6c] text-white shadow-sm flex items-center gap-1.5";
             }
+
+            // Limpa filtros de armazéns e tags do setor anterior para não travar a listagem do novo setor
+            try {
+                localStorage.removeItem('amazon_selected_armazens');
+                localStorage.removeItem('amazon_selected_tags');
+                localStorage.removeItem('amazon_selected_fornecedores');
+            } catch(e) {}
 
             initFilialFilterUI();
 
@@ -252,25 +252,33 @@
                     }
                 } catch(eVal) { console.warn("Erro validades:", eVal); }
 
-                // 4. Carrega Catálogo Completo do SB1 em paralelo ultra-rápido (garante busca e exibição de itens com saldo 0)
+                // 4. Carrega Catálogo Completo do SB1 com controle de concorrência seguro
                 let sb1All = [];
                 try {
                     const { count: totalSb1 } = await supabaseClient.from(sb1Table).select('codigo', { count: 'exact', head: true });
-                    const totalRows = totalSb1 || 14000;
+                    const totalRows = totalSb1 || (currentSector === 'INDUSTRIA' ? 60000 : 14000);
                     const chunkSize = 1000;
                     const totalChunks = Math.ceil(totalRows / chunkSize);
-                    const sb1Promises = [];
-                    for (let i = 0; i < totalChunks; i++) {
-                        const fromIdx = i * chunkSize;
-                        sb1Promises.push(
-                            supabaseClient.from(sb1Table)
-                                .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-                                .range(fromIdx, fromIdx + chunkSize - 1)
-                                .then(res => res.data || [])
-                        );
+                    
+                    const batchLimit = 6;
+                    for (let i = 0; i < totalChunks; i += batchLimit) {
+                        const batchPromises = [];
+                        for (let j = i; j < Math.min(i + batchLimit, totalChunks); j++) {
+                            const fromIdx = j * chunkSize;
+                            batchPromises.push(
+                                supabaseClient.from(sb1Table)
+                                    .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+                                    .range(fromIdx, fromIdx + chunkSize - 1)
+                                    .then(res => res.data || [])
+                            );
+                        }
+                        const batchResults = await Promise.all(batchPromises);
+                        batchResults.forEach(chunkData => {
+                            if (chunkData && chunkData.length > 0) {
+                                sb1All = sb1All.concat(chunkData);
+                            }
+                        });
                     }
-                    const results = await Promise.all(sb1Promises);
-                    sb1All = results.flat();
                 } catch (errSb1) {
                     console.warn("Aviso ao carregar catálogo completo, usando fallback por códigos ativos:", errSb1);
                     const activeCodesSet = new Set([

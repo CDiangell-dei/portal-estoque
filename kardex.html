@@ -697,7 +697,7 @@
                         selFilial.className = "bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#002f6c] w-full cursor-pointer";
                         const curVal = selFilial.value || 'ALL';
                         const filiaisInDataset = [...new Set(rawKardexDataset.map(k => k.filial).filter(Boolean))].sort();
-                        const allAvailable = sector === 'INDUSTRIA' ? ['1', '2', '3', '4', '5'] : ['1', '2', '4', '5', '6', '12'];
+                        const allAvailable = ['1', '2', '4', '5', '6', '12'];
                         const merged = [...new Set([...allAvailable, ...filiaisInDataset])].sort((a,b) => parseInt(a,10) - parseInt(b,10));
                         let opts = `<option value="ALL">Todas as Filiais</option>`;
                         merged.forEach(f => {

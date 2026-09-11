@@ -36,18 +36,6 @@ let DIC_FILIAIS_MAP = {
     12: "12 - Boa Vista",
     "12": "12 - Boa Vista"
 };
-
-const DIC_FILIAIS_INDUSTRIA = {
-    0: "00 - Todas as Filiais",
-    "00": "00 - Todas as Filiais",
-    1: "01 - Telhas",
-    2: "02 - Tubos",
-    3: "03 - Perfis",
-    4: "04 - Matéria Prima",
-    5: "05 - Sucata",
-    6: "06 - Jorge Teixeira"
-};
-
 let cachedFiliaisList = null;
 
 function syncDicFiliaisMap(list) {
@@ -366,14 +354,16 @@ function handleLogout() {
 }
 
 function getFilialDisplayName(numFilial, context = 'comercio') {
-    if (numFilial === undefined || numFilial === null || numFilial === '') return "01 - Alvorada";
+    if (numFilial === undefined || numFilial === null || numFilial === '') {
+        return context === 'industria' ? "Filial 01" : (DIC_FILIAIS_MAP['01'] || "01 - Alvorada");
+    }
     const str = String(numFilial).toUpperCase().trim();
     if (str === 'ALL' || str === 'TODAS') return "Todas as Filiais";
     const padStr = String(numFilial).padStart(2, '0');
     const num = parseInt(str, 10);
     if (str === '00' || str === '0') return DIC_FILIAIS_MAP['00'] || "00 - Geral";
     if (context === 'industria') {
-        return DIC_FILIAIS_INDUSTRIA[padStr] || DIC_FILIAIS_INDUSTRIA[num] || `Filial ${padStr}`;
+        return `Filial ${padStr}`;
     }
     return DIC_FILIAIS_MAP[padStr] || DIC_FILIAIS_MAP[num] || DIC_FILIAIS_MAP[str] || `Filial ${padStr}`;
 }
