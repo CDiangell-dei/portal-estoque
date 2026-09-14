@@ -932,11 +932,13 @@
             const filialStr = String(activeFilial || '01').padStart(2, '0');
 
             const armazens = (item.armazensNoFiltro && item.armazensNoFiltro.length > 0) ? item.armazensNoFiltro : ['01'];
+            const zeradosSet = new Set(item.armazensZerados || []);
 
             // Se apenas 1 armazém no escopo: exibe botão de alternância destacado
             if (armazens.length === 1) {
                 const arm = armazens[0];
                 const isOk = isEtiquetaTrocada(filialStr, arm, item.codigo);
+                const isZerado = zeradosSet.has(arm);
                 const info = getEtiquetaInfo(filialStr, arm, item.codigo);
                 const dateStr = info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : '';
                 const whoStr = info?.usuario_nome || 'Usuário';
@@ -950,14 +952,23 @@
                             <span class="hidden group-hover:inline">Desmarcar</span>
                         </button>
                     `;
-                } else {
+                }
+
+                if (isZerado) {
                     return `
-                        <button type="button" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filialStr}', '${arm}', '${item.codigo}', event)" class="px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-amber-100 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap mx-auto" title="Armazém ${arm}: Etiqueta pendente. Clique para marcar como OK.">
-                            <i data-lucide="tag" class="w-3.5 h-3.5 text-amber-700"></i>
-                            <span>🏷️ Trocar</span>
-                        </button>
+                        <span class="px-2.5 py-1.5 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center gap-1 mx-auto whitespace-nowrap" title="Armazém ${arm}: Material zerado e acurado (0 un). Não requer troca de etiqueta física.">
+                            <i data-lucide="minus-circle" class="w-3.5 h-3.5 text-slate-400"></i>
+                            <span>Zerado (Sem Etiqueta)</span>
+                        </span>
                     `;
                 }
+
+                return `
+                    <button type="button" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filialStr}', '${arm}', '${item.codigo}', event)" class="px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-amber-100 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap mx-auto" title="Armazém ${arm}: Etiqueta pendente. Clique para marcar como OK.">
+                        <i data-lucide="tag" class="w-3.5 h-3.5 text-amber-700"></i>
+                        <span>🏷️ Trocar</span>
+                    </button>
+                `;
             }
 
             // Se múltiplos armazéns no escopo: exibe badges/botões individuais por armazém
@@ -965,6 +976,7 @@
                 <div class="flex flex-wrap items-center justify-center gap-1">
                     ${armazens.map(arm => {
                         const isOk = isEtiquetaTrocada(filialStr, arm, item.codigo);
+                        const isZerado = zeradosSet.has(arm);
                         const info = getEtiquetaInfo(filialStr, arm, item.codigo);
                         const dateStr = info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : '';
                         const whoStr = info?.usuario_nome || 'Usuário';
@@ -978,27 +990,35 @@
                                     <span class="hidden group-hover:inline">[${arm}] Desm.</span>
                                 </button>
                             `;
-                        } else {
+                        }
+
+                        if (isZerado) {
                             return `
-                                <button type="button" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filialStr}', '${arm}', '${item.codigo}', event)" class="px-2 py-1 rounded-lg text-[9px] font-black bg-amber-50 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap" title="Armazém ${arm}: Etiqueta pendente. Clique para marcar como OK.">
-                                    <i data-lucide="tag" class="w-2.5 h-2.5 text-amber-700"></i>
-                                    <span>[${arm}] 🏷️ Trocar</span>
-                                </button>
+                                <span class="px-2 py-1 rounded-lg text-[9px] font-bold bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-1 whitespace-nowrap" title="Armazém ${arm}: Zerado e acurado (0 un). Não requer etiqueta física.">
+                                    <i data-lucide="minus" class="w-2.5 h-2.5 text-slate-400"></i>
+                                    <span>[${arm}] Zerado</span>
+                                </span>
                             `;
                         }
+
+                        return `
+                            <button type="button" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filialStr}', '${arm}', '${item.codigo}', event)" class="px-2 py-1 rounded-lg text-[9px] font-black bg-amber-50 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap" title="Armazém ${arm}: Etiqueta pendente. Clique para marcar como OK.">
+                                <i data-lucide="tag" class="w-2.5 h-2.5 text-amber-700"></i>
+                                <span>[${arm}] 🏷️ Trocar</span>
+                            </button>
+                        `;
                     }).join('')}
                 </div>
             `;
         }
 
-        function renderModalEtiquetaButtonHtml(filial, armazem, codigo) {
+        function renderModalEtiquetaButtonHtml(filial, armazem, codigo, sysQty = 0, sessionQty = null) {
             const isOk = isEtiquetaTrocada(filial, armazem, codigo);
             const info = getEtiquetaInfo(filial, armazem, codigo);
-            const title = isOk 
-                ? `Armazém ${armazem}: Etiqueta OK (${info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : ''}). Clique para desmarcar.`
-                : `Armazém ${armazem}: Trocar Etiqueta. Clique para marcar como OK.`;
+            const isZerado = (sysQty <= 0.0001) && (sessionQty === null || sessionQty <= 0.0001);
 
             if (isOk) {
+                const title = `Armazém ${armazem}: Etiqueta OK (${info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : ''}). Clique para desmarcar.`;
                 return `
                     <button type="button" id="btnModalEtiqueta_${armazem}" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filial}', '${armazem}', '${codigo}', event)" class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 hover:bg-rose-100 text-emerald-800 hover:text-rose-800 border border-emerald-300 hover:border-rose-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs group" title="${title}">
                         <i data-lucide="check" class="w-3 h-3 text-emerald-700 group-hover:hidden"></i>
@@ -1007,14 +1027,24 @@
                         <span class="hidden group-hover:inline">Desmarcar</span>
                     </button>
                 `;
-            } else {
+            }
+
+            if (isZerado) {
                 return `
-                    <button type="button" id="btnModalEtiqueta_${armazem}" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filial}', '${armazem}', '${codigo}', event)" class="px-2 py-0.5 rounded text-[9px] font-black bg-amber-100 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="${title}">
-                        <i data-lucide="tag" class="w-3 h-3 text-amber-700"></i>
-                        <span>Trocar Etiqueta</span>
-                    </button>
+                    <span id="btnModalEtiqueta_${armazem}" class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-400 border border-slate-200 flex items-center gap-1" title="Material zerado e acurado (0 un). Não requer etiqueta física.">
+                        <i data-lucide="minus-circle" class="w-3 h-3 text-slate-400"></i>
+                        <span>Zerado (Sem Etiqueta)</span>
+                    </span>
                 `;
             }
+
+            const title = `Armazém ${armazem}: Trocar Etiqueta. Clique para marcar como OK.`;
+            return `
+                <button type="button" id="btnModalEtiqueta_${armazem}" onclick="event.stopPropagation(); toggleEtiquetaStatus('${filial}', '${armazem}', '${codigo}', event)" class="px-2 py-0.5 rounded text-[9px] font-black bg-amber-100 hover:bg-emerald-100 text-amber-900 hover:text-emerald-900 border border-amber-300 hover:border-emerald-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="${title}">
+                    <i data-lucide="tag" class="w-3 h-3 text-amber-700"></i>
+                    <span>Trocar Etiqueta</span>
+                </button>
+            `;
         }
 
         function updateModalEtiquetaButton(filial, armazem, codigo) {
@@ -1199,6 +1229,8 @@
 
             // Mapeamento multidepósitos de presença de armazéns por produto
             const productWarehousesMap = {};
+            // Mapeamento de saldo por armazém específico
+            const warehouseSaldoMap = {};
 
             rawSaldoDataset.forEach(s => {
                 if (!isFilialMatch(s.filial, selectedFilial)) return;
@@ -1207,7 +1239,13 @@
                 const arm = String(s.armazem || '01').trim().padStart(2, '0');
                 if (!productWarehousesMap[cod]) productWarehousesMap[cod] = new Set();
                 productWarehousesMap[cod].add(arm);
+                const wKey = `${arm}_${cod}`;
+                warehouseSaldoMap[wKey] = (warehouseSaldoMap[wKey] || 0) + (s.quantidade || 0);
             });
+
+            // Mapeamento de contagem por armazém específico
+            const warehouseCountMap = {};
+            const warehouseCountDates = {};
 
             rawConfDataset.forEach(c => {
                 if (!isFilialMatch(c.filial, selectedFilial)) return;
@@ -1216,6 +1254,16 @@
                 if (cod) {
                     if (!productWarehousesMap[cod]) productWarehousesMap[cod] = new Set();
                     productWarehousesMap[cod].add(arm);
+
+                    const wKey = `${arm}_${cod}`;
+                    if (localCountsMap[wKey] === undefined) {
+                        const q = Number(c.quantidade_contada !== undefined ? c.quantidade_contada : (c.qtd_contada || 0));
+                        const dt = c.created_at ? new Date(c.created_at) : new Date(0);
+                        if (warehouseCountMap[wKey] === undefined || dt > (warehouseCountDates[wKey] || new Date(0))) {
+                            warehouseCountMap[wKey] = q;
+                            warehouseCountDates[wKey] = dt;
+                        }
+                    }
                 }
 
                 if (!isArmSelectedCheck(arm)) return;
@@ -1246,6 +1294,8 @@
                 if (cod) {
                     if (!productWarehousesMap[cod]) productWarehousesMap[cod] = new Set();
                     productWarehousesMap[cod].add(arm);
+                    warehouseCountMap[key] = Number(localCountsMap[key] || 0);
+                    warehouseCountDates[key] = new Date();
                 }
                 if (!selectedArmazens.includes(arm)) return;
                 
@@ -1319,10 +1369,48 @@
                 }
                 armazensNoFiltro.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
-                const etiquetasTrocadas = armazensNoFiltro.filter(arm => isEtiquetaTrocada(filialForEtiqueta, arm, cod));
-                const etiquetasPendentes = armazensNoFiltro.filter(arm => !isEtiquetaTrocada(filialForEtiqueta, arm, cod));
+                const armZeradoMap = {};
+                const armazensZerados = [];
+                const etiquetasTrocadas = [];
+                const etiquetasPendentes = [];
+                const etiquetasDispensadas = [];
+
+                armazensNoFiltro.forEach(arm => {
+                    const wKey = `${arm}_${cod}`;
+                    const armSys = warehouseSaldoMap[wKey] || 0;
+                    const armCount = warehouseCountMap[wKey];
+                    const isTrocada = isEtiquetaTrocada(filialForEtiqueta, arm, cod);
+
+                    // Material zerado e acurado: não requer troca de etiqueta!
+                    const isSysZero = Math.abs(armSys) <= 0.0001;
+                    const hasExplicitCount = (armCount !== null && armCount !== undefined);
+                    const isCountZero = hasExplicitCount ? (Math.abs(armCount) <= 0.0001) : (countedQty !== null && Math.abs(countedQty) <= 0.0001);
+
+                    const isZeradoAcurado = isSysZero && (
+                        (hasExplicitCount && isCountZero) ||
+                        (status === 'ACURADO' && (countedQty === null || Math.abs(countedQty) <= 0.0001))
+                    );
+
+                    if (isZeradoAcurado) {
+                        armZeradoMap[arm] = true;
+                        armazensZerados.push(arm);
+                        if (isTrocada) {
+                            etiquetasTrocadas.push(arm);
+                        } else {
+                            etiquetasDispensadas.push(arm);
+                        }
+                    } else {
+                        armZeradoMap[arm] = false;
+                        if (isTrocada) {
+                            etiquetasTrocadas.push(arm);
+                        } else {
+                            etiquetasPendentes.push(arm);
+                        }
+                    }
+                });
+
                 const temEtiquetaPendente = etiquetasPendentes.length > 0;
-                const isEtiquetaTotalmenteTrocada = armazensNoFiltro.length > 0 && etiquetasPendentes.length === 0;
+                const isEtiquetaTotalmenteTrocada = armazensNoFiltro.length > 0 && etiquetasPendentes.length === 0 && (etiquetasTrocadas.length > 0 || etiquetasDispensadas.length === armazensNoFiltro.length);
 
                 return {
                     codigo: cod,
@@ -1344,8 +1432,11 @@
                     isCountedToday: isCountedToday,
                     isDailyGoalItem: false,
                     armazensNoFiltro: armazensNoFiltro,
+                    armZeradoMap: armZeradoMap,
+                    armazensZerados: armazensZerados,
                     etiquetasTrocadas: etiquetasTrocadas,
                     etiquetasPendentes: etiquetasPendentes,
+                    etiquetasDispensadas: etiquetasDispensadas,
                     temEtiquetaPendente: temEtiquetaPendente,
                     isEtiquetaTotalmenteTrocada: isEtiquetaTotalmenteTrocada
                 };
@@ -1396,15 +1487,16 @@
                 return true;
             });
 
-            // 2. ATUALIZA O PLACAR DE ETIQUETAS DO ESCOPO ATIVO
+            // 2. ATUALIZA O PLACAR DE ETIQUETAS DO ESCOPO ATIVO (Apenas materiais que exigem etiqueta)
             let totalEtiquetaSlots = 0;
             let totalEtiquetasTrocadas = 0;
             baseScopedItems.forEach(item => {
-                totalEtiquetaSlots += item.armazensNoFiltro.length;
+                const slotsRequeridos = item.armazensNoFiltro.filter(arm => !item.armazensZerados.includes(arm) || item.etiquetasTrocadas.includes(arm));
+                totalEtiquetaSlots += slotsRequeridos.length;
                 totalEtiquetasTrocadas += item.etiquetasTrocadas.length;
             });
             const totalEtiquetasPendentes = Math.max(0, totalEtiquetaSlots - totalEtiquetasTrocadas);
-            const pctEtiquetas = totalEtiquetaSlots > 0 ? Math.round((totalEtiquetasTrocadas / totalEtiquetaSlots) * 100) : 0;
+            const pctEtiquetas = totalEtiquetaSlots > 0 ? Math.round((totalEtiquetasTrocadas / totalEtiquetaSlots) * 100) : 100;
 
             renderEtiquetasScoreboard({
                 selectedArmazens,
@@ -2212,7 +2304,7 @@
                                     <i data-lucide="map-pin" class="w-2.5 h-2.5 text-amber-700"></i>
                                     <span id="armCardAddressText_${armazemCode}">${armAddress || '+ Endereço'}</span>
                                 </button>
-                                ${renderModalEtiquetaButtonHtml(targetFilStr, armazemCode, codigo)}
+                                ${renderModalEtiquetaButtonHtml(targetFilStr, armazemCode, codigo, sysQty, sessionQty)}
                             </div>
                             <p class="text-[10px] font-bold text-slate-400 mt-0.5">Saldo Sis: ${sysQtyDisplay}</p>
                         </div>
