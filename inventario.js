@@ -371,6 +371,7 @@
                     armazem: String(v.armazem || '01').trim().padStart(2, '0')
                 }));
 
+                invalidateProductAddressCache();
                 extractInventoryMetadata();
                 applyInventoryFilters();
             } catch (err) {
@@ -726,9 +727,14 @@
         // CONTROLE DE TROCA FÍSICA DE ETIQUETAS POR ARMAZÉM (MULTIDEPÓSITOS)
         // Regra: Chave composta filial_armazem_codigo (nunca global).
         // Validade: 60 dias (2 meses). Após isso, expira automaticamente para pendente.
+        // Otimização: Cache em memória de alta performance para evitar leituras
+        // síncronas repetitivas do localStorage em listas de milhares de itens.
         // =========================================================================
         const ETIQUETA_EXPIRATION_DAYS = 60;
         const ETIQUETA_EXPIRATION_MS = ETIQUETA_EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+
+        let inMemoryEtiquetasMap = null;
+        let inMemoryEtiquetasTimestamp = 0;
 
         function makeEtiquetaKey(filial, armazem, codigo) {
             const f = String(filial || '01').trim().padStart(2, '0');
@@ -737,14 +743,26 @@
             return `${f}_${a}_${c}`;
         }
 
-        function getEtiquetasStorageMap() {
+        function getEtiquetasStorageMap(forceReload = false) {
+            const now = Date.now();
+            if (!forceReload && inMemoryEtiquetasMap !== null && (now - inMemoryEtiquetasTimestamp) < 60000) {
+                return inMemoryEtiquetasMap;
+            }
+
             try {
                 const raw = localStorage.getItem('amazon_etiquetas_status');
-                if (!raw) return {};
+                if (!raw) {
+                    inMemoryEtiquetasMap = {};
+                    inMemoryEtiquetasTimestamp = now;
+                    return inMemoryEtiquetasMap;
+                }
                 const parsed = JSON.parse(raw);
-                if (!parsed || typeof parsed !== 'object') return {};
+                if (!parsed || typeof parsed !== 'object') {
+                    inMemoryEtiquetasMap = {};
+                    inMemoryEtiquetasTimestamp = now;
+                    return inMemoryEtiquetasMap;
+                }
 
-                const now = Date.now();
                 let cleaned = false;
                 for (const key of Object.keys(parsed)) {
                     const entry = parsed[key];
@@ -753,35 +771,41 @@
                         cleaned = true;
                         continue;
                     }
-                    const dt = new Date(entry.trocado_em).getTime();
+                    const dt = typeof entry._ts === 'number' ? entry._ts : new Date(entry.trocado_em).getTime();
                     // Expiração automática após 60 dias:
                     if (isNaN(dt) || (now - dt) > ETIQUETA_EXPIRATION_MS) {
                         delete parsed[key];
                         cleaned = true;
+                    } else {
+                        entry._ts = dt;
                     }
                 }
                 if (cleaned) {
                     try { localStorage.setItem('amazon_etiquetas_status', JSON.stringify(parsed)); } catch(e) {}
                 }
-                return parsed;
+                inMemoryEtiquetasMap = parsed;
+                inMemoryEtiquetasTimestamp = now;
+                return inMemoryEtiquetasMap;
             } catch (e) {
                 console.warn('Erro ao carregar mapa de etiquetas:', e);
-                return {};
+                inMemoryEtiquetasMap = {};
+                inMemoryEtiquetasTimestamp = now;
+                return inMemoryEtiquetasMap;
             }
         }
 
-        function isEtiquetaTrocada(filial, armazem, codigo) {
-            const map = getEtiquetasStorageMap();
+        function isEtiquetaTrocada(filial, armazem, codigo, cachedMap = null) {
+            const map = cachedMap || getEtiquetasStorageMap();
             const key = makeEtiquetaKey(filial, armazem, codigo);
             const entry = map[key];
             if (!entry || entry.status !== true || !entry.trocado_em) return false;
-            const dt = new Date(entry.trocado_em).getTime();
+            const dt = typeof entry._ts === 'number' ? entry._ts : new Date(entry.trocado_em).getTime();
             if (isNaN(dt) || (Date.now() - dt) > ETIQUETA_EXPIRATION_MS) return false;
             return true;
         }
 
-        function getEtiquetaInfo(filial, armazem, codigo) {
-            const map = getEtiquetasStorageMap();
+        function getEtiquetaInfo(filial, armazem, codigo, cachedMap = null) {
+            const map = cachedMap || getEtiquetasStorageMap();
             const key = makeEtiquetaKey(filial, armazem, codigo);
             return map[key] || null;
         }
@@ -798,10 +822,12 @@
 
             const map = getEtiquetasStorageMap();
             const current = map[key];
-            const isCurrentlyOk = current && current.status === true && (Date.now() - new Date(current.trocado_em).getTime() <= ETIQUETA_EXPIRATION_MS);
+            const currentTs = current ? (typeof current._ts === 'number' ? current._ts : new Date(current.trocado_em).getTime()) : 0;
+            const isCurrentlyOk = current && current.status === true && ((Date.now() - currentTs) <= ETIQUETA_EXPIRATION_MS);
 
             const newStatus = !isCurrentlyOk;
-            const nowIso = new Date().toISOString();
+            const now = Date.now();
+            const nowIso = new Date(now).toISOString();
 
             const userName = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.nome || currentUser.username || 'USUARIO') : 'USUARIO';
             const userMat = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.matricula || currentUser.id || '0000') : '0000';
@@ -813,12 +839,16 @@
                     codigo: codNorm,
                     status: true,
                     trocado_em: nowIso,
+                    _ts: now,
                     usuario_nome: userName,
                     usuario_matricula: String(userMat)
                 };
             } else {
                 delete map[key];
             }
+
+            inMemoryEtiquetasMap = map;
+            inMemoryEtiquetasTimestamp = now;
 
             try {
                 localStorage.setItem('amazon_etiquetas_status', JSON.stringify(map));
@@ -933,13 +963,15 @@
 
             const armazens = (item.armazensNoFiltro && item.armazensNoFiltro.length > 0) ? item.armazensNoFiltro : ['01'];
             const zeradosSet = new Set(item.armazensZerados || []);
+            const trocadasSet = new Set(item.etiquetasTrocadas || []);
+            const etiquetasMap = getEtiquetasStorageMap();
 
             // Se apenas 1 armazém no escopo: exibe botão de alternância destacado
             if (armazens.length === 1) {
                 const arm = armazens[0];
-                const isOk = isEtiquetaTrocada(filialStr, arm, item.codigo);
+                const isOk = trocadasSet.has(arm) || isEtiquetaTrocada(filialStr, arm, item.codigo, etiquetasMap);
                 const isZerado = zeradosSet.has(arm);
-                const info = getEtiquetaInfo(filialStr, arm, item.codigo);
+                const info = getEtiquetaInfo(filialStr, arm, item.codigo, etiquetasMap);
                 const dateStr = info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : '';
                 const whoStr = info?.usuario_nome || 'Usuário';
 
@@ -975,9 +1007,9 @@
             return `
                 <div class="flex flex-wrap items-center justify-center gap-1">
                     ${armazens.map(arm => {
-                        const isOk = isEtiquetaTrocada(filialStr, arm, item.codigo);
+                        const isOk = trocadasSet.has(arm) || isEtiquetaTrocada(filialStr, arm, item.codigo, etiquetasMap);
                         const isZerado = zeradosSet.has(arm);
-                        const info = getEtiquetaInfo(filialStr, arm, item.codigo);
+                        const info = getEtiquetaInfo(filialStr, arm, item.codigo, etiquetasMap);
                         const dateStr = info?.trocado_em ? new Date(info.trocado_em).toLocaleDateString('pt-BR') : '';
                         const whoStr = info?.usuario_nome || 'Usuário';
 
@@ -1305,6 +1337,15 @@
             });
 
             const filialForEtiqueta = (selectedFilial && selectedFilial !== 'ALL' && selectedFilial !== '00') ? selectedFilial : '01';
+            const etiquetasMap = getEtiquetasStorageMap();
+            const localCountedCodesSet = new Set(
+                Object.keys(localCountsMap || {}).map(k => {
+                    const p = k.split('_');
+                    return p.length > 1 ? p.slice(1).join('_') : p[0];
+                })
+            );
+            const nowTime = Date.now();
+            const todayStr = new Date(nowTime).toISOString().slice(0, 10);
 
             const allMapped = rawSb1Dataset.map(prod => {
                 const cod = prod.codigo || prod.Codigo ? String(prod.codigo || prod.Codigo).trim() : '';
@@ -1339,22 +1380,19 @@
                 let isCountedToday = false;
 
                 if (lastDate) {
-                    const now = new Date();
-                    const diffMs = now.getTime() - lastDate.getTime();
+                    const diffMs = nowTime - lastDate.getTime();
                     daysSinceCount = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                     if (daysSinceCount >= 14) {
                         isOutdated = true;
                     }
-                    const todayStr = now.toISOString().slice(0, 10);
                     const lastDateStr = new Date(lastDate).toISOString().slice(0, 10);
                     if (todayStr === lastDateStr || daysSinceCount === 0) {
                         isCountedToday = true;
                     }
                 }
 
-                if (localCountsMap) {
-                    const hasLocalCount = Object.keys(localCountsMap).some(k => k.endsWith(`_${cod}`));
-                    if (hasLocalCount) isCountedToday = true;
+                if (localCountedCodesSet.has(cod)) {
+                    isCountedToday = true;
                 }
 
                 // Armazéns deste produto dentro do filtro atual
@@ -1379,7 +1417,7 @@
                     const wKey = `${arm}_${cod}`;
                     const armSys = warehouseSaldoMap[wKey] || 0;
                     const armCount = warehouseCountMap[wKey];
-                    const isTrocada = isEtiquetaTrocada(filialForEtiqueta, arm, cod);
+                    const isTrocada = isEtiquetaTrocada(filialForEtiqueta, arm, cod, etiquetasMap);
 
                     // Material zerado e acurado: não requer troca de etiqueta!
                     const isSysZero = Math.abs(armSys) <= 0.0001;
@@ -1624,10 +1662,14 @@
 
         function renderInventoryKPIs() {
             const totalCadastrados = rawSb1Dataset.length;
-            const itensComSaldoCount = rawSb1Dataset.filter(prod => {
-                const cod = prod.Codigo ? String(prod.Codigo).trim() : '';
-                return (rawSaldoDataset.filter(s => s.produto === cod).reduce((acc, c) => acc + (c.quantidade || 0), 0)) > 0;
-            }).length;
+            const prodsWithSaldo = new Set();
+            for (let i = 0; i < rawSaldoDataset.length; i++) {
+                const s = rawSaldoDataset[i];
+                if ((s.quantidade || 0) > 0.0001 && s.produto) {
+                    prodsWithSaldo.add(String(s.produto).trim());
+                }
+            }
+            const itensComSaldoCount = prodsWithSaldo.size;
 
             const acuradosCount = filteredInventoryDataset.filter(i => i.status === 'ACURADO').length;
             const ganhosCount = filteredInventoryDataset.filter(i => i.status === 'GANHO').length;
@@ -3117,50 +3159,64 @@
         // --- GESTÃO DE ENDEREÇAMENTO POR ARMAZÉM NO GALPÃO ---
         let activeAddressFocusArm = '01';
         let currentModalAddressList = [];
+        let productAddressCache = null;
+
+        function invalidateProductAddressCache() {
+            productAddressCache = null;
+        }
 
         function getProductAddressMap(code) {
             const cleanCode = String(code || '').trim().toUpperCase();
-            const currentFilial = String(getTargetFilialForSector() || '01').padStart(2, '0');
-            const map = {};
+            if (!cleanCode) return {};
 
-            // 1. Pega do rawSaldoDataset (que é específico da filial ativa)
-            if (rawSaldoDataset) {
-                rawSaldoDataset.filter(s => 
-                    String(s.produto).trim().toUpperCase() === cleanCode &&
-                    (s.filial === currentFilial || currentFilial === 'ALL' || isGlobalFilial(currentUser))
-                ).forEach(s => {
-                    const a = String(s.armazem || '01').trim().padStart(2, '0');
-                    if (s.endereco) {
-                        map[a] = String(s.endereco).trim();
+            if (!productAddressCache) {
+                productAddressCache = {};
+                const currentFilial = String(getTargetFilialForSector() || '01').padStart(2, '0');
+
+                if (rawSaldoDataset) {
+                    for (let i = 0; i < rawSaldoDataset.length; i++) {
+                        const s = rawSaldoDataset[i];
+                        if (!s.produto) continue;
+                        const pFil = String(s.filial || '01').trim().padStart(2, '0');
+                        if (currentFilial !== 'ALL' && !isGlobalFilial(currentUser) && pFil !== currentFilial) continue;
+                        if (!s.endereco) continue;
+                        const c = String(s.produto).trim().toUpperCase();
+                        const a = String(s.armazem || '01').trim().padStart(2, '0');
+                        if (!productAddressCache[c]) productAddressCache[c] = {};
+                        productAddressCache[c][a] = String(s.endereco).trim();
                     }
-                });
-            }
+                }
 
-            // 2. Se não achou no saldo da filial, verifica se há no SB1
-            if (Object.keys(map).length === 0 && rawSb1Dataset) {
-                const sbMatch = rawSb1Dataset.find(p => String(p.codigo || p.Codigo).trim().toUpperCase() === cleanCode);
-                if (sbMatch) {
-                    const raw = sbMatch.endereco || sbMatch.Endereco || '';
-                    if (raw && raw.startsWith('{') && raw.endsWith('}')) {
-                        try {
-                            const parsed = JSON.parse(raw);
-                            if (parsed[currentFilial] && typeof parsed[currentFilial] === 'object') {
-                                Object.keys(parsed[currentFilial]).forEach(k => {
-                                    map[k.padStart(2, '0')] = String(parsed[currentFilial][k]).trim();
-                                });
-                            } else {
-                                Object.keys(parsed).forEach(k => {
-                                    map[k.padStart(2, '0')] = String(parsed[k]).trim();
-                                });
-                            }
-                        } catch(e) {}
-                    } else if (raw) {
-                        map['01'] = raw.trim();
+                if (rawSb1Dataset) {
+                    for (let i = 0; i < rawSb1Dataset.length; i++) {
+                        const p = rawSb1Dataset[i];
+                        const c = String(p.codigo || p.Codigo || '').trim().toUpperCase();
+                        if (!c) continue;
+                        if (productAddressCache[c] && Object.keys(productAddressCache[c]).length > 0) continue;
+                        const raw = p.endereco || p.Endereco || '';
+                        if (!raw) continue;
+                        if (!productAddressCache[c]) productAddressCache[c] = {};
+                        if (raw.startsWith('{') && raw.endsWith('}')) {
+                            try {
+                                const parsed = JSON.parse(raw);
+                                if (parsed[currentFilial] && typeof parsed[currentFilial] === 'object') {
+                                    Object.keys(parsed[currentFilial]).forEach(k => {
+                                        productAddressCache[c][k.padStart(2, '0')] = String(parsed[currentFilial][k]).trim();
+                                    });
+                                } else {
+                                    Object.keys(parsed).forEach(k => {
+                                        productAddressCache[c][k.padStart(2, '0')] = String(parsed[k]).trim();
+                                    });
+                                }
+                            } catch(e) {}
+                        } else {
+                            productAddressCache[c]['01'] = raw.trim();
+                        }
                     }
                 }
             }
 
-            return map;
+            return productAddressCache[cleanCode] || {};
         }
 
         function getProductAddressForArmazem(code, armazem, fallbackAll = false) {
@@ -3406,6 +3462,7 @@
                         invItem.endereco = jsonStr || '';
                     }
                 }
+                invalidateProductAddressCache();
 
                 // Atualiza visualização no modal de contagem se aberto
                 const currentCountCode = document.getElementById('countProductCode') ? document.getElementById('countProductCode').value : '';

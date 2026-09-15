@@ -529,7 +529,7 @@
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Busca Rápida</label>
                         <div class="relative w-full sm:w-60">
                             <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
-                            <input type="text" id="invSearch" onkeyup="handleSearchDebounce()" placeholder="Código, descrição ou tag..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                            <input type="text" id="invSearch" oninput="handleSearchDebounce()" placeholder="Código, descrição ou tag..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
                         </div>
                     </div>
                     <button type="button" onclick="scanBarcodeForInventario()" class="md:hidden w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition-all shadow-md active:scale-95 h-[38px] touch-active cursor-pointer" title="Bipar Código de Barras ou QR Code com a câmera">
