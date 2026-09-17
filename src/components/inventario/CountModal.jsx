@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   X, 
   Check, 
@@ -15,10 +15,14 @@ import { formatNumber } from '../../utils/formatters'
 import EtiquetaButton from './EtiquetaButton'
 
 export default function CountModal({ item, onClose }) {
-  const { saveCount } = useInventory()
+  const { saveCount, availableArmazens, warehouseSaldoMap, warehouseCountMap } = useInventory()
+
+  const armOptions = (item?.armazensNoFiltro && item.armazensNoFiltro.length > 0)
+    ? item.armazensNoFiltro
+    : (availableArmazens?.length > 0 ? availableArmazens : ['01'])
 
   const [selectedArm, setSelectedArm] = useState(() => {
-    return item?.armazensNoFiltro?.[0] || '01'
+    return armOptions[0] || '01'
   })
   const [quantidade, setQuantidade] = useState('')
   const [observacao, setObservacao] = useState('')
@@ -26,17 +30,31 @@ export default function CountModal({ item, onClose }) {
   const [lote, setLote] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Preenche dados anteriores se existirem
+  // Preenche dados anteriores se existirem para o armazém selecionado
   useEffect(() => {
-    if (item) {
-      setQuantidade(item.qtd_contada !== null && item.qtd_contada !== undefined ? String(item.qtd_contada) : '')
+    if (item && selectedArm) {
+      const armPad = String(selectedArm).padStart(2, '0')
+      const wKey = `${armPad}_${item.codigo}`
+      const existingArmCount = warehouseCountMap ? warehouseCountMap[wKey] : undefined
+      if (existingArmCount !== undefined && existingArmCount !== null) {
+        setQuantidade(String(existingArmCount))
+      } else if (item.qtd_contada !== null && item.qtd_contada !== undefined && armOptions.length === 1) {
+        setQuantidade(String(item.qtd_contada))
+      } else {
+        setQuantidade('')
+      }
       setObservacao(item.observacao || '')
     }
-  }, [item])
+  }, [item, selectedArm, warehouseCountMap])
 
   if (!item) return null
 
-  const sysQty = item.quantidade || 0
+  const armPad = String(selectedArm || '01').padStart(2, '0')
+  const wKey = `${armPad}_${item.codigo}`
+  const sysQty = (warehouseSaldoMap && warehouseSaldoMap[wKey] !== undefined)
+    ? warehouseSaldoMap[wKey]
+    : (item.quantidade || 0)
+
   const parsedCount = quantidade !== '' ? parseFloat(quantidade) : null
   const diff = parsedCount !== null ? parsedCount - sysQty : null
 
@@ -113,7 +131,7 @@ export default function CountModal({ item, onClose }) {
             </label>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-              {item.armazensNoFiltro?.map(arm => (
+              {armOptions.map(arm => (
                 <button
                   type="button"
                   key={arm}

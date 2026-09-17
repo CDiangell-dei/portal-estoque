@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import { 
@@ -324,11 +324,16 @@ export function InventoryProvider({ children }) {
   }, [rawSaldo])
 
   // Garante seleção inicial de armazéns
+  const hasInitializedArmazens = useRef(false)
   useEffect(() => {
-    if (availableArmazens.length > 0 && selectedArmazens.length === 0) {
-      setSelectedArmazens(availableArmazens)
+    if (!hasInitializedArmazens.current && availableArmazens.length > 0) {
+      hasInitializedArmazens.current = true
+      const saved = localStorage.getItem('amazon_selected_armazens')
+      if (!saved || JSON.parse(saved).length === 0) {
+        setSelectedArmazens(availableArmazens)
+      }
     }
-  }, [availableArmazens, selectedArmazens.length])
+  }, [availableArmazens])
 
   // Lista de tags disponíveis ({ key, label })
   const availableTags = useMemo(() => {
@@ -380,25 +385,36 @@ export function InventoryProvider({ children }) {
       return String(itemFil).padStart(2, '0') === String(filial).padStart(2, '0')
     }
 
+    const isArmSelectedCheck = (rawArm) => {
+      if (!selectedArmazens || selectedArmazens.length === 0) return false
+      const arm = String(rawArm || '01').trim()
+      const armPad = arm.padStart(2, '0')
+      const armRaw = String(parseInt(arm, 10) || 0)
+      return selectedArmazens.includes(arm) || selectedArmazens.includes(armPad) || selectedArmazens.includes(armRaw)
+    }
+
     rawSaldo.forEach(s => {
       if (!isFilialMatch(s.filial)) return
       const cod = s.produto
       if (!cod) return
-      const arm = s.armazem
-      sMap[cod] = (sMap[cod] || 0) + (s.quantidade || 0)
+      const arm = String(s.armazem || '01').trim().padStart(2, '0')
 
       if (!pwMap[cod]) pwMap[cod] = new Set()
       pwMap[cod].add(arm)
 
       const wKey = `${arm}_${cod}`
       wsMap[wKey] = (wsMap[wKey] || 0) + (s.quantidade || 0)
+
+      if (isArmSelectedCheck(arm)) {
+        sMap[cod] = (sMap[cod] || 0) + (s.quantidade || 0)
+      }
     })
 
     rawConf.forEach(c => {
       if (!isFilialMatch(c.filial)) return
       const cod = c.produto
       if (!cod) return
-      const arm = c.armazem
+      const arm = String(c.armazem || '01').trim().padStart(2, '0')
 
       if (!pwMap[cod]) pwMap[cod] = new Set()
       pwMap[cod].add(arm)
@@ -406,16 +422,18 @@ export function InventoryProvider({ children }) {
       const wKey = `${arm}_${cod}`
       wcMap[wKey] = c.qtd_contada
 
-      pcMap[cod] = (pcMap[cod] || 0) + c.qtd_contada
-      hcMap[cod] = true
+      if (isArmSelectedCheck(arm)) {
+        pcMap[cod] = (pcMap[cod] || 0) + c.qtd_contada
+        hcMap[cod] = true
 
-      if (c.observacao && !ploMap[cod]) ploMap[cod] = c.observacao
-      if (c.created_at) {
-        const dt = new Date(c.created_at)
-        if (!isNaN(dt.getTime())) {
-          if (!pldMap[cod] || dt > pldMap[cod]) {
-            pldMap[cod] = dt
-            if (c.observacao) ploMap[cod] = c.observacao
+        if (c.observacao && !ploMap[cod]) ploMap[cod] = c.observacao
+        if (c.created_at) {
+          const dt = new Date(c.created_at)
+          if (!isNaN(dt.getTime())) {
+            if (!pldMap[cod] || dt > pldMap[cod]) {
+              pldMap[cod] = dt
+              if (c.observacao) ploMap[cod] = c.observacao
+            }
           }
         }
       }
@@ -423,16 +441,19 @@ export function InventoryProvider({ children }) {
 
     // Incorpora contagens locais offline
     Object.keys(localCounts).forEach(key => {
-      const [arm, cod] = key.split('_')
+      const [armRaw, cod] = key.split('_')
       if (cod) {
-        const armPad = arm.padStart(2, '0')
+        const armPad = armRaw.padStart(2, '0')
         if (!pwMap[cod]) pwMap[cod] = new Set()
         pwMap[cod].add(armPad)
 
-        wcMap[key] = Number(localCounts[key] || 0)
-        pcMap[cod] = (pcMap[cod] || 0) + Number(localCounts[key] || 0)
-        hcMap[cod] = true
-        pldMap[cod] = new Date()
+        wcMap[`${armPad}_${cod}`] = Number(localCounts[key] || 0)
+
+        if (isArmSelectedCheck(armPad)) {
+          pcMap[cod] = (pcMap[cod] || 0) + Number(localCounts[key] || 0)
+          hcMap[cod] = true
+          pldMap[cod] = new Date()
+        }
       }
     })
 
@@ -446,7 +467,7 @@ export function InventoryProvider({ children }) {
       productLastDateMap: pldMap,
       productLastObsMap: ploMap
     }
-  }, [rawSaldo, rawConf, localCounts, filial])
+  }, [rawSaldo, rawConf, localCounts, filial, selectedArmazens])
 
   // Mapeamento base de produtos com cálculos de etiquetas, acurácia e metas
   const allMapped = useMemo(() => {
@@ -500,9 +521,15 @@ export function InventoryProvider({ children }) {
 
       // Armazéns do produto no filtro
       const allItemArmazens = Array.from(productWarehousesMap[cod] || [])
-      let armazensNoFiltro = allItemArmazens.filter(a => selectedArmazens.includes(a))
-      if (armazensNoFiltro.length === 0) {
-        armazensNoFiltro = selectedArmazens.length > 0 ? [selectedArmazens[0]] : ['01']
+      let armazensNoFiltro = allItemArmazens.filter(a => {
+        const armPad = String(a).trim().padStart(2, '0')
+        const armRaw = String(parseInt(a, 10) || 0)
+        return selectedArmazens.includes(a) || selectedArmazens.includes(armPad) || selectedArmazens.includes(armRaw)
+      })
+
+      const isSpecificWarehouseFilter = selectedArmazens.length > 0 && selectedArmazens.length < availableArmazens.length
+      if (armazensNoFiltro.length === 0 && !isSpecificWarehouseFilter) {
+        armazensNoFiltro = ['01']
       }
       armazensNoFiltro.sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
 
@@ -565,11 +592,18 @@ export function InventoryProvider({ children }) {
         isEtiquetaTotalmenteTrocada
       }
     })
-  }, [rawSb1, saldoMap, productWarehousesMap, warehouseSaldoMap, warehouseCountMap, productCountsMap, hasCountMap, productLastDateMap, productLastObsMap, selectedArmazens, filial, etiquetasMap, localCounts])
+  }, [rawSb1, saldoMap, productWarehousesMap, warehouseSaldoMap, warehouseCountMap, productCountsMap, hasCountMap, productLastDateMap, productLastObsMap, selectedArmazens, availableArmazens, filial, etiquetasMap, localCounts])
 
-  // Itens escopados pelos filtros base (Tags, Fornecedores, Saldo)
+  // Itens escopados pelos filtros base (Tags, Fornecedores, Saldo, Armazéns)
   const baseScopedItems = useMemo(() => {
+    const isSpecificWarehouseFilter = selectedArmazens.length > 0 && selectedArmazens.length < availableArmazens.length
+
     return allMapped.filter(item => {
+      // Quando filtrando por armazéns específicos, só exibe produtos presentes nos armazéns selecionados
+      if (isSpecificWarehouseFilter && item.armazensNoFiltro.length === 0) {
+        return false
+      }
+
       if (saldoFilterMode === 'COM_SALDO') {
         if (item.quantidade <= 0.0001 && item.status !== 'GANHO') return false
       } else if (saldoFilterMode === 'SALDO_ZERO') {
@@ -606,7 +640,7 @@ export function InventoryProvider({ children }) {
 
       return true
     })
-  }, [allMapped, saldoFilterMode, selectedTags, isExcludeTagMode, selectedFornecedores, isExcludeFornMode])
+  }, [allMapped, saldoFilterMode, selectedTags, isExcludeTagMode, selectedFornecedores, isExcludeFornMode, selectedArmazens, availableArmazens])
 
   // Placar de Etiquetas
   const scoreboardStats = useMemo(() => {
@@ -714,11 +748,26 @@ export function InventoryProvider({ children }) {
 
   // KPIs
   const kpis = useMemo(() => {
+    const isArmSelectedCheck = (rawArm) => {
+      if (!selectedArmazens || selectedArmazens.length === 0) return false
+      const arm = String(rawArm || '01').trim()
+      const armPad = arm.padStart(2, '0')
+      const armRaw = String(parseInt(arm, 10) || 0)
+      return selectedArmazens.includes(arm) || selectedArmazens.includes(armPad) || selectedArmazens.includes(armRaw)
+    }
+
+    const isFilialMatch = (itemFil) => {
+      if (!filial || filial === 'ALL' || filial === '00') return true
+      return String(itemFil).padStart(2, '0') === String(filial).padStart(2, '0')
+    }
+
     const totalCadastrados = rawSb1.length
     const prodsWithSaldo = new Set()
     for (let i = 0; i < rawSaldo.length; i++) {
       const s = rawSaldo[i]
-      if ((s.quantidade || 0) > 0.0001 && s.produto) {
+      if (!isFilialMatch(s.filial)) continue
+      const arm = String(s.armazem || '01').trim().padStart(2, '0')
+      if (isArmSelectedCheck(arm) && (s.quantidade || 0) > 0.0001 && s.produto) {
         prodsWithSaldo.add(String(s.produto).trim())
       }
     }
@@ -747,7 +796,7 @@ export function InventoryProvider({ children }) {
       pctPerdas,
       volumeTotal
     }
-  }, [rawSb1.length, rawSaldo, filteredItems])
+  }, [rawSb1.length, rawSaldo, filteredItems, selectedArmazens, filial])
 
   // Ação de Toggle de Etiqueta
   const toggleEtiqueta = useCallback(async (itemFilial, armazem, codigo) => {
@@ -937,6 +986,8 @@ export function InventoryProvider({ children }) {
         scoreboardStats,
         dailyGoalStats,
         dailyGoalItems,
+        warehouseSaldoMap,
+        warehouseCountMap,
         kpis,
         // Ações
         toggleEtiqueta,
