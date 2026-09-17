@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useInventory } from '../../context/InventoryContext'
 import { FILIAIS_LIST } from '../../utils/formatters'
+import logoAmazonAco from '../../assets/logo_amazon_aco.png'
 
 export default function Navbar({ activeTab, setActiveTab }) {
   const { user, sector, setSector, filial, setFilial, isGlobal, logout, theme, toggleTheme } = useAuth()
@@ -34,33 +35,41 @@ export default function Navbar({ activeTab, setActiveTab }) {
   const isAdmin = user?.eh_admin === true
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <div className="flex items-center justify-between h-16 gap-2">
-          
-          {/* Logo & Brand */}
-          <button 
-            type="button"
-            onClick={() => setActiveTab('home')}
-            className="flex items-center gap-3 text-left cursor-pointer group"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#002f6c] to-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-900/20 flex-shrink-0 group-hover:scale-105 transition-transform">
-              <Warehouse className="w-5 h-5 text-amber-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm sm:text-base font-black tracking-tight text-[#002f6c] dark:text-blue-400 leading-none">
-                  AMAZON AÇO
-                </span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300/50">
-                  {sector}
-                </span>
+    <div className="sticky top-0 z-40">
+      {/* Faixa de Identidade Visual Amazon Aço (Azul e Carmim) */}
+      <div className="h-1 w-full bg-gradient-to-r from-[#002f6c] via-[#B40D15] to-[#002f6c]" />
+
+      <header className="bg-white/95 dark:bg-[#0B132B]/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 transition-colors shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6">
+          <div className="flex items-center justify-between h-16 gap-2">
+            
+            {/* Logo & Brand */}
+            <button 
+              type="button"
+              onClick={() => setActiveTab('home')}
+              className="flex items-center space-x-3 text-left cursor-pointer group"
+            >
+              <img 
+                src={logoAmazonAco} 
+                alt="Amazon Aço" 
+                fetchPriority="high" 
+                loading="eager" 
+                className="h-9 sm:h-10 w-auto flex-shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-102 dark:bg-white/95 dark:p-1.5 dark:rounded-xl" 
+              />
+              <div className="border-l border-slate-200 dark:border-slate-800 pl-3 hidden sm:block">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase">
+                    WMS Almoxarifado
+                  </span>
+                  <span className="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#B40D15]/20 uppercase tracking-wider">
+                    {sector}
+                  </span>
+                </div>
+                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                  Portal de Controle de Estoques
+                </p>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 leading-tight hidden sm:block">
-                WMS Almoxarifado Enterprise
-              </p>
-            </div>
-          </button>
+            </button>
 
           {/* Navigation Tabs Desktop */}
           <nav className="hidden lg:flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
@@ -308,5 +317,6 @@ export default function Navbar({ activeTab, setActiveTab }) {
         </div>
       </div>
     </header>
+  </div>
   )
 }

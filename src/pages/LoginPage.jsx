@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Warehouse, Lock, User, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
+import { Lock, User, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import logoAmazonAco from '../assets/logo_amazon_aco.png'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -33,15 +34,24 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6">
         
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#002f6c] to-blue-600 flex items-center justify-center text-white shadow-xl shadow-blue-950/20 mx-auto">
-            <Warehouse className="w-8 h-8 text-amber-300" />
+        <div className="text-center space-y-3 mb-4">
+          <img 
+            src={logoAmazonAco} 
+            alt="Amazon Aço" 
+            fetchPriority="high" 
+            loading="eager" 
+            className="h-12 sm:h-14 w-auto mx-auto object-contain drop-shadow-sm dark:bg-white/95 dark:p-2 dark:rounded-2xl" 
+          />
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase">
+              WMS Almoxarifado
+            </span>
+            <span className="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[10px] px-2.5 py-0.5 rounded-full font-black border border-[#B40D15]/20 uppercase tracking-wider">
+              Enterprise
+            </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            AMAZON AÇO
-          </h2>
-          <p className="text-xs font-bold text-slate-400">
-            Portal de Controle & Inventário Rotativo
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            Portal Corporativo de Controle &amp; Inventário
           </p>
         </div>
 
