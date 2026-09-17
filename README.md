@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo_amazon_aco.png" alt="Amazon Aço Logo" width="320">
+  <img src="/assets/logo_amazon_aco.png" alt="Amazon Aço Logo" width="320">
 </p>
 
 <h1 align="center">Portal WMS & Controle de Estoques — Amazon Aço</h1>
