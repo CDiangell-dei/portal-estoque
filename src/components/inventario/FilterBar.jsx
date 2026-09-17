@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { 
   Search, 
   X, 
@@ -14,13 +14,14 @@ import {
   RotateCw,
   FileSpreadsheet,
   Zap,
-  Filter
+  Filter,
+  Upload
 } from 'lucide-react'
 import { useInventory } from '../../context/InventoryContext'
 import { useAuth } from '../../context/AuthContext'
 import { exportInventarioExcel } from '../../utils/exportExcel'
 
-export default function FilterBar({ onOpenMassCount }) {
+export default function FilterBar({ onOpenMassCount, onOpenImportSaldo }) {
   const { sector } = useAuth()
   const {
     search,
@@ -196,6 +197,17 @@ export default function FilterBar({ onOpenMassCount }) {
           >
             <Zap className="w-3.5 h-3.5 text-slate-950" />
             <span>⚡ Em Massa</span>
+          </button>
+
+          {/* Importar Saldo */}
+          <button
+            type="button"
+            onClick={onOpenImportSaldo}
+            className="px-3 py-2 rounded-2xl text-xs font-black bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+            title="Importar planilha de saldo do ERP (CSV ou Excel)"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>Importar Saldo</span>
           </button>
 
           {/* Exportar Excel */}

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { 
   Package, 
   CheckCircle2, 
@@ -19,6 +19,7 @@ import AuditHistoryModal from '../components/inventario/AuditHistoryModal'
 import TagsModal from '../components/inventario/TagsModal'
 import FornecedoresModal from '../components/inventario/FornecedoresModal'
 import MassCountModal from '../components/inventario/MassCountModal'
+import ImportSaldoModal from '../components/inventario/ImportSaldoModal'
 import { formatNumber } from '../utils/formatters'
 
 const ITEMS_PER_PAGE = 50
@@ -32,6 +33,7 @@ export default function InventarioPage() {
   const [activeTagsItem, setActiveTagsItem] = useState(null)
   const [activeFornecedoresItem, setActiveFornecedoresItem] = useState(null)
   const [isMassCountOpen, setIsMassCountOpen] = useState(false)
+  const [isImportSaldoOpen, setIsImportSaldoOpen] = useState(false)
 
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1
   const validPage = Math.min(Math.max(1, currentPage), totalPages)
@@ -134,7 +136,10 @@ export default function InventarioPage() {
       <DailyGoalBanner />
 
       {/* 4. Barra de Filtros e Busca Rápida */}
-      <FilterBar onOpenMassCount={() => setIsMassCountOpen(true)} />
+      <FilterBar 
+        onOpenMassCount={() => setIsMassCountOpen(true)} 
+        onOpenImportSaldo={() => setIsImportSaldoOpen(true)}
+      />
 
       {/* 5. Listagem de Produtos (Tabela Desktop / Cards Mobile) */}
       {loading ? (
@@ -237,6 +242,12 @@ export default function InventarioPage() {
       {isMassCountOpen && (
         <MassCountModal
           onClose={() => setIsMassCountOpen(false)}
+        />
+      )}
+
+      {isImportSaldoOpen && (
+        <ImportSaldoModal
+          onClose={() => setIsImportSaldoOpen(false)}
         />
       )}
 
