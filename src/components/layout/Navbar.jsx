@@ -1,15 +1,23 @@
-﻿import React from 'react'
+import React, { useState } from 'react'
 import { 
   Building2, 
   Warehouse, 
   Moon, 
   Sun, 
   LogOut, 
-  User, 
   Layers, 
   RefreshCw,
-  Tag,
-  ClipboardList
+  ClipboardList,
+  Home,
+  ShoppingCart,
+  Boxes,
+  Truck,
+  History,
+  CalendarClock,
+  Shield,
+  FileText,
+  Settings,
+  ChevronDown
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useInventory } from '../../context/InventoryContext'
@@ -19,14 +27,24 @@ export default function Navbar({ activeTab, setActiveTab }) {
   const { user, sector, setSector, filial, setFilial, isGlobal, logout, theme, toggleTheme } = useAuth()
   const { loading, reload } = useInventory()
 
+  const [showEstoqueDropdown, setShowEstoqueDropdown] = useState(false)
+  const [showAlmoxDropdown, setShowAlmoxDropdown] = useState(false)
+
+  const isAlmoxarife = user?.eh_almoxarife === true || user?.eh_admin === true
+  const isAdmin = user?.eh_admin === true
+
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         <div className="flex items-center justify-between h-16 gap-2">
           
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#002f6c] to-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-900/20 flex-shrink-0">
+          <button 
+            type="button"
+            onClick={() => setActiveTab('home')}
+            className="flex items-center gap-3 text-left cursor-pointer group"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#002f6c] to-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-900/20 flex-shrink-0 group-hover:scale-105 transition-transform">
               <Warehouse className="w-5 h-5 text-amber-300" />
             </div>
             <div>
@@ -38,38 +56,179 @@ export default function Navbar({ activeTab, setActiveTab }) {
                   {sector}
                 </span>
               </div>
-              <p className="text-[11px] font-bold text-slate-400 leading-tight hidden sm:block">
-                Portal de Controle & Inventário
+              <p className="text-[10px] font-bold text-slate-400 leading-tight hidden sm:block">
+                WMS Almoxarifado Enterprise
               </p>
             </div>
-          </div>
+          </button>
 
-          {/* Navigation Tabs */}
-          <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+          {/* Navigation Tabs Desktop */}
+          <nav className="hidden lg:flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+            {/* INÍCIO */}
             <button
-              onClick={() => setActiveTab('inventario')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
-                activeTab === 'inventario'
+              onClick={() => { setActiveTab('home'); setShowEstoqueDropdown(false); setShowAlmoxDropdown(false); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'home'
                   ? 'bg-white dark:bg-slate-900 text-[#002f6c] dark:text-blue-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <ClipboardList className="w-4 h-4" />
-              <span>Inventário Rotativo</span>
+              <Home className="w-4 h-4" />
+              <span>Início</span>
             </button>
 
+            {/* SOLICITAÇÃO DE ESTOQUE */}
+            <a
+              href="solicitacao_estoque.html"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ShoppingCart className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <span>Solicitação</span>
+            </a>
+
+            {/* DROPDOWN ESTOQUE */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setShowEstoqueDropdown(!showEstoqueDropdown); setShowAlmoxDropdown(false); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'inventario'
+                    ? 'bg-white dark:bg-slate-900 text-[#002f6c] dark:text-blue-400 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Boxes className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                <span>Estoque</span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {showEstoqueDropdown && (
+                <div className="absolute top-11 left-0 w-60 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in duration-100">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveTab('inventario'); setShowEstoqueDropdown(false); }}
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950 text-[#002f6c] dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                      <ClipboardList className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-slate-800 dark:text-slate-100">Inventário Rotativo</div>
+                      <div className="text-[10px] text-slate-400">Contagens físicas e conciliação</div>
+                    </div>
+                  </button>
+
+                  <a
+                    href="transferencia.html"
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-600 flex items-center justify-center flex-shrink-0">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-slate-800 dark:text-slate-100">Transferência</div>
+                      <div className="text-[10px] text-slate-400">QR Code e separação física</div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="kardex.html"
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 flex items-center justify-center flex-shrink-0">
+                      <History className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-slate-800 dark:text-slate-100">Kardex de Contagem</div>
+                      <div className="text-[10px] text-slate-400">Histórico de lançamentos</div>
+                    </div>
+                  </a>
+
+                  <a
+                    href="validade.html"
+                    className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 flex items-center justify-center flex-shrink-0">
+                      <CalendarClock className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-slate-800 dark:text-slate-100">Controle de Validade</div>
+                      <div className="text-[10px] text-slate-400">Lotes FEFO e Armazém 50</div>
+                    </div>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* DROPDOWN ALMOXARIFADO (SE ALMOXARIFE OU ADMIN) */}
+            {isAlmoxarife && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setShowAlmoxDropdown(!showAlmoxDropdown); setShowEstoqueDropdown(false); }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Shield className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span>Almoxarifado</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400" />
+                </button>
+
+                {showAlmoxDropdown && (
+                  <div className="absolute top-11 left-0 w-60 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in zoom-in duration-100">
+                    <a
+                      href="luvas.html"
+                      className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0">
+                        <Shield className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-slate-800 dark:text-slate-100">Consumo de EPIs</div>
+                        <div className="text-[10px] text-slate-400">Entrega de luvas por matrícula</div>
+                      </div>
+                    </a>
+
+                    <a
+                      href="minutas.html"
+                      className="w-full flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black text-slate-800 dark:text-slate-100">Minutas & Recebimento</div>
+                        <div className="text-[10px] text-slate-400">Entrada de NFs e canhotos</div>
+                      </div>
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* BOTÃO ADMIN (SE ADMIN) */}
+            {isAdmin && (
+              <a
+                href="admin.html"
+                className="px-3 py-1.5 rounded-xl text-xs font-black bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Admin</span>
+              </a>
+            )}
+
+            {/* BOTÃO PRODUTIVIDADE */}
             <button
-              onClick={() => setActiveTab('ranking')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+              onClick={() => { setActiveTab('ranking'); setShowEstoqueDropdown(false); setShowAlmoxDropdown(false); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'ranking'
                   ? 'bg-white dark:bg-slate-900 text-[#002f6c] dark:text-blue-400 shadow-sm'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-4 h-4" />
               <span>Produtividade</span>
             </button>
-          </div>
+          </nav>
 
           {/* Controls: Sector, Filial, Theme, User */}
           <div className="flex items-center gap-2">

@@ -1,0 +1,2987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" type="image/png" href="./icon.png">
+    <link rel="shortcut icon" type="image/png" href="./icon.png">
+    <link rel="apple-touch-icon" href="./icon.png">
+    <title>Transferência entre Armazéns - Amazon Aço</title>
+    <script>
+        if (localStorage.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f8fafc">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- SheetJS (xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- HTML5-QRCode Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            -webkit-tap-highlight-color: transparent;
+        }
+        :root {
+            --amazon-navy: #002f6c;
+            --amazon-navy-dark: #0A192F;
+            --amazon-red: #B40D15;
+            --amazon-red-hover: #9c0e25;
+        }
+        .touch-active:active { transform: scale(0.97); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .dark ::-webkit-scrollbar-track { background: #162244; }
+        .dark ::-webkit-scrollbar-thumb { background: #23355E; }
+
+        /* Dark Mode Styling */
+        .dark body { background-color: #0B132B !important; color: #ffffff !important; }
+        .dark .bg-white { background-color: #111C38 !important; border-color: #1E293B !important; }
+        .dark .bg-[#f8fafc] { background-color: #0B132B !important; }
+        .dark .text-slate-900, .dark .text-slate-800 { color: #ffffff !important; }
+        .dark .text-slate-700, .dark .text-slate-600 { color: #cbd5e1 !important; }
+        .dark .text-slate-500, .dark .text-slate-400 { color: #94a3b8 !important; }
+        .dark .bg-slate-50, .dark .bg-slate-100 { background-color: #162244 !important; border-color: #23355E !important; color: #ffffff !important; }
+        .dark .border-slate-200, .dark .border-slate-300 { border-color: #23355E !important; }
+        .dark .border-slate-100 { border-color: #162244 !important; }
+        .dark input, .dark select, .dark textarea { background-color: #162244 !important; color: #ffffff !important; border-color: #23355E !important; }
+        .dark table th { background-color: #162244 !important; color: #94a3b8 !important; border-color: #23355E !important; }
+        .dark table tr:hover { background-color: #162244 !important; }
+        .dark .shadow-sm, .dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
+        .dark .text-[#9c0e25], .dark .text-[#B40D15] { color: #f87171 !important; }
+        .dark .bg-[#9c0e25], .dark .bg-[#B40D15] { background-color: #B40D15 !important; }
+        .dark .text-[#002f6c] { color: #60a5fa !important; }
+        .dark .bg-[#002f6c] { background-color: #1d4ed8 !important; }
+        .dark img[alt="Amazon Aço"] { filter: brightness(0) invert(1) !important; }
+
+        /* Impressão - Romaneio */
+        @media print {
+            body { background-color: #ffffff !important; color: #000000 !important; font-size: 11px; padding: 0 !important; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .print-card { border: 1px solid #cbd5e1 !important; box-shadow: none !important; page-break-inside: avoid; background-color: #ffffff !important; color: #000000 !important; margin-bottom: 1.25rem !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col relative pb-20 md:pb-10 bg-[#f8fafc]">
+
+    <!-- Spinner de Loading Global -->
+    <div id="globalLoader" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
+        <div class="flex flex-col items-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl">
+            <svg class="animate-spin h-14 w-14 text-[#002f6c] dark:text-blue-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span id="globalLoaderText" class="text-slate-800 dark:text-white font-bold text-lg animate-pulse">Carregando Transferências...</span>
+        </div>
+    </div>
+
+    <!-- FEEDBACK ALERT (TOAST) -->
+    <div id="feedbackAlert" class="hidden no-print z-[200] fixed top-5 right-4 sm:right-6">
+        <div id="alertContainer" class="p-4 rounded-2xl border flex items-center justify-between shadow-2xl transition-all duration-300 min-w-[320px] max-w-md">
+            <div class="flex items-center space-x-3">
+                <i id="alertIcon" data-lucide="info" class="w-5 h-5 flex-shrink-0"></i>
+                <p id="alertMessage" class="text-xs font-bold leading-snug mr-2"></p>
+            </div>
+            <button onclick="hideAlert()" class="p-1 hover:bg-slate-200/50 rounded-lg">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- FAIXA DE IDENTIDADE VISUAL AMAZON AÇO (AZUL E CARMIM) -->
+    <div class="h-1 w-full bg-gradient-to-r from-[#002f6c] via-[#B40D15] to-[#002f6c] no-print"></div>
+
+    <!-- HEADER PRINCIPAL DO PORTAL (PADRÃO CORPORATIVO AMAZON AÇO) -->
+    <header class="bg-white/95 dark:bg-[#0B132B]/95 border-b border-slate-200/90 dark:border-slate-800 sticky top-0 z-40 backdrop-blur-md shadow-xs no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+            <a href="index.html" class="flex items-center space-x-3 cursor-pointer group">
+                <img src="./logo_amazon_aco.png" alt="Amazon Aço" fetchpriority="high" loading="eager" class="h-9 w-auto flex-shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-102">
+                <div class="border-l border-slate-200 dark:border-slate-800 pl-3 hidden sm:block">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase">WMS Almoxarifado</span>
+                        <span class="bg-[#002f6c]/10 text-[#002f6c] dark:bg-blue-950/50 dark:text-blue-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#002f6c]/20 uppercase tracking-wider">Transferência</span>
+                    </div>
+                    <p class="text-[10px] font-medium text-slate-500 dark:text-slate-400">Transferência entre Armazéns</p>
+                </div>
+            </a>
+
+            <!-- NAV DESKTOP (ESTILO ABAS TÉCNICAS DE PRECISÃO) -->
+            <div class="hidden md:flex items-center space-x-1.5 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                <a href="index.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 cursor-pointer">
+                    <i data-lucide="home" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+                    <span>Início</span>
+                </a>
+
+                <a href="solicitacao_estoque.html" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 cursor-pointer">
+                    <i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+                    <span>Solicitação</span>
+                </a>
+
+                <!-- GRUPO ESTOQUE (ATIVO) -->
+                <div class="relative">
+                    <button onclick="toggleDesktopSubmenu('estoque')" id="desktopBtnEstoqueGroup" class="px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center space-x-1.5 bg-white text-[#002f6c] dark:bg-[#111C38] dark:text-blue-300 shadow-xs border border-slate-200/80 dark:border-slate-700 cursor-pointer transition-all">
+                        <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
+                        <span>Estoque</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                    </button>
+
+                    <div id="desktopEstoqueSubmenu" class="hidden absolute top-10 left-0 w-64 bg-white dark:bg-[#111C38] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5 no-print">
+                        <a href="inventario.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Inventário Rotativo</p>
+                                <p class="text-[10px] text-slate-400">Contagens físicas e conciliação</p>
+                            </div>
+                        </a>
+                        <a href="transferencia.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-300 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-[#002f6c] text-white flex items-center justify-center">
+                                <i data-lucide="truck" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold">Transferência entre Armazéns</p>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">QR Code e separação física</p>
+                            </div>
+                        </a>
+                        <a href="kardex.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Kardex de Contagem</p>
+                                <p class="text-[10px] text-slate-400">Histórico de lançamentos</p>
+                            </div>
+                        </a>
+                        <a href="validade.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="calendar-clock" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Controle de Validade</p>
+                                <p class="text-[10px] text-slate-400">Lotes FEFO e Armazém 50</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- GRUPO ALMOXARIFADO -->
+                <div id="desktopAlmoxGroupContainer" class="relative hidden">
+                    <button onclick="toggleDesktopSubmenu('almox')" id="desktopBtnAlmoxGroup" class="px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center space-x-1.5 text-slate-700 hover:text-[#002f6c] dark:text-slate-300 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60 transition-all cursor-pointer">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+                        <span>Almoxarifado</span>
+                        <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                    </button>
+
+                    <div id="desktopAlmoxSubmenu" class="hidden absolute top-10 left-0 w-64 bg-white dark:bg-[#111C38] border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 p-1.5 space-y-0.5 no-print">
+                        <a href="luvas.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Consumo de EPIs</p>
+                                <p class="text-[10px] text-slate-400">Entrega de luvas por matrícula</p>
+                            </div>
+                        </a>
+                        <a href="minutas.html" class="w-full flex items-center space-x-2.5 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-left transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-slate-100 dark:bg-slate-800 text-[#002f6c] dark:text-blue-400 flex items-center justify-center">
+                                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800 dark:text-slate-200">Minutas & Recebimento</p>
+                                <p class="text-[10px] text-slate-400">Entrada de NFs e canhotos</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- BOTÃO ADMIN -->
+                <a href="admin.html" id="desktopBtnAdmin" class="hidden px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center space-x-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 cursor-pointer">
+                    <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                    <span>Admin</span>
+                </a>
+            </div>
+
+            <!-- PERFIL E CONTROLES -->
+            <div class="flex items-center space-x-2.5">
+                <div title="Status da Conexão com o Servidor" class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center space-x-1.5 border border-slate-200/60 dark:border-slate-700/60">
+                    <span id="appStatusDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 hidden sm:inline">Online</span>
+                </div>
+
+                <div class="flex flex-col text-right pl-1">
+                    <span id="headerUserName" class="text-xs font-bold text-slate-900 dark:text-white">Usuário</span>
+                    <span id="headerUserFilial" class="text-[10px] font-bold text-[#B40D15] dark:text-rose-400 uppercase tracking-wider">Filial</span>
+                </div>
+
+                <button onclick="toggleDarkMode()" title="Modo Escuro" id="darkModeBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 transition-all touch-active cursor-pointer">
+                    <i data-lucide="moon" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="handleLogout()" title="Sair da Sessão" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-[#B40D15] dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-rose-950/50 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 transition-all touch-active cursor-pointer">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-grow space-y-6 w-full flex flex-col no-print">
+
+        <!-- HERO BANNER SIDERÚRGICO COM SELETOR DE SETOR & ABAS -->
+        <div class="bg-gradient-to-br from-[#0A192F] via-[#0D1F3D] to-[#071120] rounded-2xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+            <div class="space-y-2 z-10">
+                <div id="transferFilialContainer" class="inline-flex items-center space-x-2 bg-blue-950/80 border border-blue-800/80 px-3 py-1 rounded-full text-xs font-semibold text-blue-200 backdrop-blur-xs">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="transferFilialBadge" class="uppercase tracking-wide">Filial 01 - Alvorada</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2 text-white">
+                    <i data-lucide="truck" class="w-6 h-6 text-[#002f6c] dark:text-blue-400"></i>
+                    <span>Transferência entre Armazéns</span>
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-300 font-normal max-w-xl">
+                    Selecione o armazém de destino e origem, escaneie QR Codes e monte a lista de movimentação física e baixa no ERP.
+                </p>
+            </div>
+
+            <!-- CONTROLES DO BANNER: SELETOR DE SETOR & ABAS -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto z-10">
+                <!-- Seletor de Setor (Comércio / Indústria) -->
+                <div class="bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/15 flex items-center gap-1.5 shadow-inner">
+                    <button id="sectorComercioBtn" onclick="switchSector('COMERCIO')" class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-white text-[#002f6c] shadow-sm cursor-pointer">
+                        <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+                        <span>Comércio</span>
+                    </button>
+                    <button id="sectorIndustriaBtn" onclick="switchSector('INDUSTRIA')" class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer">
+                        <i data-lucide="factory" class="w-3.5 h-3.5"></i>
+                        <span>Indústria</span>
+                    </button>
+                </div>
+
+                <!-- Seletor de Abas (Histórico / Lote Ativo) -->
+                <div class="bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/15 flex items-center gap-1.5 shadow-inner">
+                    <button id="tabHistoryBtn" onclick="switchTransferTab('history')" class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#9c0e25] text-white shadow-sm cursor-pointer">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        <span>Histórico</span>
+                    </button>
+                    <button id="tabActiveTransferBtn" onclick="switchTransferTab('active')" class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer">
+                        <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
+                        <span>Lote em Coleta</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ABA 1: LOTE ATIVO / COLETA & SEPARAÇÃO                       -->
+        <!-- ============================================================ -->
+        <div id="viewActiveTransfer" class="hidden space-y-6">
+
+            <!-- HEADER DO LOTE ATIVO -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-slate-700 text-[#002f6c] dark:text-blue-400 flex items-center justify-center font-black text-lg border border-blue-100 dark:border-slate-600">
+                        <i data-lucide="package-plus" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="activeLoteCodigo" class="text-sm font-black text-slate-900 dark:text-white">TMA-COM-NOVO</span>
+                            <span id="activeLoteStatusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                                🟡 Em Aberto (Rascunho)
+                            </span>
+                        </div>
+                        <p id="activeLoteInfo" class="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5 flex flex-wrap items-center gap-1.5">
+                            <span>Filial:</span>
+                            <span id="activeLoteFilialBadge" class="text-blue-700 dark:text-blue-300 font-black bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">Filial 01 - Alvorada</span>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <span>Destino:</span>
+                            <strong id="activeLoteDestinoBadge" class="text-emerald-700 dark:text-emerald-300 font-black bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">Armazém 01</strong>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <span>Criado por:</span>
+                            <span id="activeLoteCriador" class="font-bold text-slate-700 dark:text-slate-200">Você</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+                    <button onclick="switchTransferTab('history')" class="px-3.5 py-2 rounded-xl text-xs font-black transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                        <span>Voltar ao Histórico</span>
+                    </button>
+                    <button onclick="saveDraftManually()" id="btnSalvarRascunho" class="px-3.5 py-2 rounded-xl text-xs font-black transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 cursor-pointer shadow-xs">
+                        <i data-lucide="bookmark" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>
+                        <span>Salvar Rascunho</span>
+                    </button>
+                    <button onclick="openModalNovaTransferencia()" class="px-3.5 py-2 rounded-xl text-xs font-black transition-all bg-[#002f6c] hover:bg-[#00204a] text-white flex items-center gap-1.5 cursor-pointer shadow-xs">
+                        <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Nova Transferência</span>
+                    </button>
+                    <button onclick="printTransferManifest()" class="px-3.5 py-2 rounded-xl text-xs font-black transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        <span>Imprimir Romaneio</span>
+                    </button>
+                    <button onclick="exportActiveTransferCSV()" class="px-3.5 py-2 rounded-xl text-xs font-black transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>Exportar Excel</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PAINEL DE LEITURA & BIPAGEM RÁPIDA (QR CODE / BUSCA SB1) -->
+            <div id="scannerSectionCard" class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                            <i data-lucide="qr-code" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Adicionar Material à Transferência</h3>
+                            <p class="text-[11px] text-slate-400 font-bold">Escaneie o QR Code no Armazém 01 ou digite o código do material</p>
+                        </div>
+                    </div>
+
+                    <!-- Botão Scanner de Câmera -->
+                    <button onclick="openCameraScannerModal()" class="px-4 py-2 bg-[#002f6c] hover:bg-[#00204a] text-white rounded-xl text-xs font-black flex items-center gap-2 shadow-md transition touch-active cursor-pointer">
+                        <i data-lucide="camera" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Abrir Câmera / Scanner</span>
+                    </button>
+                </div>
+
+                <!-- INPUT DE BUSCA MANUAL COM AUTOCOMPLETE -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                    <div class="md:col-span-8 relative">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Buscar Material (Código ou Descrição SB1)</label>
+                        <div class="relative flex items-center">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 text-slate-400"></i>
+                            <input type="text" id="inputProductSearch" placeholder="Ex: 57000354 ou PARAFUSO..."
+                                   class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-2xl pl-9 pr-10 py-2.5 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002f6c] transition"
+                                   oninput="handleProductSearchInput(this.value)"
+                                   onkeydown="handleProductSearchKeyDown(event)">
+                            <button id="btnClearProductSearch" onclick="clearSelectedProduct()" class="hidden absolute right-3 text-slate-400 hover:text-slate-600 p-1">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <!-- Lista de Sugestões Autocomplete -->
+                        <div id="productAutocompleteList" class="hidden absolute left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700 text-xs"></div>
+                    </div>
+
+                    <!-- Seletor de Armazém de Origem Padrão -->
+                    <div class="md:col-span-4">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Armazém de Origem</label>
+                        <select id="selectArmazemOrigem" onchange="onArmazemOrigemChange()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-2xl px-3 py-2.5 text-xs font-black text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#002f6c] cursor-pointer">
+                            <option value="02" selected>Armazém 02 (Padrão)</option>
+                            <option value="01">Armazém 01</option>
+                            <option value="03">Armazém 03</option>
+                            <option value="04">Armazém 04</option>
+                            <option value="05">Armazém 05</option>
+                            <option value="06">Armazém 06</option>
+                            <option value="50">Armazém 50 (Validade/Avarias)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- CARD DE DIAGNÓSTICO DO MATERIAL SELECIONADO / BIPADO -->
+                <div id="productDiagnosisCard" class="hidden bg-slate-50 dark:bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+                    
+                    <!-- ALERTA DE MATERIAL JÁ PRESENTE NA TRANSFERÊNCIA (MÚLTIPLOS LOTES / RETIRADAS) -->
+                    <div id="diagAlreadyInBatchNotice" class="hidden p-3 rounded-xl bg-blue-50/80 dark:bg-slate-800/80 border border-blue-200 dark:border-slate-700 text-xs space-y-1.5">
+                        <div class="flex items-center justify-between font-black text-[#002f6c] dark:text-blue-300">
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="layers" class="w-4 h-4 text-blue-600"></i>
+                                <span>Material já presente nesta transferência:</span>
+                            </span>
+                            <span id="diagAlreadyInBatchSummaryBadge" class="bg-blue-200/60 dark:bg-blue-900/60 text-blue-900 dark:text-blue-100 px-2 py-0.5 rounded-full text-[10px] font-black">0 itens</span>
+                        </div>
+                        <div id="diagAlreadyInBatchItemsList" class="flex flex-wrap gap-1.5 pt-1">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700/80 pb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="diagProductCode" class="text-sm font-black text-blue-700 dark:text-blue-400 font-mono bg-blue-50 dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-blue-200 dark:border-slate-700">---</span>
+                                <span id="diagProductUM" class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">PC</span>
+                            </div>
+                            <h4 id="diagProductDesc" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white mt-1">---</h4>
+                        </div>
+
+                        <!-- SALDOS EM TEMPO REAL NOS ARMAZÉNS -->
+                        <div class="flex items-center gap-2">
+                            <div class="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center min-w-[95px]">
+                                <span id="diagDestinoLabel" class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Destino (01)</span>
+                                <span id="diagSaldoDestino" class="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">0</span>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-center min-w-[100px]">
+                                <span id="diagOrigemLabel" class="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Origem (02)</span>
+                                <span id="diagSaldoOrigem" class="text-xs sm:text-sm font-black text-blue-700 dark:text-blue-300">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SELEÇÃO RÁPIDA DE ARMAZÉNS COM SALDO (CHIPS) -->
+                    <div id="productWarehouseChipsSection" class="space-y-1.5 pt-1 border-b border-slate-200 dark:border-slate-700/80 pb-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Armazéns com Saldo Disponível (Clique para selecionar)</label>
+                            <span id="warehouseCountNotice" class="text-[10px] font-bold text-blue-600 dark:text-blue-400">0 armazéns encontrados</span>
+                        </div>
+                        <div id="productWarehouseChipsContainer" class="flex flex-wrap gap-2 items-center">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SELEÇÃO DE LOTES DO CONTROLE DE VALIDADE -->
+                    <div id="productLotSection" class="hidden space-y-2 pt-1 border-b border-slate-200 dark:border-slate-700/80 pb-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="calendar-clock" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                <label class="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                                    Lotes Registrados no Armazém de Origem (Controle de Validade)
+                                </label>
+                            </div>
+                            <span id="productLotCountBadge" class="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200">
+                                0 lotes disponíveis
+                            </span>
+                        </div>
+
+                        <!-- Lista de Cards de Lote -->
+                        <div id="productLotChipsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            <!-- Inserido dinamicamente via JS -->
+                        </div>
+
+                        <!-- Aviso de Lotes Vencidos Ocultos -->
+                        <div id="productExpiredLotWarning" class="hidden text-[10px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 pt-1">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 flex-shrink-0 text-rose-500"></i>
+                            <span id="productExpiredLotWarningText">1 lote vencido oculto (materiais vencidos não são permitidos para Armazém 01).</span>
+                        </div>
+                    </div>
+
+                    <!-- WIDGET DE CONFIABILIDADE DE INVENTÁRIO (CONTAGEM FÍSICA) -->
+                    <div id="diagInventoryReliabilityBox" class="p-3 rounded-xl border flex items-start sm:items-center justify-between gap-3 text-xs font-semibold">
+                        <div class="flex items-center gap-2.5">
+                            <i id="diagReliabilityIcon" data-lucide="shield-check" class="w-5 h-5 flex-shrink-0 text-emerald-600"></i>
+                            <div>
+                                <span id="diagReliabilityStatusTitle" class="font-black text-slate-900 dark:text-white block">Situação de Inventário</span>
+                                <p id="diagReliabilityDetails" class="text-[11px] text-slate-500 dark:text-slate-400">Verificando histórico de contagens...</p>
+                            </div>
+                        </div>
+                        <span id="diagReliabilityBadge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Confiável
+                        </span>
+                    </div>
+
+                    <!-- FORMULÁRIO DE QUANTIDADE & ATALHOS DE ADIÇÃO -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
+                        <div class="sm:col-span-5 space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quantidade a Transferir para 01</label>
+                            <div class="flex items-center space-x-1.5">
+                                <input type="number" id="diagInputQty" value="1" min="0.001" step="any"
+                                       class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <button type="button" onclick="setTransferAllStock()" title="Transferir todo o saldo disponível de origem" class="px-3 py-2 bg-blue-50 dark:bg-slate-700 hover:bg-blue-100 text-[#002f6c] dark:text-blue-300 rounded-xl text-xs font-black whitespace-nowrap border border-blue-200 dark:border-slate-600 cursor-pointer">
+                                    Total
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Atalhos rápidos de quantidade -->
+                        <div class="sm:col-span-4 flex items-center gap-1.5 flex-wrap">
+                            <button type="button" onclick="quickAddQty(1)" class="px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-black rounded-lg transition text-slate-700 dark:text-slate-200">+1</button>
+                            <button type="button" onclick="quickAddQty(5)" class="px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-black rounded-lg transition text-slate-700 dark:text-slate-200">+5</button>
+                            <button type="button" onclick="quickAddQty(10)" class="px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-black rounded-lg transition text-slate-700 dark:text-slate-200">+10</button>
+                            <button type="button" onclick="quickAddQty(50)" class="px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 text-xs font-black rounded-lg transition text-slate-700 dark:text-slate-200">+50</button>
+                        </div>
+
+                        <!-- Botão Adicionar ao Lote -->
+                        <div class="sm:col-span-3">
+                            <button type="button" id="btnAddItemToList" onclick="addItemToActiveBatch()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition touch-active cursor-pointer">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Adicionar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELA DE ITENS NO LOTE ATIVO -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+                            <i data-lucide="list-checks" class="w-4 h-4"></i>
+                        </div>
+                        <h3 class="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Itens Coletados para Transferência</h3>
+                    </div>
+
+                    <!-- Resumo Rápido -->
+                    <div class="flex items-center gap-3 text-xs font-bold text-slate-600 dark:text-slate-300">
+                        <span>SKUs: <strong id="activeBatchTotalSkus" class="text-[#002f6c] dark:text-blue-400">0</strong></span>
+                        <span class="border-l border-slate-200 dark:border-slate-700 pl-3">Total Qtd: <strong id="activeBatchTotalQty" class="text-emerald-600 dark:text-emerald-400">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                <th class="px-3 py-2.5 text-center w-12">#</th>
+                                <th class="px-3 py-2.5">Código</th>
+                                <th class="px-3 py-2.5">Descrição</th>
+                                <th class="px-3 py-2.5 text-center">Origem</th>
+                                <th class="px-3 py-2.5 text-center">Destino</th>
+                                <th class="px-3 py-2.5 text-right">Qtd Transferida</th>
+                                <th class="px-3 py-2.5 text-center">UM</th>
+                                <th class="px-3 py-2.5 text-center">Confiabilidade</th>
+                                <th class="px-3 py-2.5 text-center no-print w-24">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activeBatchTableBody">
+                            <tr>
+                                <td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-slate-400">
+                                    Nenhum material adicionado a esta transferência. Escaneie um QR Code ou busque um produto acima.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Observação do Lote & Ações Finais do Ciclo -->
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Observações da Movimentação (Opcional)</label>
+                        <input type="text" id="activeBatchObservacao" placeholder="Ex: Abastecimento matinal do Armazém 01 para atender frente de loja..."
+                               class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#002f6c]"
+                               onchange="saveBatchObservacao(this.value)">
+                    </div>
+
+                    <!-- BOTÕES DE TRANSIÇÃO DE STATUS -->
+                    <div id="batchWorkflowButtonsRow" class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                        <!-- Botão Salvar Rascunho / Pausar -->
+                        <button type="button" id="btnSalvarRascunhoBottom" onclick="saveDraftManually()" class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer touch-active">
+                            <i data-lucide="bookmark" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i>
+                            <span>Salvar Rascunho</span>
+                        </button>
+
+                        <!-- Botão Finalizar Físico -->
+                        <button type="button" id="btnFinalizarFisico" onclick="markBatchFinalizadoFisico()" class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#002f6c] hover:bg-[#00204a] text-white font-black text-xs uppercase tracking-wider shadow-md transition flex items-center justify-center gap-2 cursor-pointer touch-active">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                            <span>1. Finalizar Separação Física (Entregue no 01)</span>
+                        </button>
+
+                        <!-- Botão Transferir no ERP (Habilitado após finalização física ou admin) -->
+                        <button type="button" id="btnTransferirERP" onclick="openModalTransferirERP()" class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-md transition flex items-center justify-center gap-2 cursor-pointer touch-active">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>2. Confirmar Baixa no ERP / Sistema</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ABA 2: HISTÓRICO DE TRANSFERÊNCIAS                          -->
+        <!-- ============================================================ -->
+        <div id="viewHistoryTransfer" class="space-y-6">
+
+            <!-- BANNER DE AÇÃO RÁPIDA: NOVA TRANSFERÊNCIA -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-slate-700 text-[#002f6c] dark:text-blue-400 flex items-center justify-center font-black text-lg border border-blue-100 dark:border-slate-600">
+                        <i data-lucide="history" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Histórico de Transferências</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Consulte transferências anteriores ou inicie um novo lote escolhendo o armazém de destino.</p>
+                    </div>
+                </div>
+                <button onclick="openModalNovaTransferencia()" class="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#9c0e25] hover:bg-[#800b1d] text-white font-black text-xs uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer touch-active">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>
+                    <span>+ Nova Transferência</span>
+                </button>
+            </div>
+
+            <!-- FILTROS DO HISTÓRICO -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                            <i data-lucide="filter" class="w-4 h-4"></i>
+                        </div>
+                        <h3 class="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Filtros do Histórico</h3>
+                    </div>
+                    <button onclick="loadTransferHistory()" class="text-xs font-bold text-[#002f6c] dark:text-blue-400 hover:underline flex items-center gap-1">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                        <span>Atualizar</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filial</label>
+                        <select id="histFilterFilial" onchange="applyHistoryFilters()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 font-bold text-slate-800 dark:text-white">
+                            <option value="ALL">Todas as Filiais</option>
+                            <!-- Inserido dinamicamente via JS -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Status</label>
+                        <select id="histFilterStatus" onchange="applyHistoryFilters()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 font-bold text-slate-800 dark:text-white">
+                            <option value="ALL">Todos os Status</option>
+                            <option value="EM_ABERTO">🟡 Em Aberto (Rascunho)</option>
+                            <option value="FINALIZADO_FISICO">🔵 Finalizado Físico (Pendente ERP)</option>
+                            <option value="TRANSFERIDO_ERP">🟢 Transferido no ERP (Concluído)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Setor</label>
+                        <select id="histFilterSetor" onchange="applyHistoryFilters()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 font-bold text-slate-800 dark:text-white">
+                            <option value="ALL">Comércio & Indústria</option>
+                            <option value="COMERCIO">Comércio</option>
+                            <option value="INDUSTRIA">Indústria</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Buscar Código / Lote / Item</label>
+                        <input type="text" id="histFilterSearch" placeholder="Ex: TMA-COM ou 57000354..."
+                               class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 font-bold text-slate-800 dark:text-white"
+                               oninput="applyHistoryFilters()">
+                    </div>
+
+                    <div class="flex items-end">
+                        <button onclick="clearHistoryFilters()" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-xs font-black text-slate-700 dark:text-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i data-lucide="filter-x" class="w-3.5 h-3.5 text-rose-500"></i>
+                            <span>Limpar Filtros</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTAGEM DO HISTÓRICO -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                <th class="px-3 py-2.5">Lote / Destino</th>
+                                <th class="px-3 py-2.5">Filial</th>
+                                <th class="px-3 py-2.5 text-center">Setor</th>
+                                <th class="px-3 py-2.5 text-center">Status</th>
+                                <th class="px-3 py-2.5 text-center">Itens (SKUs)</th>
+                                <th class="px-3 py-2.5">Criado Por</th>
+                                <th class="px-3 py-2.5">Data / Hora</th>
+                                <th class="px-3 py-2.5">Status Físico / ERP</th>
+                                <th class="px-3 py-2.5 text-center w-28">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-slate-400">
+                                    Carregando histórico de transferências...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RODAPÉ INSTITUCIONAL CORPORATIVO -->
+        <footer class="mt-8 pt-6 pb-6 border-t border-slate-200/80 dark:border-slate-800 text-center text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            <p class="font-bold text-slate-600 dark:text-slate-400">© 2026 Amazon Aço • Todos os direitos reservados</p>
+            <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Sistema Integrado de Apoio Operacional e Controle de Estoques • Uso Interno e Restrito</p>
+        </footer>
+
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- MODAL DE SCANNER DE CÂMERA (QR CODE / CÓDIGO DE BARRAS)       -->
+    <!-- ============================================================ -->
+    <div id="cameraScannerModal" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm transition-opacity no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-11/12 max-w-lg shadow-2xl p-5 border border-slate-200 dark:border-slate-700 space-y-4 relative">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <i data-lucide="camera" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Escanear QR Code no Armazém 01</h3>
+                </div>
+                <button type="button" onclick="closeCameraScannerModal()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <div id="readerContainer" class="w-full rounded-2xl overflow-hidden bg-black aspect-square max-h-72 flex items-center justify-center relative">
+                    <div id="qr-reader" class="w-full h-full"></div>
+                </div>
+                <p class="text-[11px] text-center font-bold text-slate-500 dark:text-slate-400">
+                    Aponte a câmera para o QR Code fixado na prateleira ou código de barras do material.
+                </p>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="closeCameraScannerModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition">
+                    Fechar Câmera
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL DE CONFIRMAÇÃO DE BAIXA NO ERP (DOCUMENTO / PROTOCOLO)  -->
+    <!-- ============================================================ -->
+    <div id="modalTransferirERP" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm transition-opacity no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-11/12 max-w-md shadow-2xl p-6 border border-slate-200 dark:border-slate-700 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Confirmar Baixa no ERP</h3>
+                    <p class="text-[11px] text-slate-400 font-semibold">Registro da efetivação no Protheus / Sistema</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nº do Documento / Protocolo ERP (Opcional)</label>
+                    <input type="text" id="inputDocErpNumero" placeholder="Ex: TMA-2026-9988 ou Nº do Movimento"
+                           class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                    Ao confirmar, o status deste lote passará para <strong class="text-emerald-600">TRANSFERIDO NO ERP</strong> com o seu registro de usuário e carimbo de data/hora.
+                </p>
+            </div>
+
+            <div class="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="closeModalTransferirERP()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition">
+                    Cancelar
+                </button>
+                <button type="button" onclick="executeTransferirERP()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition">
+                    Confirmar Baixa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL DE CONFIGURAÇÃO / INÍCIO DE NOVA TRANSFERÊNCIA         -->
+    <!-- ============================================================ -->
+    <div id="modalNovaTransferencia" class="hidden fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm transition-opacity no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl w-11/12 max-w-lg shadow-2xl p-6 border border-slate-200 dark:border-slate-700 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/60 text-[#9c0e25] dark:text-red-400 flex items-center justify-center">
+                        <i data-lucide="truck" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900 dark:text-white">Iniciar Nova Transferência</h3>
+                        <p class="text-[11px] text-slate-400 font-semibold">Defina o armazém de destino e a origem padrão</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModalNovaTransferencia()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Seleção / Exibição da Filial -->
+                <div class="bg-blue-50/70 dark:bg-slate-700/60 p-3.5 rounded-2xl border border-blue-100 dark:border-slate-600 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-[10px] font-bold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                            Filial da Movimentação
+                        </label>
+                        <span id="modalNewTransferSectorBadge" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#002f6c] text-white">
+                            Comércio
+                        </span>
+                    </div>
+                    <div id="modalFilialContainer">
+                        <!-- Inserido dinamicamente via JS -->
+                    </div>
+                </div>
+
+                <!-- Armazém de Destino (Para onde vai levar) -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span>1. Armazém de Destino (Para onde vai levar)</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-black">Destino Fixo do Lote</span>
+                    </label>
+                    <select id="modalNewTransferDestino" onchange="onModalDestinoChange()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-2xl px-3.5 py-3 text-xs font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002f6c] cursor-pointer">
+                        <!-- Inserido dinamicamente com os armazéns reais da filial -->
+                    </select>
+                    <p class="text-[10px] text-slate-400 mt-1 font-semibold">Este será o armazém que receberá todos os materiais movimentados neste lote.</p>
+                </div>
+
+                <!-- Armazém de Origem Padrão (De onde vai tirar inicialmente) -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span>2. Armazém de Origem Padrão (De onde retirar)</span>
+                        <span class="text-blue-600 dark:text-blue-400 font-black">Pode alterar por item</span>
+                    </label>
+                    <select id="modalNewTransferOrigem" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-2xl px-3.5 py-3 text-xs font-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002f6c] cursor-pointer">
+                        <!-- Inserido dinamicamente com os armazéns reais da filial -->
+                    </select>
+                    <p class="text-[10px] text-slate-400 mt-1 font-semibold">Sugestão padrão de saída. Você ainda poderá selecionar o armazém de origem para cada material individualmente.</p>
+                </div>
+
+                <!-- Observação / Finalidade -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">3. Finalidade / Observação do Lote (Opcional)</label>
+                    <input type="text" id="modalNewTransferObs" placeholder="Ex: Abastecimento de Frente de Loja, Reposição de Estoque, etc."
+                           class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#002f6c]">
+                </div>
+            </div>
+
+            <div class="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="closeModalNovaTransferencia()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-2xl transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="executeStartNewTransfer()" class="flex-1 py-3 bg-[#002f6c] hover:bg-[#00204a] text-white font-black text-xs rounded-2xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer touch-active">
+                    <i data-lucide="play" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Iniciar Transferência</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ROMANEIO DE TRANSFERÊNCIA PARA IMPRESSÃO A4 (PRINT ONLY)     -->
+    <!-- ============================================================ -->
+    <div id="printManifestArea" class="print-only p-6 space-y-6">
+        <div class="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+            <div class="flex items-center space-x-3">
+                <img src="./logo_amazon_aco.png" alt="Amazon Aço" class="h-10 w-auto object-contain">
+                <div>
+                    <h1 id="printManifestTitle" class="text-base font-black uppercase text-slate-900">Guia / Romaneio de Transferência entre Armazéns</h1>
+                    <p class="text-xs text-slate-600">Amazon Aço - Controle de Movimentação Interna de Estoque</p>
+                </div>
+            </div>
+            <div class="text-right text-xs">
+                <p>Lote: <strong id="printLoteCodigo" class="text-sm font-black font-mono">---</strong></p>
+                <p>Setor: <strong id="printSetor">COMÉRCIO</strong> | Filial: <strong id="printFilial">01</strong></p>
+                <p>Emissão: <span id="printDataEmissao">--/--/---- --:--</span></p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 text-xs p-3 bg-slate-100 rounded-lg border border-slate-300">
+            <div>
+                <span class="block text-[10px] text-slate-500 uppercase font-bold">Criado Por:</span>
+                <strong id="printCriadoPor">---</strong>
+            </div>
+            <div>
+                <span class="block text-[10px] text-slate-500 uppercase font-bold">Separação Física:</span>
+                <strong id="printFinalizadoPor">---</strong>
+            </div>
+            <div>
+                <span class="block text-[10px] text-slate-500 uppercase font-bold">Baixa ERP:</span>
+                <strong id="printTransferidoPor">---</strong>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-xs font-black uppercase text-slate-900 mb-2">Materiais Transferidos</h3>
+            <table class="w-full text-left border-collapse border border-slate-300 text-xs">
+                <thead>
+                    <tr class="bg-slate-200 border-b border-slate-300 font-bold">
+                        <th class="p-2 border-r border-slate-300 text-center w-10">Item</th>
+                        <th class="p-2 border-r border-slate-300">Código</th>
+                        <th class="p-2 border-r border-slate-300">Descrição do Material</th>
+                        <th class="p-2 border-r border-slate-300 text-center">Origem</th>
+                        <th class="p-2 border-r border-slate-300 text-center">Destino</th>
+                        <th class="p-2 border-r border-slate-300 text-right">Qtd</th>
+                        <th class="p-2 text-center">UM</th>
+                    </tr>
+                </thead>
+                <tbody id="printItemsTableBody">
+                    <!-- Gerado Dinamicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Observações do Romaneio -->
+        <div id="printObservacaoBox" class="text-xs p-3 border border-slate-300 rounded">
+            <span class="font-bold uppercase text-[10px] block text-slate-500">Observações:</span>
+            <p id="printObservacaoText">Nenhuma observação registrada.</p>
+        </div>
+
+        <!-- ASSINATURAS DO ROMANEIO -->
+        <div class="pt-8 grid grid-cols-3 gap-6 text-center text-xs mt-8">
+            <div class="border-t border-slate-900 pt-2">
+                <p class="font-bold">Separador / Origem</p>
+                <p class="text-[10px] text-slate-500">Responsável pela Coleta</p>
+            </div>
+            <div class="border-t border-slate-900 pt-2">
+                <p class="font-bold">Transportador / Movimentação</p>
+                <p class="text-[10px] text-slate-500">Deslocamento</p>
+            </div>
+            <div class="border-t border-slate-900 pt-2">
+                <p id="printReceiverSignatureLabel" class="font-bold">Recebedor / Armazém Destino</p>
+                <p class="text-[10px] text-slate-500">Conferência Física no Destino</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAÇÃO DE LOGOUT -->
+    <div id="logoutModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-opacity no-print">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl w-11/12 max-w-sm shadow-2xl scale-95 transition-transform duration-200">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mx-auto mb-4">
+                <i data-lucide="log-out" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-black text-center text-slate-900 dark:text-white mb-2">Sair do Sistema?</h3>
+            <p class="text-sm text-center text-slate-500 dark:text-slate-400 mb-6 font-semibold">Tem certeza que deseja encerrar a sessão atual?</p>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeLogoutModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                <button type="button" onclick="executeLogout()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-md shadow-red-200">Sim, Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUBMENUS FLUTUANTES (MOBILE) -->
+    <div id="mobileEstoqueSubmenu" class="hidden md:hidden fixed bottom-16 left-4 right-4 bg-white/95 backdrop-blur-md border border-slate-200 rounded-3xl shadow-2xl z-50 p-2 space-y-1.5 no-print">
+        <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Módulo de Estoque</span>
+            <button type="button" onclick="closeMobileSubmenus()" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <a href="inventario.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left transition-colors">
+            <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+                <i data-lucide="boxes" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black text-slate-800">Inventário Rotativo</p>
+                <p class="text-[10px] font-bold text-slate-400">Contagens, saldos e divergências</p>
+            </div>
+        </a>
+        <a href="transferencia.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl bg-blue-50 text-blue-800 text-left transition-colors font-bold">
+            <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                <i data-lucide="truck" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black">Transferência entre Armazéns</p>
+                <p class="text-[10px] font-bold text-blue-600">QR Code, separação física e ERP</p>
+            </div>
+        </a>
+        <a href="kardex.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left transition-colors">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
+                <i data-lucide="history" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black text-slate-800">Kardex de Contagem</p>
+                <p class="text-[10px] font-bold text-slate-400">Histórico cronológico de lançamentos</p>
+            </div>
+        </a>
+        <a href="validade.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left transition-colors">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black text-slate-800">Controle de Validade</p>
+                <p class="text-[10px] font-bold text-slate-400">Ano/Mês, alertas e Armazém 50</p>
+            </div>
+        </a>
+    </div>
+
+    <div id="mobileAlmoxSubmenu" class="hidden md:hidden fixed bottom-16 left-4 right-4 bg-white/95 backdrop-blur-md border border-slate-200 rounded-3xl shadow-2xl z-50 p-2 space-y-1.5 no-print">
+        <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Módulo Almoxarifado</span>
+            <button type="button" onclick="closeMobileSubmenus()" class="text-slate-400 p-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <a href="luvas.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left transition-colors">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <i data-lucide="shield" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black text-slate-800">Consumo de EPIs</p>
+                <p class="text-[10px] font-bold text-slate-400">Entrega de luvas e controle por matrícula</p>
+            </div>
+        </a>
+        <a href="minutas.html" class="w-full flex items-center space-x-3 p-2.5 rounded-2xl hover:bg-slate-100 text-left transition-colors">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <p class="text-xs font-black text-slate-800">Minutas & Recebimento</p>
+                <p class="text-[10px] font-bold text-slate-400">Entrada de NFs e canhotos de entrega</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- BOTTOM NAV (MOBILE) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-2 py-1.5 shadow-lg flex items-center justify-around no-print pb-safe">
+        <a href="index.html" class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black uppercase tracking-wider truncate w-full text-center mt-0.5">Início</span>
+        </a>
+
+        <!-- GRUPO ESTOQUE -->
+        <button onclick="toggleMobileSubmenu('estoque')" id="bottomBtnEstoqueGroup" class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 text-blue-600">
+            <i data-lucide="boxes" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black uppercase tracking-wider truncate w-full text-center mt-0.5 flex items-center justify-center gap-0.5">Estoque <i data-lucide="chevron-up" class="w-3 h-3"></i></span>
+        </button>
+
+        <a href="solicitacao_estoque.html" class="flex-1 min-w-0 flex flex-col items-center justify-center py-1 text-slate-400 hover:text-blue-600">
+            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black uppercase tracking-wider truncate w-full text-center mt-0.5">Compras</span>
+        </a>
+
+        <!-- GRUPO ALMOXARIFADO -->
+        <button onclick="toggleMobileSubmenu('almox')" id="bottomBtnAlmoxGroup" class="hidden flex-1 min-w-0 flex-col items-center justify-center py-1 text-slate-400 hover:text-slate-600">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black uppercase tracking-wider truncate w-full text-center mt-0.5 flex items-center justify-center gap-0.5">Almox. <i data-lucide="chevron-up" class="w-3 h-3"></i></span>
+        </button>
+        
+        <!-- ADMIN -->
+        <a href="admin.html" id="bottomBtnAdmin" class="hidden flex-1 min-w-0 flex-col items-center justify-center py-1 text-slate-400 hover:text-amber-600">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+            <span class="text-[9px] font-black uppercase tracking-wider truncate w-full text-center mt-0.5">Admin</span>
+        </a>
+    </nav>
+
+    <!-- SHARED JS SCRIPT -->
+    <script src="shared.js"></script>
+
+    <!-- TRANSFERÊNCIA ARMAZÉM 01 LOGIC SCRIPT -->
+    <script>
+        // --- ESTADO GLOBAL DO MÓDULO DE TRANSFERÊNCIA ---
+        let currentSector = 'COMERCIO'; // 'COMERCIO' ou 'INDUSTRIA'
+        let currentFilialId = '01';
+        let activeTab = 'active'; // 'active' ou 'history'
+
+        // Cache de dados do catálogo e saldos
+        let catalogMaster = [];
+        let balancesMaster = [];
+        let physicalCountsMaster = [];
+
+        // Helper para obter nome formatado do usuário logado
+        function getFormattedLoggedUserName() {
+            const user = getCurrentUser() || (typeof currentUser !== 'undefined' ? currentUser : null);
+            if (!user) return 'USUÁRIO';
+            const nome = user.nome || user.usuario || 'USUÁRIO';
+            const matricula = user.matricula ? ` (${user.matricula})` : '';
+            return `${nome}${matricula}`;
+        }
+
+        // Gerador de código offline / fallback: TMA-COM-18082026-1 ou TMA-IND-18082026-1
+        function generateBatchCodeFallback(sector) {
+            const sec = sector === 'INDUSTRIA' ? 'IND' : 'COM';
+            const now = new Date();
+            const d = String(now.getDate()).padStart(2, '0');
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const y = now.getFullYear();
+            const dateStr = `${d}${m}${y}`;
+            return `TMA-${sec}-${dateStr}-1`;
+        }
+
+        // Lote Ativo em Memória
+        let activeBatch = {
+            id: null,
+            codigo_lote: 'TMA-COM-NOVO',
+            setor: 'COMERCIO',
+            filial_id: '01',
+            status: 'EM_ABERTO',
+            observacao: '',
+            criado_por: '',
+            criado_em: null,
+            finalizado_fisico_por: null,
+            finalizado_fisico_em: null,
+            transferido_erp_por: null,
+            transferido_erp_em: null,
+            doc_erp_numero: null,
+            itens: []
+        };
+
+        let selectedProductForDiag = null;
+        let html5QrScanner = null;
+        let allHistoryBatches = [];
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
+        window.onload = async function() {
+            initTheme();
+            const user = await checkAuth();
+            if (!user) return;
+
+            // Atualiza exibição do usuário no cabeçalho
+            const headerUserName = document.getElementById('headerUserName');
+            if (headerUserName) {
+                headerUserName.innerText = user.nome || user.usuario || 'USUÁRIO';
+            }
+
+            // Define filial ativa
+            if (isGlobalFilial(user)) {
+                currentFilialId = '01';
+            } else {
+                currentFilialId = getUserAssignedFilial(user, 'COMERCIO');
+            }
+
+            setupTransferFilialUI();
+
+            // Carrega dados e lote pendente
+            await switchSector('COMERCIO', false);
+            await restoreOrInitActiveBatch();
+
+            // Abre por padrão na aba de Histórico
+            switchTransferTab('history');
+        };
+
+        function setupTransferFilialUI() {
+            const isGlobal = isGlobalFilial(currentUser);
+            const container = document.getElementById('transferFilialContainer');
+            if (!container) return;
+
+            if (isGlobal) {
+                const list = currentSector === 'INDUSTRIA'
+                    ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
+                    : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
+                
+                let opts = '';
+                list.forEach(f => {
+                    const isSel = String(currentFilialId).padStart(2, '0') === f.num;
+                    opts += `<option value="${f.num}" ${isSel ? 'selected' : ''} class="bg-slate-900 text-white">${f.name}</option>`;
+                });
+
+                container.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <select id="transferFilialSelect" onchange="changeTransferFilialGlobal(this.value)" class="bg-transparent text-blue-100 font-extrabold uppercase text-xs focus:outline-none cursor-pointer">
+                        ${opts}
+                    </select>
+                `;
+            } else {
+                const userFil = getUserAssignedFilial(currentUser, currentSector);
+                currentFilialId = userFil;
+                const name = getFilialDisplayName(userFil, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                container.innerHTML = `
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="transferFilialBadge" class="text-blue-100 font-extrabold uppercase">${name}</span>
+                `;
+            }
+        }
+
+        async function changeTransferFilialGlobal(newFilial) {
+            currentFilialId = newFilial;
+            await loadMasterDataForSector();
+            await restoreOrInitActiveBatch();
+        }
+
+        // --- ALTERNÂNCIA DE SETOR (COMÉRCIO / INDÚSTRIA) ---
+        async function switchSector(sector, reloadBatch = true) {
+            currentSector = sector;
+
+            const comBtn = document.getElementById('sectorComercioBtn');
+            const indBtn = document.getElementById('sectorIndustriaBtn');
+
+            if (sector === 'COMERCIO') {
+                comBtn.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-white text-[#002f6c] shadow-sm cursor-pointer";
+                indBtn.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer";
+            } else {
+                indBtn.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-white text-[#002f6c] shadow-sm cursor-pointer";
+                comBtn.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer";
+            }
+
+            setupTransferFilialUI();
+
+            await loadMasterDataForSector();
+
+            if (reloadBatch) {
+                await restoreOrInitActiveBatch();
+            }
+        }
+
+        // --- CARREGAMENTO DE DADOS DO SUPABASE ---
+        async function loadMasterDataForSector() {
+            if (!supabaseClient) initSupabase();
+            showLoader(true, `Carregando catálogo e saldos (${currentSector})...`);
+
+            try {
+                const saldoTable = currentSector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
+                const contagemTable = currentSector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio';
+                const padFilial = String(currentFilialId).padStart(2, '0');
+                const rawFilial = String(currentFilialId).replace(/^0+/, '');
+
+                // 1. Carregar Saldos da Filial (suporta '01' e '1')
+                const { data: saldoData, error: saldoErr } = await supabaseClient.from(saldoTable)
+                    .select('*')
+                    .or(`filial.eq.${padFilial},filial.eq.${rawFilial}`);
+                if (saldoErr) console.warn("Erro ao carregar saldos:", saldoErr);
+                balancesMaster = saldoData || [];
+
+                // 2. Carregar Últimas Contagens da Filial
+                const { data: countData, error: countErr } = await supabaseClient.from(contagemTable)
+                    .select('*')
+                    .or(`filial.eq.${padFilial},filial.eq.${rawFilial}`)
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+                if (countErr) console.warn("Erro ao carregar contagens:", countErr);
+                physicalCountsMaster = countData || [];
+
+                // 3. Atualizar lista dinâmica de armazéns existentes na filial
+                updateBranchWarehousesList();
+
+            } catch (err) {
+                console.error("Erro no carregamento de dados mestre:", err);
+                showAlert("Erro ao carregar dados do setor.", "error");
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // --- CONTROLE DE ABAS (LOTE ATIVO / HISTÓRICO) ---
+        function switchTransferTab(tab) {
+            activeTab = tab;
+            const viewActive = document.getElementById('viewActiveTransfer');
+            const viewHist = document.getElementById('viewHistoryTransfer');
+            const btnActive = document.getElementById('tabActiveTransferBtn');
+            const btnHist = document.getElementById('tabHistoryBtn');
+
+            if (tab === 'active') {
+                viewActive.classList.remove('hidden');
+                viewHist.classList.add('hidden');
+                btnActive.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#9c0e25] text-white shadow-sm cursor-pointer";
+                btnHist.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer";
+            } else {
+                viewActive.classList.add('hidden');
+                viewHist.classList.remove('hidden');
+                btnHist.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 bg-[#9c0e25] text-white shadow-sm cursor-pointer";
+                btnActive.className = "px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 text-blue-100 hover:text-white cursor-pointer";
+                loadTransferHistory();
+            }
+        }
+
+        // --- GERENCIAMENTO DO LOTE ATIVO ---
+        function initInMemoryDraftBatch(destino = '01', origemPadrao = '02', observacao = '') {
+            const sec = currentSector === 'INDUSTRIA' ? 'IND' : 'COM';
+            activeBatch = {
+                id: null,
+                codigo_lote: `TMA-${sec}-NOVO`,
+                setor: currentSector,
+                filial_id: String(currentFilialId).padStart(2, '0'),
+                armazem_destino: String(destino).padStart(2, '0'),
+                armazem_origem_padrao: String(origemPadrao).padStart(2, '0'),
+                status: 'EM_ABERTO',
+                observacao: observacao || '',
+                criado_por: getFormattedLoggedUserName(),
+                itens: []
+            };
+        }
+
+        // --- DESCRIÇÕES E ARMAZÉNS REAIS POR FILIAL E SETOR (AMAZON AÇO) ---
+        function getWarehouseDescription(armCode, sector = 'COMERCIO', filialId = '01') {
+            const arm = String(armCode).trim().padStart(2, '0');
+            const descriptions = {
+                '01': sector === 'INDUSTRIA' ? 'Frente Loja / Venda' : 'Frente de Loja / Principal',
+                '02': sector === 'INDUSTRIA' ? 'Almoxarifado Geral' : 'Almoxarifado CD / Pulmão',
+                '03': 'Perfis / Depósito',
+                '04': sector === 'INDUSTRIA' ? 'Almoxarifado Produção' : 'Almoxarifado Secundário',
+                '05': 'Sucata / Acessórios',
+                '06': sector === 'INDUSTRIA' ? 'Jorge Teixeira' : 'Depósito Externo',
+                '09': 'Matéria Prima Especial',
+                '11': 'Área Técnica / Trânsito',
+                '12': 'Área de Corte / Bobinas',
+                '24': 'Consignado / Terceiros',
+                '26': 'Crossdocking / Reserva',
+                '30': 'Depósito Fechado',
+                '41': 'Showroom / Loja',
+                '42': 'Galpão Principal',
+                '46': 'Produção / Laminação',
+                '50': 'Validade / Quarentena / Avarias'
+            };
+            const desc = descriptions[arm];
+            return desc ? `Armazém ${arm} (${desc})` : `Armazém ${arm}`;
+        }
+
+        async function fetchWarehousesForFilial(filialId, sector) {
+            if (!supabaseClient) initSupabase();
+            const table = sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
+            const padFilial = String(filialId).padStart(2, '0');
+            const rawFilial = String(filialId).replace(/^0+/, '');
+
+            // Se for a filial ativa e balancesMaster já estiver carregado para este setor:
+            if (String(currentFilialId).padStart(2, '0') === padFilial && currentSector === sector && balancesMaster && balancesMaster.length > 0) {
+                const setArm = new Set();
+                balancesMaster.forEach(s => {
+                    const a = String(s.armazem || s.Armazem || '').trim().padStart(2, '0');
+                    if (a && a !== '00') setArm.add(a);
+                });
+                setArm.add('50');
+                return Array.from(setArm).sort((a, b) => a.localeCompare(b));
+            }
+
+            try {
+                const { data, error } = await supabaseClient.from(table)
+                    .select('armazem')
+                    .or(`filial.eq.${padFilial},filial.eq.${rawFilial}`);
+
+                if (!error && data && data.length > 0) {
+                    const setArm = new Set();
+                    data.forEach(r => {
+                        const a = String(r.armazem || '').trim().padStart(2, '0');
+                        if (a && a !== '00') setArm.add(a);
+                    });
+                    setArm.add('50');
+                    return Array.from(setArm).sort((a, b) => a.localeCompare(b));
+                }
+            } catch(e) {
+                console.warn("Erro ao buscar armazéns da filial no Supabase:", e);
+            }
+
+            // Fallbacks baseados na base de dados real da Amazon Aço
+            if (sector === 'INDUSTRIA') {
+                return ['01', '02', '04', '09', '24', '46', '50'];
+            }
+            if (padFilial === '02') {
+                return ['01', '12', '24', '41', '42', '50'];
+            }
+            if (padFilial === '04') {
+                return ['01', '02', '11', '24', '26', '30', '50'];
+            }
+            if (padFilial === '05') {
+                return ['01', '02', '11', '24', '26', '50'];
+            }
+            if (padFilial === '06') {
+                return ['01', '02', '11', '12', '24', '50'];
+            }
+            return ['01', '02', '04', '05', '11', '12', '24', '26', '50'];
+        }
+
+        // --- MODAL DE NOVA TRANSFERÊNCIA (SETUP DE FILIAL, DESTINO E ORIGEM) ---
+        let modalCurrentWarehouses = [];
+
+        async function openModalNovaTransferencia() {
+            const modal = document.getElementById('modalNovaTransferencia');
+            if (!modal) return;
+
+            if (activeBatch && activeBatch.itens && activeBatch.itens.length > 0 && activeBatch.status === 'EM_ABERTO') {
+                if (!confirm(`Já existe uma lista de transferência em andamento (${activeBatch.codigo_lote}) com ${activeBatch.itens.length} item(ns). Deseja iniciar um novo lote zerado?`)) {
+                    return;
+                }
+            }
+
+            // 1. Configurar Badge do Setor
+            const sectorBadge = document.getElementById('modalNewTransferSectorBadge');
+            if (sectorBadge) {
+                sectorBadge.innerText = currentSector === 'INDUSTRIA' ? 'Indústria' : 'Comércio';
+            }
+
+            // 2. Renderizar Seletor / Badge de Filial
+            const filialContainer = document.getElementById('modalFilialContainer');
+            const isGlobal = isGlobalFilial(currentUser);
+
+            if (isGlobal) {
+                const list = currentSector === 'INDUSTRIA'
+                    ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
+                    : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
+
+                let opts = '';
+                list.forEach(f => {
+                    const isSel = String(currentFilialId).padStart(2, '0') === f.num;
+                    opts += `<option value="${f.num}" ${isSel ? 'selected' : ''}>${f.name}</option>`;
+                });
+
+                filialContainer.innerHTML = `
+                    <select id="modalNewTransferFilial" onchange="onModalFilialChange(this.value)" class="w-full bg-white dark:bg-slate-800 border border-blue-300 dark:border-slate-600 rounded-xl px-3 py-2.5 text-xs font-black text-[#002f6c] dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-[#002f6c] cursor-pointer shadow-xs">
+                        ${opts}
+                    </select>
+                `;
+            } else {
+                const userFil = getUserAssignedFilial(currentUser, currentSector);
+                const name = getFilialDisplayName(userFil, currentSector === 'INDUSTRIA' ? 'industria' : 'comercio');
+                filialContainer.innerHTML = `
+                    <div class="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-slate-600">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-red-500"></i>
+                        <span class="text-xs font-black text-[#002f6c] dark:text-blue-300">${name}</span>
+                    </div>
+                `;
+            }
+
+            const selectedFilial = isGlobal ? (document.getElementById('modalNewTransferFilial')?.value || currentFilialId) : currentFilialId;
+            await onModalFilialChange(selectedFilial);
+
+            document.getElementById('modalNewTransferObs').value = '';
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModalNovaTransferencia() {
+            const modal = document.getElementById('modalNovaTransferencia');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        async function onModalFilialChange(filialId) {
+            const selDest = document.getElementById('modalNewTransferDestino');
+            if (!selDest) return;
+            selDest.innerHTML = `<option value="">Carregando armazéns da filial...</option>`;
+
+            modalCurrentWarehouses = await fetchWarehousesForFilial(filialId, currentSector);
+
+            let destOpts = '';
+            modalCurrentWarehouses.forEach(arm => {
+                const desc = getWarehouseDescription(arm, currentSector, filialId);
+                destOpts += `<option value="${arm}">${desc}</option>`;
+            });
+            selDest.innerHTML = destOpts;
+
+            // Seleciona 01 por padrão se existir, senão o primeiro armazém da lista
+            if (modalCurrentWarehouses.includes('01')) {
+                selDest.value = '01';
+            } else if (modalCurrentWarehouses.length > 0) {
+                selDest.value = modalCurrentWarehouses[0];
+            }
+
+            onModalDestinoChange();
+        }
+
+        function onModalDestinoChange() {
+            const destVal = document.getElementById('modalNewTransferDestino')?.value;
+            const selOrig = document.getElementById('modalNewTransferOrigem');
+            if (!selOrig) return;
+
+            const filialEl = document.getElementById('modalNewTransferFilial');
+            const currentFil = filialEl ? filialEl.value : currentFilialId;
+
+            const warehouses = modalCurrentWarehouses && modalCurrentWarehouses.length > 0
+                ? modalCurrentWarehouses
+                : availableWarehousesInBranch;
+
+            let origOpts = '';
+            warehouses.forEach(arm => {
+                if (arm === destVal) return; // Não permite origem idêntica ao destino
+                const desc = getWarehouseDescription(arm, currentSector, currentFil);
+                origOpts += `<option value="${arm}">${desc}</option>`;
+            });
+            selOrig.innerHTML = origOpts;
+
+            if (warehouses.includes('02') && destVal !== '02') {
+                selOrig.value = '02';
+            } else if (warehouses.includes('01') && destVal !== '01') {
+                selOrig.value = '01';
+            } else if (selOrig.options.length > 0) {
+                selOrig.value = selOrig.options[0].value;
+            }
+        }
+
+        async function executeStartNewTransfer() {
+            const filialEl = document.getElementById('modalNewTransferFilial');
+            const chosenFilial = filialEl ? filialEl.value : currentFilialId;
+            const dest = document.getElementById('modalNewTransferDestino').value || '01';
+            const orig = document.getElementById('modalNewTransferOrigem').value || '02';
+            const obs = document.getElementById('modalNewTransferObs').value.trim();
+
+            // Se o usuário selecionou uma filial diferente no modal, atualiza o contexto global
+            if (String(chosenFilial).padStart(2, '0') !== String(currentFilialId).padStart(2, '0')) {
+                currentFilialId = chosenFilial;
+                setupTransferFilialUI();
+                await loadMasterDataForSector();
+            }
+
+            clearSelectedProduct();
+            initInMemoryDraftBatch(dest, orig, obs);
+
+            const selOrigPage = document.getElementById('selectArmazemOrigem');
+            if (selOrigPage) selOrigPage.value = orig;
+
+            closeModalNovaTransferencia();
+            switchTransferTab('active');
+            renderActiveBatchUI();
+            showAlert(`Nova transferência iniciada na ${getFilialDisplayName(currentFilialId)}! Destino: Armazém ${dest}.`, "success");
+
+            setTimeout(() => {
+                const inp = document.getElementById('inputProductSearch');
+                if (inp) inp.focus();
+            }, 250);
+        }
+
+        async function restoreOrInitActiveBatch() {
+            if (!supabaseClient) initSupabase();
+
+            try {
+                // Procura se existe algum lote em aberto já salvo no banco para esta filial e setor
+                const { data, error } = await supabaseClient.from('transferencias_armazem')
+                    .select('*, transferencias_armazem_itens(*)')
+                    .eq('filial_id', String(currentFilialId).padStart(2, '0'))
+                    .eq('setor', currentSector)
+                    .eq('status', 'EM_ABERTO')
+                    .order('criado_em', { ascending: false })
+                    .limit(1);
+
+                if (!error && data && data.length > 0) {
+                    const row = data[0];
+                    activeBatch = {
+                        id: row.id,
+                        codigo_lote: row.codigo_lote,
+                        setor: row.setor,
+                        filial_id: row.filial_id,
+                        armazem_destino: row.armazem_destino || '01',
+                        armazem_origem_padrao: row.armazem_origem_padrao || '02',
+                        status: row.status,
+                        observacao: row.observacao || '',
+                        criado_por: row.criado_por || getFormattedLoggedUserName(),
+                        criado_em: row.criado_em,
+                        finalizado_fisico_por: row.finalizado_fisico_por,
+                        finalizado_fisico_em: row.finalizado_fisico_em,
+                        transferido_erp_por: row.transferido_erp_por,
+                        transferido_erp_em: row.transferido_erp_em,
+                        doc_erp_numero: row.doc_erp_numero,
+                        itens: row.transferencias_armazem_itens || []
+                    };
+                } else {
+                    // Inicializa apenas em memória (NÃO insere no Supabase se estiver zerado)
+                    initInMemoryDraftBatch('01', '02');
+                }
+            } catch(e) {
+                console.error("Erro ao restaurar lote ativo:", e);
+                initInMemoryDraftBatch('01', '02');
+            }
+
+            renderActiveBatchUI();
+        }
+
+        async function ensureBatchPersistedInSupabase() {
+            if (activeBatch.id) return activeBatch.id;
+
+            const userName = getFormattedLoggedUserName();
+            let newCode = generateBatchCodeFallback(currentSector);
+
+            try {
+                const { data: codeData, error: codeErr } = await supabaseClient.rpc('gerar_codigo_transferencia', { p_setor: currentSector });
+                if (!codeErr && codeData) {
+                    newCode = codeData;
+                }
+            } catch(e) {
+                console.warn("Gerador de código sequencial TMA:", e);
+            }
+
+            const newBatchPayload = {
+                codigo_lote: newCode,
+                setor: currentSector,
+                filial_id: String(currentFilialId).padStart(2, '0'),
+                armazem_destino: activeBatch.armazem_destino || '01',
+                armazem_origem_padrao: activeBatch.armazem_origem_padrao || '02',
+                status: 'EM_ABERTO',
+                observacao: activeBatch.observacao || '',
+                criado_por: userName
+            };
+
+            const { data, error } = await supabaseClient.from('transferencias_armazem')
+                .insert(newBatchPayload)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            activeBatch.id = data.id;
+            activeBatch.codigo_lote = data.codigo_lote;
+            activeBatch.criado_em = data.criado_em;
+            activeBatch.criado_por = data.criado_por;
+            renderActiveBatchUI();
+            return data.id;
+        }
+
+        function renderActiveBatchUI() {
+            // Header do Lote
+            document.getElementById('activeLoteCodigo').innerText = activeBatch.codigo_lote || 'TMA-NOVO';
+            document.getElementById('activeLoteCriador').innerText = activeBatch.criado_por || getFormattedLoggedUserName();
+            document.getElementById('activeBatchObservacao').value = activeBatch.observacao || '';
+
+            const filBadge = document.getElementById('activeLoteFilialBadge');
+            if (filBadge) {
+                filBadge.innerText = getFilialDisplayName(activeBatch.filial_id || currentFilialId, activeBatch.setor === 'INDUSTRIA' ? 'industria' : 'comercio');
+            }
+
+            const destBadge = document.getElementById('activeLoteDestinoBadge');
+            if (destBadge) {
+                destBadge.innerText = `Armazém ${activeBatch.armazem_destino || '01'}`;
+            }
+
+            const statusBadge = document.getElementById('activeLoteStatusBadge');
+            const btnFinalizar = document.getElementById('btnFinalizarFisico');
+            const btnTransferir = document.getElementById('btnTransferirERP');
+            const btnSalvar = document.getElementById('btnSalvarRascunho');
+            const btnSalvarBottom = document.getElementById('btnSalvarRascunhoBottom');
+            const scannerCard = document.getElementById('scannerSectionCard');
+
+            if (btnFinalizar) {
+                btnFinalizar.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i><span>1. Finalizar Separação Física (Entregue no Arm. ${activeBatch.armazem_destino || '01'})</span>`;
+            }
+
+            if (activeBatch.status === 'TRANSFERIDO_ERP') {
+                statusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200";
+                statusBadge.innerText = `🟢 Transferido no ERP (${activeBatch.doc_erp_numero || 'OK'})`;
+                btnFinalizar.classList.add('hidden');
+                btnTransferir.classList.add('hidden');
+                if (btnSalvar) btnSalvar.classList.add('hidden');
+                if (btnSalvarBottom) btnSalvarBottom.classList.add('hidden');
+                scannerCard.classList.add('opacity-50', 'pointer-events-none');
+            } else if (activeBatch.status === 'FINALIZADO_FISICO') {
+                statusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800 border border-blue-200";
+                statusBadge.innerText = "🔵 Finalizado Físico (Aguardando ERP)";
+                btnFinalizar.classList.add('hidden');
+                btnTransferir.classList.remove('hidden');
+                if (btnSalvar) btnSalvar.classList.add('hidden');
+                if (btnSalvarBottom) btnSalvarBottom.classList.add('hidden');
+                scannerCard.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                statusBadge.className = "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200";
+                statusBadge.innerText = "🟡 Em Aberto (Rascunho / Coleta)";
+                btnFinalizar.classList.remove('hidden');
+                btnTransferir.classList.add('hidden');
+                if (btnSalvar) btnSalvar.classList.remove('hidden');
+                if (btnSalvarBottom) btnSalvarBottom.classList.remove('hidden');
+                scannerCard.classList.remove('opacity-50', 'pointer-events-none');
+            }
+
+            // Renderizar tabela de itens
+            const tbody = document.getElementById('activeBatchTableBody');
+            if (!activeBatch.itens || activeBatch.itens.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-slate-400">
+                            Nenhum material adicionado a esta transferência. Escaneie um QR Code ou busque um produto acima.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('activeBatchTotalSkus').innerText = "0";
+                document.getElementById('activeBatchTotalQty').innerText = "0";
+                return;
+            }
+
+            let html = '';
+            let totalQty = 0;
+
+            activeBatch.itens.forEach((item, index) => {
+                const qty = Number(item.quantidade) || 0;
+                totalQty += qty;
+                const orig = String(item.armazem_origem || '02').padStart(2, '0');
+                const dest = String(item.armazem_destino || '01').padStart(2, '0');
+
+                let relBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600">N/D</span>`;
+                if (item.confiabilidade_inventario) {
+                    if (item.confiabilidade_inventario.includes('Confiável')) {
+                        relBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">🟢 Confiável</span>`;
+                    } else if (item.confiabilidade_inventario.includes('Alerta')) {
+                        relBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">🟡 +30 dias</span>`;
+                    } else {
+                        relBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800">🔴 Não contada</span>`;
+                    }
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/80 text-xs">
+                        <td class="px-3 py-2.5 text-center font-bold text-slate-400">${index + 1}</td>
+                        <td class="px-3 py-2.5 font-mono font-black text-[#002f6c] dark:text-blue-400">${item.produto}</td>
+                        <td class="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-100">
+                            <div class="flex flex-col">
+                                <span>${item.descricao || 'PRODUTO'}</span>
+                                ${item.lote ? `
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-black bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                            Lote: ${item.lote}
+                                        </span>
+                                        ${item.data_validade ? `
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                Val: ${formatAnoMesDisplay(item.data_validade)}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td class="px-3 py-2.5 text-center font-black text-blue-700 dark:text-blue-300">Arm. ${orig}</td>
+                        <td class="px-3 py-2.5 text-center font-black text-emerald-700 dark:text-emerald-300">Arm. ${dest}</td>
+                        <td class="px-3 py-2.5 text-right font-black text-slate-900 dark:text-white">${qty.toLocaleString('pt-BR')}</td>
+                        <td class="px-3 py-2.5 text-center font-black text-slate-500">${item.unidade || 'PC'}</td>
+                        <td class="px-3 py-2.5 text-center">${relBadge}</td>
+                        <td class="px-3 py-2.5 text-center no-print">
+                            ${activeBatch.status === 'EM_ABERTO' ? `
+                                <button onclick="deleteItemFromBatch('${item.id || index}')" class="p-1 text-slate-400 hover:text-red-600 transition" title="Remover item">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            ` : `<span class="text-[10px] text-slate-400 font-bold">Bloqueado</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('activeBatchTotalSkus').innerText = activeBatch.itens.length.toLocaleString('pt-BR');
+            document.getElementById('activeBatchTotalQty').innerText = totalQty.toLocaleString('pt-BR');
+            lucide.createIcons();
+        }
+
+        // --- BUSCA E DIAGNÓSTICO DO PRODUTO (QR CODE / AUTOCOMPLETE) ---
+        let searchDebounceTimer = null;
+
+        function handleProductSearchInput(val) {
+            const list = document.getElementById('productAutocompleteList');
+            const btnClear = document.getElementById('btnClearProductSearch');
+            
+            if (!val || !val.trim()) {
+                list.classList.add('hidden');
+                btnClear.classList.add('hidden');
+                return;
+            }
+            btnClear.classList.remove('hidden');
+
+            const query = val.trim();
+            list.innerHTML = `<div class="p-3 text-slate-400 font-semibold text-center flex items-center justify-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-[#002f6c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Buscando no catálogo ${currentSector === 'INDUSTRIA' ? 'Indústria' : 'Comércio'}...</span>
+            </div>`;
+            list.classList.remove('hidden');
+
+            if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(async () => {
+                await executeLiveProductSearch(query);
+            }, 250);
+        }
+
+        async function executeLiveProductSearch(query) {
+            const list = document.getElementById('productAutocompleteList');
+            if (!supabaseClient) initSupabase();
+
+            try {
+                const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+                const clean = String(query).trim();
+
+                const { data, error } = await supabaseClient.from(sb1Table)
+                    .select('codigo, descricao, unidade')
+                    .or(`codigo.ilike.%${clean}%,descricao.ilike.%${clean}%`)
+                    .limit(25);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `<div class="p-3 text-slate-400 font-semibold text-center">Nenhum produto encontrado para "${clean}" no catálogo de ${currentSector === 'INDUSTRIA' ? 'Indústria' : 'Comércio'}.</div>`;
+                    list.classList.remove('hidden');
+                    return;
+                }
+
+                let html = '';
+                data.forEach(p => {
+                    html += `
+                        <div onclick="selectProductForTransfer('${p.codigo}')" class="p-2.5 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer flex items-center justify-between transition">
+                            <div class="truncate mr-2">
+                                <span class="font-mono font-black text-[#002f6c] dark:text-blue-400 mr-2">${p.codigo}</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-100">${p.descricao}</span>
+                            </div>
+                            <span class="text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-600 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 flex-shrink-0">${p.unidade || 'PC'}</span>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+                list.classList.remove('hidden');
+
+            } catch (err) {
+                console.error("Erro na busca de produtos:", err);
+                list.innerHTML = `<div class="p-3 text-rose-500 font-semibold text-center text-xs">Erro ao consultar o catálogo. Tente novamente.</div>`;
+                list.classList.remove('hidden');
+            }
+        }
+
+        function handleProductSearchKeyDown(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const list = document.getElementById('productAutocompleteList');
+                const first = list.querySelector('div[onclick]');
+                if (first) {
+                    first.click();
+                } else {
+                    const typed = e.target.value.trim();
+                    if (typed) selectProductForTransfer(typed);
+                }
+            }
+        }
+
+        // --- GERENCIAMENTO DINÂMICO DE ARMAZÉNS & SALDOS ---
+        let availableWarehousesInBranch = [];
+
+        function updateBranchWarehousesList() {
+            const setArm = new Set();
+            balancesMaster.forEach(s => {
+                const arm = String(s.armazem || s.Armazem || '').trim().padStart(2, '0');
+                if (arm && arm !== '00') setArm.add(arm);
+            });
+            availableWarehousesInBranch = Array.from(setArm).sort((a, b) => a.localeCompare(b));
+            if (availableWarehousesInBranch.length === 0) {
+                availableWarehousesInBranch = ['02', '03', '04', '05', '06', '11', '12', '24', '26', '30', '41', '50'];
+            }
+            populateOriginWarehousesDropdown();
+        }
+
+        function populateOriginWarehousesDropdown(productCode = null, selectedArm = null, customBalances = null) {
+            const selectEl = document.getElementById('selectArmazemOrigem');
+            if (!selectEl) return '02';
+
+            const currentDestArm = String(activeBatch.armazem_destino || '01').padStart(2, '0');
+
+            // Se não houver produto específico selecionado, preenche com os armazéns disponíveis da filial (exceto o destino)
+            if (!productCode) {
+                let html = '';
+                const defaultArm = selectedArm || activeBatch.armazem_origem_padrao || (currentDestArm === '02' ? '01' : '02');
+                availableWarehousesInBranch.forEach(arm => {
+                    if (arm === currentDestArm) return; // Exclui o armazém de destino do lote
+                    const isSelected = arm === defaultArm ? 'selected' : '';
+                    html += `<option value="${arm}" ${isSelected}>Armazém ${arm} ${arm === '02' ? '(Padrão)' : ''}</option>`;
+                });
+                selectEl.innerHTML = html;
+                return defaultArm;
+            }
+
+            // Quando temos um produto específico selecionado:
+            const warehouseBalances = {};
+            availableWarehousesInBranch.forEach(arm => warehouseBalances[arm] = 0);
+
+            const sourceBalances = customBalances || balancesMaster;
+            sourceBalances.forEach(s => {
+                const sProd = String(s.produto || s.Produto || '').trim();
+                if (sProd === productCode) {
+                    const arm = String(s.armazem || s.Armazem || '').trim().padStart(2, '0');
+                    const qtd = Number(s.quantidade !== undefined ? s.quantidade : (s['Qtde.1a.U.M.'] || 0));
+                    warehouseBalances[arm] = (warehouseBalances[arm] || 0) + qtd;
+                }
+            });
+
+            // Separa armazéns com saldo positivo (excluindo o armazém de destino deste lote)
+            const withStock = [];
+            const withoutStock = [];
+
+            Object.keys(warehouseBalances).forEach(arm => {
+                if (arm === currentDestArm) return; // Exclui o destino deste lote
+                const qty = warehouseBalances[arm];
+                if (qty > 0) {
+                    withStock.push({ arm, qty });
+                } else {
+                    withoutStock.push({ arm, qty: 0 });
+                }
+            });
+
+            // Ordena os com saldo: prioriza 02 se tiver saldo (ou 01 se 02 for o destino), depois maior quantidade
+            const preferredStockArm = currentDestArm === '02' ? '01' : '02';
+            withStock.sort((a, b) => {
+                if (a.arm === preferredStockArm) return -1;
+                if (b.arm === preferredStockArm) return 1;
+                return b.qty - a.qty;
+            });
+
+            let chosenArm = selectedArm;
+            if (!chosenArm || (!withStock.some(w => w.arm === chosenArm) && withStock.length > 0)) {
+                chosenArm = withStock.length > 0 ? withStock[0].arm : (selectedArm || preferredStockArm);
+            }
+
+            let html = '';
+            if (withStock.length > 0) {
+                html += `<optgroup label="✅ Armazéns com Saldo Disponível">`;
+                withStock.forEach(w => {
+                    const isSelected = w.arm === chosenArm ? 'selected' : '';
+                    html += `<option value="${w.arm}" ${isSelected}>Armazém ${w.arm} — Saldo: ${w.qty.toLocaleString('pt-BR')} ${selectedProductForDiag?.unidade || 'PC'}</option>`;
+                });
+                html += `</optgroup>`;
+            }
+
+            if (withoutStock.length > 0) {
+                html += `<optgroup label="⚠️ Outros Armazéns (Saldo: 0)">`;
+                withoutStock.forEach(w => {
+                    const isSelected = w.arm === chosenArm ? 'selected' : '';
+                    html += `<option value="${w.arm}" ${isSelected}>Armazém ${w.arm} (Zerado)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+
+            selectEl.innerHTML = html;
+            selectEl.value = chosenArm;
+
+            // Renderiza os Chips interativos no card de diagnóstico
+            renderWarehouseChips(withStock, withoutStock, chosenArm);
+            return chosenArm;
+        }
+
+        function renderWarehouseChips(withStock, withoutStock, activeArm) {
+            const container = document.getElementById('productWarehouseChipsContainer');
+            const countNotice = document.getElementById('warehouseCountNotice');
+            if (!container) return;
+
+            if (withStock.length === 0) {
+                if (countNotice) {
+                    countNotice.className = "text-[10px] font-bold text-rose-600 dark:text-rose-400";
+                    countNotice.innerText = "Sem saldo positivo nos armazéns";
+                }
+                container.innerHTML = `
+                    <div class="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300 w-full flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
+                        <span>Atenção: Este produto não possui saldo positivo registrado nos armazéns de origem desta filial.</span>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (countNotice) {
+                countNotice.className = "text-[10px] font-bold text-emerald-600 dark:text-emerald-400";
+                countNotice.innerText = `${withStock.length} armazém(ns) com saldo disponível`;
+            }
+
+            let html = '';
+            withStock.forEach(w => {
+                const isActive = w.arm === activeArm;
+                if (isActive) {
+                    html += `
+                        <button type="button" onclick="switchSelectedOriginWarehouse('${w.arm}')" class="px-3 py-1.5 rounded-xl text-xs font-black bg-[#002f6c] dark:bg-blue-600 text-white shadow-md border border-[#002f6c] flex items-center gap-1.5 cursor-pointer scale-105 transition">
+                            <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>Armazém ${w.arm}:</span>
+                            <span class="bg-white/20 px-1.5 py-0.5 rounded text-[11px] font-mono font-black">${w.qty.toLocaleString('pt-BR')} ${selectedProductForDiag?.unidade || 'PC'}</span>
+                        </button>
+                    `;
+                } else {
+                    html += `
+                        <button type="button" onclick="switchSelectedOriginWarehouse('${w.arm}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5 cursor-pointer transition">
+                            <span>Armazém ${w.arm}:</span>
+                            <span class="font-black text-blue-700 dark:text-blue-400 font-mono">${w.qty.toLocaleString('pt-BR')}</span>
+                        </button>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function switchSelectedOriginWarehouse(armCode) {
+            if (selectedProductForDiag) {
+                selectProductForTransfer(selectedProductForDiag.codigo, armCode);
+            }
+        }
+
+        async function selectProductForTransfer(code, forceArmOrigem = null) {
+            document.getElementById('productAutocompleteList').classList.add('hidden');
+            const cleanCode = String(code).trim();
+            document.getElementById('inputProductSearch').value = cleanCode;
+
+            if (!supabaseClient) initSupabase();
+            const sb1Table = currentSector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio';
+            const saldoTable = currentSector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio';
+            const contagemTable = currentSector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio';
+            const padFilial = String(currentFilialId).padStart(2, '0');
+            const rawFilial = String(currentFilialId).replace(/^0+/, '');
+
+            const pad8 = /^\d+$/.test(cleanCode) ? cleanCode.padStart(8, '0') : cleanCode;
+            const unpad = /^\d+$/.test(cleanCode) ? cleanCode.replace(/^0+/, '') : cleanCode;
+            const codesToSearch = Array.from(new Set([cleanCode, pad8, unpad]));
+            const filialIdsToSearch = Array.from(new Set([padFilial, rawFilial]));
+
+            // 1. Busca dados do produto no SB1 diretamente no Supabase
+            let prod = null;
+            try {
+                const { data: prodData } = await supabaseClient.from(sb1Table)
+                    .select('codigo, descricao, unidade')
+                    .in('codigo', codesToSearch)
+                    .limit(1);
+
+                if (prodData && prodData.length > 0) {
+                    prod = prodData[0];
+                } else {
+                    // Tenta busca parcial por código ou descrição
+                    const { data: prodIlike } = await supabaseClient.from(sb1Table)
+                        .select('codigo, descricao, unidade')
+                        .or(`codigo.ilike.%${cleanCode}%,descricao.ilike.%${cleanCode}%`)
+                        .limit(1);
+                    if (prodIlike && prodIlike.length > 0) {
+                        prod = prodIlike[0];
+                    } else {
+                        prod = {
+                            codigo: cleanCode,
+                            descricao: 'PRODUTO NÃO IDENTIFICADO NO CATÁLOGO',
+                            unidade: 'PC'
+                        };
+                    }
+                }
+            } catch(e) {
+                console.warn("Erro ao obter produto:", e);
+                prod = { codigo: cleanCode, descricao: 'PRODUTO NÃO IDENTIFICADO', unidade: 'PC' };
+            }
+
+            selectedProductForDiag = prod;
+
+            // 2. Busca saldos reais do produto no Supabase
+            let prodSaldos = [];
+            try {
+                const { data: sData } = await supabaseClient.from(saldoTable)
+                    .select('*')
+                    .in('produto', codesToSearch)
+                    .in('filial', filialIdsToSearch);
+                prodSaldos = sData || [];
+            } catch(e) {
+                console.warn("Erro ao obter saldos:", e);
+                prodSaldos = balancesMaster.filter(s => codesToSearch.includes(String(s.produto || s.Produto || '').trim()));
+            }
+
+            // 3. Atualiza a lista de armazéns dinamicamente
+            const currentSelectedInDropdown = forceArmOrigem || document.getElementById('selectArmazemOrigem').value;
+            const armOrigem = populateOriginWarehousesDropdown(prod.codigo, currentSelectedInDropdown, prodSaldos);
+
+            // 4. Calcula saldos no Armazém de Destino e no Armazém de Origem Selecionado
+            const destArm = String(activeBatch.armazem_destino || '01').padStart(2, '0');
+            let saldoDest = 0;
+            let saldoOrig = 0;
+
+            prodSaldos.forEach(s => {
+                const arm = String(s.armazem || s.Armazem || '').trim().padStart(2, '0');
+                const qtd = Number(s.quantidade !== undefined ? s.quantidade : (s['Qtde.1a.U.M.'] || 0));
+
+                if (arm === destArm) saldoDest += qtd;
+                if (arm === armOrigem) saldoOrig += qtd;
+            });
+
+            // Preenche UI Diagnóstico
+            document.getElementById('diagProductCode').innerText = prod.codigo;
+            document.getElementById('diagProductDesc').innerText = prod.descricao;
+            document.getElementById('diagProductUM').innerText = prod.unidade || 'PC';
+            document.getElementById('diagSaldoDestino').innerText = saldoDest.toLocaleString('pt-BR');
+            document.getElementById('diagDestinoLabel').innerText = `Destino (${destArm})`;
+            document.getElementById('diagSaldoOrigem').innerText = saldoOrig.toLocaleString('pt-BR');
+            document.getElementById('diagOrigemLabel').innerText = `Origem (${armOrigem})`;
+
+            // 5. Verifica se este produto já possui itens coletados no lote atual
+            const existingItems = (activeBatch.itens || []).filter(it => codesToSearch.includes(String(it.produto || '').trim()));
+            const alreadyInBatchBox = document.getElementById('diagAlreadyInBatchNotice');
+            const alreadyInBatchBadge = document.getElementById('diagAlreadyInBatchSummaryBadge');
+            const alreadyInBatchList = document.getElementById('diagAlreadyInBatchItemsList');
+            if (alreadyInBatchBox && existingItems.length > 0) {
+                alreadyInBatchBox.classList.remove('hidden');
+                const totalAlready = existingItems.reduce((acc, it) => acc + Number(it.quantidade || 0), 0);
+                alreadyInBatchBadge.innerText = `${existingItems.length} ${existingItems.length === 1 ? 'retirada adicionada' : 'retiradas adicionadas'} (Total: ${totalAlready.toLocaleString('pt-BR')} ${prod.unidade || 'PC'})`;
+                
+                let chipsHtml = '';
+                existingItems.forEach((it, idx) => {
+                    const lName = it.lote ? `Lote: ${it.lote}` : `Arm. ${it.armazem_origem || '02'}`;
+                    const vInfo = it.data_validade ? ` (${formatAnoMesDisplay(it.data_validade)})` : '';
+                    chipsHtml += `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-700 border border-blue-200 dark:border-slate-600 text-[11px] font-bold text-slate-700 dark:text-slate-200 shadow-2xs">
+                            <span class="font-mono text-blue-700 dark:text-blue-400 font-black">${lName}${vInfo}</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-black font-mono bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">+${Number(it.quantidade).toLocaleString('pt-BR')} ${it.unidade || 'PC'}</span>
+                        </span>
+                    `;
+                });
+                alreadyInBatchList.innerHTML = chipsHtml;
+            } else if (alreadyInBatchBox) {
+                alreadyInBatchBox.classList.add('hidden');
+                alreadyInBatchList.innerHTML = '';
+            }
+
+            // 6. Busca situação de inventário física em tempo real
+            await evaluateInventoryReliability(prod.codigo, saldoOrig);
+
+            // 7. Busca lotes disponíveis no Controle de Validade para este Armazém de Origem
+            await loadProductLotsForOriginWarehouse(prod.codigo, armOrigem);
+
+            // Abre o card de diagnóstico
+            document.getElementById('productDiagnosisCard').classList.remove('hidden');
+            document.getElementById('diagInputQty').value = "1";
+            document.getElementById('diagInputQty').focus();
+        }
+
+        let availableLotsForSelectedProduct = [];
+        let selectedLotForTransfer = null;
+
+        // Funções de Cálculo e Formatação de Validade
+        function getValidadeStatus(dataValidadeStr) {
+            if (!dataValidadeStr) return 'OK';
+            const s = String(dataValidadeStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return 'OK';
+            
+            const parts = s.split('-');
+            const valYear = parseInt(parts[0], 10);
+            const valMonth = parseInt(parts[1], 10);
+            const valDay = (parts.length > 2 && parts[2]) 
+                ? parseInt(parts[2].slice(0, 2), 10) 
+                : new Date(valYear, valMonth, 0).getDate();
+
+            const valDate = new Date(valYear, valMonth - 1, valDay, 23, 59, 59, 999);
+            const now = new Date();
+
+            const diffTime = valDate.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffTime < 0) return 'VENCIDO';
+            if (diffDays <= 60) return 'AVENCER';
+            return 'OK';
+        }
+
+        function formatAnoMesDisplay(anoMesStr) {
+            if (!anoMesStr) return '-';
+            const s = String(anoMesStr).trim();
+            if (!/^\d{4}-\d{2}/.test(s)) return s;
+            const parts = s.split('-');
+            const ano = parts[0];
+            const mes = parts[1];
+            const dia = (parts.length > 2 && parts[2]) ? parts[2].slice(0, 2) : null;
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const idx = parseInt(mes, 10) - 1;
+            const mesNome = meses[idx] || mes;
+            return dia ? `${dia}/${mesNome}/${ano}` : `${mesNome}/${ano}`;
+        }
+
+        async function loadProductLotsForOriginWarehouse(prodCode, armOrigem) {
+            availableLotsForSelectedProduct = [];
+            selectedLotForTransfer = null;
+
+            const lotSection = document.getElementById('productLotSection');
+            const lotContainer = document.getElementById('productLotChipsContainer');
+            const lotBadge = document.getElementById('productLotCountBadge');
+            const expiredWarning = document.getElementById('productExpiredLotWarning');
+            const expiredWarningText = document.getElementById('productExpiredLotWarningText');
+
+            if (!supabaseClient) initSupabase();
+            const validadeTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
+            const padFilial = String(currentFilialId).padStart(2, '0');
+            const rawFilial = String(currentFilialId).replace(/^0+/, '');
+            const cleanArm = String(armOrigem).trim().padStart(2, '0');
+            const rawArm = String(armOrigem).trim().replace(/^0+/, '');
+
+            const pad8 = /^\d+$/.test(prodCode) ? prodCode.padStart(8, '0') : prodCode;
+            const unpad = /^\d+$/.test(prodCode) ? prodCode.replace(/^0+/, '') : prodCode;
+            const codesToSearch = Array.from(new Set([prodCode, pad8, unpad]));
+            const filialIdsToSearch = Array.from(new Set([padFilial, rawFilial]));
+            const armIdsToSearch = Array.from(new Set([cleanArm, rawArm]));
+
+            try {
+                const { data, error } = await supabaseClient.from(validadeTable)
+                    .select('*')
+                    .in('filial', filialIdsToSearch)
+                    .in('armazem', armIdsToSearch)
+                    .in('produto', codesToSearch)
+                    .gt('quantidade', 0);
+
+                if (error) throw error;
+
+                const allLots = data || [];
+                let expiredCount = 0;
+
+                // Filtra estritamente lotes que estão NO PRAZO ou A VENCER (Vencidos NÃO são permitidos para Armazém 01)
+                const validLots = [];
+                allLots.forEach(lot => {
+                    const status = getValidadeStatus(lot.data_validade);
+                    if (status === 'VENCIDO') {
+                        expiredCount++;
+                    } else {
+                        validLots.push({
+                            ...lot,
+                            status_validade: status
+                        });
+                    }
+                });
+
+                // Ordena por validade ASC (FEFO: mais próximo de vencer selecionado primeiro)
+                validLots.sort((a, b) => {
+                    const dateA = String(a.data_validade || '');
+                    const dateB = String(b.data_validade || '');
+                    return dateA.localeCompare(dateB);
+                });
+
+                availableLotsForSelectedProduct = validLots;
+
+                if (validLots.length > 0) {
+                    lotSection.classList.remove('hidden');
+                    lotBadge.innerText = `${validLots.length} ${validLots.length === 1 ? 'lote no prazo' : 'lotes no prazo'}`;
+                    
+                    // Seleciona o primeiro lote por padrão (FEFO)
+                    selectedLotForTransfer = validLots[0];
+                    renderProductLotChips();
+                } else {
+                    lotSection.classList.add('hidden');
+                    lotContainer.innerHTML = '';
+                }
+
+                if (expiredCount > 0) {
+                    expiredWarning.classList.remove('hidden');
+                    expiredWarningText.innerText = `${expiredCount} ${expiredCount === 1 ? 'lote vencido ocultado' : 'lotes vencidos ocultados'} (materiais vencidos não são permitidos para Armazém 01).`;
+                } else {
+                    expiredWarning.classList.add('hidden');
+                }
+
+            } catch (e) {
+                console.warn("Erro ao buscar lotes de validade:", e);
+                lotSection.classList.add('hidden');
+            }
+        }
+
+        function renderProductLotChips() {
+            const lotContainer = document.getElementById('productLotChipsContainer');
+            if (!lotContainer) return;
+
+            let html = '';
+            availableLotsForSelectedProduct.forEach(lot => {
+                const isSelected = selectedLotForTransfer && selectedLotForTransfer.id === lot.id;
+                const qtd = Number(lot.quantidade || 0);
+                const emb = lot.embalagem || selectedProductForDiag?.unidade || 'UN';
+                const valFormatted = formatAnoMesDisplay(lot.data_validade);
+                const isAvencer = lot.status_validade === 'AVENCER';
+
+                let badgeStatus = isAvencer 
+                    ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300">🟡 A Vencer</span>`
+                    : `<span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300">🟢 No Prazo</span>`;
+
+                if (isSelected) {
+                    html += `
+                        <div onclick="selectLotForTransfer(${lot.id})" class="p-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border-2 border-amber-500 shadow-md cursor-pointer transition flex flex-col justify-between space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                                    <span class="font-mono font-black text-xs text-slate-900 dark:text-white">${lot.lote || 'S/ LOTE'}</span>
+                                </div>
+                                ${badgeStatus}
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] pt-1 border-t border-amber-200/60 dark:border-amber-900/60 font-bold">
+                                <span class="text-slate-500 dark:text-slate-400">Val: <strong class="text-slate-800 dark:text-slate-200">${valFormatted}</strong></span>
+                                <span class="text-amber-700 dark:text-amber-300 font-mono font-black text-xs">${qtd.toLocaleString('pt-BR')} ${emb}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div onclick="selectLotForTransfer(${lot.id})" class="p-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer transition flex flex-col justify-between space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono font-bold text-xs text-slate-700 dark:text-slate-300">${lot.lote || 'S/ LOTE'}</span>
+                                ${badgeStatus}
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100 dark:border-slate-700/60 font-semibold">
+                                <span class="text-slate-400">Val: ${valFormatted}</span>
+                                <span class="text-slate-700 dark:text-slate-300 font-mono font-bold">${qtd.toLocaleString('pt-BR')} ${emb}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            lotContainer.innerHTML = html;
+            lucide.createIcons();
+
+            // Ajusta o valor padrão do input de quantidade para o saldo do lote se necessário
+            if (selectedLotForTransfer) {
+                const inputQty = document.getElementById('diagInputQty');
+                if (inputQty && (!inputQty.value || parseFloat(inputQty.value) > selectedLotForTransfer.quantidade)) {
+                    inputQty.value = Math.min(1, selectedLotForTransfer.quantidade);
+                }
+            }
+        }
+
+        function selectLotForTransfer(lotId) {
+            const found = availableLotsForSelectedProduct.find(l => l.id === lotId);
+            if (found) {
+                selectedLotForTransfer = found;
+                renderProductLotChips();
+            }
+        }
+
+        async function evaluateInventoryReliability(prodCode, currentSystemBalance) {
+            const relBox = document.getElementById('diagInventoryReliabilityBox');
+            const relTitle = document.getElementById('diagReliabilityStatusTitle');
+            const relDetails = document.getElementById('diagReliabilityDetails');
+            const relBadge = document.getElementById('diagReliabilityBadge');
+            const relIcon = document.getElementById('diagReliabilityIcon');
+
+            if (!supabaseClient) initSupabase();
+            const contagemTable = currentSector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio';
+            const padFilial = String(currentFilialId).padStart(2, '0');
+            const rawFilial = String(currentFilialId).replace(/^0+/, '');
+
+            const pad8 = /^\d+$/.test(prodCode) ? prodCode.padStart(8, '0') : prodCode;
+            const unpad = /^\d+$/.test(prodCode) ? prodCode.replace(/^0+/, '') : prodCode;
+            const codesToSearch = Array.from(new Set([prodCode, pad8, unpad]));
+            const filialIdsToSearch = Array.from(new Set([padFilial, rawFilial]));
+
+            let counts = [];
+            try {
+                const { data } = await supabaseClient.from(contagemTable)
+                    .select('*')
+                    .in('produto', codesToSearch)
+                    .in('filial', filialIdsToSearch)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                counts = data || [];
+            } catch(e) {
+                console.warn("Erro ao buscar contagem:", e);
+                counts = physicalCountsMaster.filter(c => codesToSearch.includes(String(c.produto || '').trim()));
+            }
+
+            if (counts.length === 0) {
+                relBox.className = "p-3 rounded-xl border border-rose-200 bg-rose-50/60 dark:bg-rose-950/30 flex items-start sm:items-center justify-between gap-3 text-xs font-semibold";
+                relTitle.innerText = "Sem Registro de Inventário Recente";
+                relDetails.innerText = "Este material não possui contagem física recente registrada. O saldo do sistema deve ser verificado antes da coleta.";
+                relBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap bg-rose-100 text-rose-800 border border-rose-200";
+                relBadge.innerText = "🔴 Não Inventariado";
+                relIcon.setAttribute('data-lucide', 'alert-circle');
+                relIcon.className = "w-5 h-5 flex-shrink-0 text-rose-600";
+                lucide.createIcons();
+                return;
+            }
+
+            const latest = counts[0];
+            const countDate = latest.created_at ? new Date(latest.created_at) : new Date();
+            const daysAgo = Math.floor((new Date() - countDate) / (1000 * 60 * 60 * 24));
+            const countFormatted = countDate.toLocaleDateString('pt-BR');
+            const conferente = latest.quem_contou || latest.conferente_nome || 'Conferente';
+            const countQty = Number(latest.quantidade_contada !== undefined ? latest.quantidade_contada : (latest.qtd_contada || 0));
+
+            if (daysAgo <= 30) {
+                relBox.className = "p-3 rounded-xl border border-emerald-200 bg-emerald-50/60 dark:bg-emerald-950/30 flex items-start sm:items-center justify-between gap-3 text-xs font-semibold";
+                relTitle.innerText = "Saldo Confiável (Inventariado Recentemente)";
+                relDetails.innerText = `Contado em ${countFormatted} (${daysAgo === 0 ? 'hoje' : 'há ' + daysAgo + ' dias'}) por ${conferente}. Quantidade física contada: ${countQty.toLocaleString('pt-BR')} ${selectedProductForDiag?.unidade || 'PC'}.`;
+                relBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap bg-emerald-100 text-emerald-800 border border-emerald-200";
+                relBadge.innerText = "🟢 Confiável";
+                relIcon.setAttribute('data-lucide', 'shield-check');
+                relIcon.className = "w-5 h-5 flex-shrink-0 text-emerald-600";
+            } else {
+                relBox.className = "p-3 rounded-xl border border-amber-200 bg-amber-50/60 dark:bg-amber-950/30 flex items-start sm:items-center justify-between gap-3 text-xs font-semibold";
+                relTitle.innerText = `Atenção: Inventariado há ${daysAgo} dias`;
+                relDetails.innerText = `Última contagem em ${countFormatted} por ${conferente} (${countQty.toLocaleString('pt-BR')} ${selectedProductForDiag?.unidade || 'PC'}). Recomendado confirmar saldo físico no armazém.`;
+                relBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider whitespace-nowrap bg-amber-100 text-amber-800 border border-amber-200";
+                relBadge.innerText = "🟡 +30 Dias";
+                relIcon.setAttribute('data-lucide', 'clock');
+                relIcon.className = "w-5 h-5 flex-shrink-0 text-amber-600";
+            }
+
+            lucide.createIcons();
+        }
+
+        function onArmazemOrigemChange() {
+            if (selectedProductForDiag) {
+                const currentArm = document.getElementById('selectArmazemOrigem').value;
+                selectProductForTransfer(selectedProductForDiag.codigo, currentArm);
+            }
+        }
+
+        function quickAddQty(val) {
+            const input = document.getElementById('diagInputQty');
+            const current = parseFloat(input.value) || 0;
+            const maxVal = selectedLotForTransfer ? selectedLotForTransfer.quantidade : 999999;
+            input.value = Math.min(maxVal, current + val);
+        }
+
+        function setTransferAllStock() {
+            if (selectedLotForTransfer) {
+                document.getElementById('diagInputQty').value = selectedLotForTransfer.quantidade;
+            } else {
+                const saldoOrigText = document.getElementById('diagSaldoOrigem').innerText;
+                const parsed = parseFloat(saldoOrigText.replace(/\./g, '').replace(',', '.')) || 0;
+                document.getElementById('diagInputQty').value = Math.max(1, parsed);
+            }
+        }
+
+        function clearSelectedProduct() {
+            selectedProductForDiag = null;
+            availableLotsForSelectedProduct = [];
+            selectedLotForTransfer = null;
+            document.getElementById('inputProductSearch').value = '';
+            document.getElementById('productDiagnosisCard').classList.add('hidden');
+            document.getElementById('productLotSection').classList.add('hidden');
+            document.getElementById('productAutocompleteList').classList.add('hidden');
+            document.getElementById('btnClearProductSearch').classList.add('hidden');
+            populateOriginWarehousesDropdown();
+        }
+
+        // --- ADIÇÃO DE ITEM AO LOTE ATIVO ---
+        async function addItemToActiveBatch() {
+            if (!selectedProductForDiag) {
+                showAlert("Selecione um produto primeiro.", "warning");
+                return;
+            }
+
+            const qty = parseFloat(document.getElementById('diagInputQty').value);
+            if (!qty || qty <= 0) {
+                showAlert("Informe uma quantidade válida para transferência.", "warning");
+                return;
+            }
+
+            const armOrigem = document.getElementById('selectArmazemOrigem').value;
+            const saldoOrigText = document.getElementById('diagSaldoOrigem').innerText;
+            const saldoOrig = parseFloat(saldoOrigText.replace(/\./g, '').replace(',', '.')) || 0;
+            const relBadgeText = document.getElementById('diagReliabilityBadge').innerText;
+
+            // Se houver lote selecionado, valida quantidade e prepara abatimento
+            let lotDataToSave = null;
+            if (selectedLotForTransfer) {
+                if (qty > selectedLotForTransfer.quantidade) {
+                    showAlert(`A quantidade solicitada (${qty.toLocaleString('pt-BR')}) é maior que o saldo do lote (${selectedLotForTransfer.quantidade.toLocaleString('pt-BR')}).`, "warning");
+                    return;
+                }
+
+                lotDataToSave = {
+                    id: selectedLotForTransfer.id,
+                    lote: selectedLotForTransfer.lote,
+                    data_validade: selectedLotForTransfer.data_validade,
+                    quantidade_anterior: Number(selectedLotForTransfer.quantidade),
+                    nova_quantidade: Math.max(0, Number(selectedLotForTransfer.quantidade) - qty)
+                };
+            }
+
+            // Garante que o lote pai exista no Supabase antes de inserir o item (save automático só quando adiciona item!)
+            if (!activeBatch.id && supabaseClient) {
+                try {
+                    await ensureBatchPersistedInSupabase();
+                } catch (err) {
+                    console.error("Erro ao iniciar lote no Supabase:", err);
+                    showAlert("Erro ao iniciar lote no banco de dados.", "error");
+                    return;
+                }
+            }
+
+            const itemPayload = {
+                transferencia_id: activeBatch.id,
+                produto: selectedProductForDiag.codigo,
+                descricao: selectedProductForDiag.descricao,
+                unidade: selectedProductForDiag.unidade || 'PC',
+                armazem_origem: armOrigem,
+                armazem_destino: activeBatch.armazem_destino || '01',
+                quantidade: qty,
+                saldo_origem_momento: saldoOrig,
+                confiabilidade_inventario: relBadgeText,
+                lote: lotDataToSave ? lotDataToSave.lote : null,
+                data_validade: lotDataToSave ? lotDataToSave.data_validade : null,
+                validade_id: lotDataToSave ? lotDataToSave.id : null
+            };
+
+            // 1. Decrementa quantidade do lote no Supabase (Controle de Validade)
+            if (lotDataToSave && supabaseClient) {
+                const validadeTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
+                try {
+                    const { error: lotUpdErr } = await supabaseClient.from(validadeTable)
+                        .update({ quantidade: lotDataToSave.nova_quantidade })
+                        .eq('id', lotDataToSave.id);
+                    if (lotUpdErr) throw lotUpdErr;
+                } catch (err) {
+                    console.error("Erro ao atualizar lote de validade:", err);
+                    showAlert("Erro ao atualizar saldo no Controle de Validade.", "error");
+                    return;
+                }
+            }
+
+            // 2. Salva o item no Supabase (com fallback offline inteligente)
+            if (activeBatch.id && supabaseClient && navigator.onLine) {
+                try {
+                    const { data, error } = await supabaseClient.from('transferencias_armazem_itens')
+                        .insert(itemPayload)
+                        .select()
+                        .single();
+
+                    if (!error && data) {
+                        activeBatch.itens.push(data);
+                    } else {
+                        saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
+                        activeBatch.itens.push(itemPayload);
+                    }
+                } catch(eTrf) {
+                    saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
+                    activeBatch.itens.push(itemPayload);
+                }
+            } else {
+                if (activeBatch.id) {
+                    saveOfflineAction('insert', 'transferencias_armazem_itens', itemPayload);
+                }
+                activeBatch.itens.push(itemPayload);
+            }
+
+            let successMsg = `+${qty} ${selectedProductForDiag.unidade || 'PC'} de ${selectedProductForDiag.codigo} adicionado!`;
+            if (lotDataToSave) {
+                successMsg += ` Lote ${lotDataToSave.lote} atualizado no Controle de Validade para ${lotDataToSave.nova_quantidade.toLocaleString('pt-BR')} ${selectedProductForDiag.unidade || 'PC'}.`;
+            }
+            showAlert(successMsg, "success");
+
+            clearSelectedProduct();
+            renderActiveBatchUI();
+        }
+
+        async function deleteItemFromBatch(itemId) {
+            const itemToDelete = activeBatch.itens.find((it, idx) => (it.id !== undefined && it.id !== null ? String(it.id) === String(itemId) : idx === parseInt(itemId, 10)));
+            if (!itemToDelete) return;
+
+            const descName = itemToDelete.descricao || itemToDelete.produto || 'Item';
+            const loteInfo = itemToDelete.lote ? ` (Lote: ${itemToDelete.lote})` : '';
+            if (!confirm(`Remover ${itemToDelete.produto} - ${descName}${loteInfo} (${itemToDelete.quantidade} ${itemToDelete.unidade}) da transferência?`)) return;
+
+            // Se o item estava associado a um lote de validade, devolve a quantidade
+            if (itemToDelete.validade_id && supabaseClient) {
+                const validadeTable = currentSector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio';
+                try {
+                    const { data: curLot } = await supabaseClient.from(validadeTable)
+                        .select('quantidade')
+                        .eq('id', itemToDelete.validade_id)
+                        .single();
+                    
+                    const curQtd = Number(curLot?.quantidade || 0);
+                    const restoredQtd = curQtd + Number(itemToDelete.quantidade);
+
+                    await supabaseClient.from(validadeTable)
+                        .update({ quantidade: restoredQtd })
+                        .eq('id', itemToDelete.validade_id);
+
+                    showAlert(`Quantidade de ${itemToDelete.quantidade} devolvida ao lote no Controle de Validade!`, "info");
+                } catch(e) {
+                    console.warn("Erro ao devolver saldo do lote:", e);
+                }
+            }
+
+            if (activeBatch.id && supabaseClient && itemToDelete.id) {
+                await supabaseClient.from('transferencias_armazem_itens')
+                    .delete()
+                    .eq('id', itemToDelete.id);
+            }
+
+            activeBatch.itens = activeBatch.itens.filter((it, idx) => (it.id !== undefined && it.id !== null ? String(it.id) !== String(itemId) : idx !== parseInt(itemId, 10)));
+            renderActiveBatchUI();
+        }
+
+        async function saveBatchObservacao(val) {
+            activeBatch.observacao = val;
+            if (activeBatch.id && supabaseClient) {
+                await supabaseClient.from('transferencias_armazem')
+                    .update({ observacao: val })
+                    .eq('id', activeBatch.id);
+            }
+        }
+
+        async function saveDraftManually() {
+            const obsInput = document.getElementById('activeBatchObservacao');
+            const obsVal = obsInput ? obsInput.value.trim() : '';
+            activeBatch.observacao = obsVal;
+
+            if (!activeBatch.id && supabaseClient) {
+                try {
+                    await ensureBatchPersistedInSupabase();
+                } catch(e) {
+                    console.error("Erro ao iniciar rascunho:", e);
+                    showAlert("Erro ao salvar rascunho.", "error");
+                    return;
+                }
+            }
+
+            if (activeBatch.id && supabaseClient) {
+                try {
+                    await supabaseClient.from('transferencias_armazem')
+                        .update({
+                            observacao: obsVal,
+                            armazem_destino: activeBatch.armazem_destino || '01',
+                            armazem_origem_padrao: activeBatch.armazem_origem_padrao || '02',
+                            status: 'EM_ABERTO'
+                        })
+                        .eq('id', activeBatch.id);
+
+                    showAlert(`Rascunho ${activeBatch.codigo_lote} salvo com sucesso! Você pode continuar a qualquer momento.`, "success");
+                } catch(e) {
+                    console.error("Erro ao salvar rascunho:", e);
+                    showAlert("Erro ao salvar rascunho.", "error");
+                }
+            } else {
+                showAlert(`Rascunho ${activeBatch.codigo_lote} salvo localmente!`, "success");
+            }
+        }
+
+        // --- TRANSIÇÃO DE STATUS (FINALIZAR FÍSICO / ERP) ---
+        async function markBatchFinalizadoFisico() {
+            if (!activeBatch.itens || activeBatch.itens.length === 0) {
+                showAlert("Adicione materiais à lista antes de finalizar.", "warning");
+                return;
+            }
+
+            const userName = getFormattedLoggedUserName();
+            const timestamp = new Date().toISOString();
+            const destArm = activeBatch.armazem_destino || '01';
+
+            if (!confirm(`Confirmar que a separação física foi concluída e os materiais foram entregues no Armazém ${destArm}?`)) {
+                return;
+            }
+
+            activeBatch.status = 'FINALIZADO_FISICO';
+            activeBatch.finalizado_fisico_por = userName;
+            activeBatch.finalizado_fisico_em = timestamp;
+
+            if (activeBatch.id && supabaseClient) {
+                await supabaseClient.from('transferencias_armazem')
+                    .update({
+                        status: 'FINALIZADO_FISICO',
+                        finalizado_fisico_por: activeBatch.finalizado_fisico_por,
+                        finalizado_fisico_em: timestamp
+                    })
+                    .eq('id', activeBatch.id);
+            }
+
+            renderActiveBatchUI();
+            showAlert(`Separação física finalizada (Entregue no Arm. ${destArm})! Aguardando baixa no ERP.`, "success");
+        }
+
+        function openModalTransferirERP() {
+            document.getElementById('inputDocErpNumero').value = '';
+            document.getElementById('modalTransferirERP').classList.remove('hidden');
+        }
+
+        function closeModalTransferirERP() {
+            document.getElementById('modalTransferirERP').classList.add('hidden');
+        }
+
+        async function executeTransferirERP() {
+            const userName = getFormattedLoggedUserName();
+            const docNum = document.getElementById('inputDocErpNumero').value.trim();
+            const timestamp = new Date().toISOString();
+
+            activeBatch.status = 'TRANSFERIDO_ERP';
+            activeBatch.transferido_erp_por = userName;
+            activeBatch.transferido_erp_em = timestamp;
+            activeBatch.doc_erp_numero = docNum || null;
+
+            if (activeBatch.id && supabaseClient) {
+                await supabaseClient.from('transferencias_armazem')
+                    .update({
+                        status: 'TRANSFERIDO_ERP',
+                        transferido_erp_por: activeBatch.transferido_erp_por,
+                        transferido_erp_em: timestamp,
+                        doc_erp_numero: docNum || null
+                    })
+                    .eq('id', activeBatch.id);
+            }
+
+            closeModalTransferirERP();
+            renderActiveBatchUI();
+            showAlert(`Lote ${activeBatch.codigo_lote} marcado como TRANSFERIDO NO ERP!`, "success");
+        }
+
+        // --- SCANNER DE CÂMERA (QR CODE / CÓDIGO DE BARRAS) ---
+        function openCameraScannerModal() {
+            document.getElementById('cameraScannerModal').classList.remove('hidden');
+
+            try {
+                if (html5QrScanner) {
+                    html5QrScanner.clear();
+                }
+
+                html5QrScanner = new Html5Qrcode("qr-reader");
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+                html5QrScanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        // Sucesso na leitura
+                        closeCameraScannerModal();
+                        selectProductForTransfer(decodedText);
+                        showAlert(`QR Code lido: ${decodedText}`, "success");
+                    },
+                    (errorMessage) => {
+                        // Ignora frames sem código
+                    }
+                ).catch(err => {
+                    console.error("Erro ao iniciar câmera:", err);
+                    showAlert("Não foi possível acessar a câmera do dispositivo.", "error");
+                });
+            } catch(e) {
+                console.error("Erro no scanner:", e);
+            }
+        }
+
+        function closeCameraScannerModal() {
+            if (html5QrScanner) {
+                html5QrScanner.stop().then(() => {
+                    html5QrScanner.clear();
+                }).catch(() => {});
+            }
+            document.getElementById('cameraScannerModal').classList.add('hidden');
+        }
+
+        // --- IMPRESSÃO DE ROMANEIO (A4) ---
+        function printTransferManifest() {
+            if (!activeBatch.itens || activeBatch.itens.length === 0) {
+                showAlert("A lista está vazia.", "warning");
+                return;
+            }
+
+            const destArm = activeBatch.armazem_destino || '01';
+            document.getElementById('printLoteCodigo').innerText = activeBatch.codigo_lote || 'TMA-COM-1';
+            document.getElementById('printSetor').innerText = activeBatch.setor || 'COMÉRCIO';
+            document.getElementById('printFilial').innerText = getFilialDisplayName(currentFilialId);
+            document.getElementById('printDataEmissao').innerText = new Date().toLocaleString('pt-BR');
+
+            document.getElementById('printCriadoPor').innerText = activeBatch.criado_por || 'N/D';
+            document.getElementById('printFinalizadoPor').innerText = activeBatch.finalizado_fisico_por ? `${activeBatch.finalizado_fisico_por} em ${new Date(activeBatch.finalizado_fisico_em).toLocaleDateString('pt-BR')}` : 'Pendente';
+            document.getElementById('printTransferidoPor').innerText = activeBatch.transferido_erp_por ? `${activeBatch.transferido_erp_por} (Doc: ${activeBatch.doc_erp_numero || 'S/N'})` : 'Pendente ERP';
+
+            document.getElementById('printObservacaoText').innerText = activeBatch.observacao || 'Nenhuma observação registrada.';
+
+            const tbody = document.getElementById('printItemsTableBody');
+            let html = '';
+            activeBatch.itens.forEach((it, idx) => {
+                const itemDest = it.armazem_destino || destArm;
+                html += `
+                    <tr class="border-b border-slate-300">
+                        <td class="p-2 border-r border-slate-300 text-center">${idx + 1}</td>
+                        <td class="p-2 border-r border-slate-300 font-mono font-bold">${it.produto}</td>
+                        <td class="p-2 border-r border-slate-300">
+                            <div>${it.descricao}</div>
+                            ${it.lote ? `<div class="text-[10px] font-bold text-slate-600">Lote: ${it.lote} | Val: ${formatAnoMesDisplay(it.data_validade)}</div>` : ''}
+                        </td>
+                        <td class="p-2 border-r border-slate-300 text-center">Arm. ${it.armazem_origem || '02'}</td>
+                        <td class="p-2 border-r border-slate-300 text-center font-bold">Arm. ${itemDest}</td>
+                        <td class="p-2 border-r border-slate-300 text-right font-bold">${Number(it.quantidade).toLocaleString('pt-BR')}</td>
+                        <td class="p-2 text-center">${it.unidade || 'PC'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+
+            window.print();
+        }
+
+        // --- EXPORTAÇÃO CSV / EXCEL ---
+        function exportActiveTransferCSV() {
+            if (!activeBatch.itens || activeBatch.itens.length === 0) {
+                showAlert("Nenhum item para exportar.", "warning");
+                return;
+            }
+
+            const data = activeBatch.itens.map((it, idx) => ({
+                "Item": idx + 1,
+                "Lote Transferência": activeBatch.codigo_lote,
+                "Setor": activeBatch.setor,
+                "Filial": currentFilialId,
+                "Código Produto": it.produto,
+                "Descrição": it.descricao,
+                "Lote Validade": it.lote || 'N/A',
+                "Data Validade": it.data_validade ? formatAnoMesDisplay(it.data_validade) : 'N/A',
+                "Armazém Origem": it.armazem_origem,
+                "Armazém Destino": it.armazem_destino || activeBatch.armazem_destino || '01',
+                "Quantidade Transferida": it.quantidade,
+                "Unidade": it.unidade,
+                "Status Lote": activeBatch.status,
+                "Criado Por": activeBatch.criado_por
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Transferencia");
+            XLSX.writeFile(wb, `${activeBatch.codigo_lote || 'Transferencia'}_Armazem${activeBatch.armazem_destino || '01'}.xlsx`);
+        }
+
+        // --- ABA DE HISTÓRICO ---
+        function populateHistoryFilialFilter() {
+            const sel = document.getElementById('histFilterFilial');
+            if (!sel) return;
+
+            const isGlobal = isGlobalFilial(currentUser);
+            const list = currentSector === 'INDUSTRIA'
+                ? getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `Filial ${String(f.num_filial).padStart(2, '0')}` }))
+                : getCachedFiliaisList().filter(f => f.num_filial !== '00').map(f => ({ num: String(f.num_filial).padStart(2, '0'), name: `${String(f.num_filial).padStart(2, '0')} - ${f.nome_filial}` }));
+
+            let html = `<option value="ALL">Todas as Filiais</option>`;
+            list.forEach(f => {
+                html += `<option value="${f.num}">${f.name}</option>`;
+            });
+            sel.innerHTML = html;
+
+            if (!isGlobal) {
+                sel.value = String(currentFilialId).padStart(2, '0');
+                sel.disabled = true;
+            }
+        }
+
+        async function loadTransferHistory() {
+            if (!supabaseClient) initSupabase();
+            populateHistoryFilialFilter();
+
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-slate-400">Carregando histórico...</td></tr>`;
+
+            try {
+                const isGlobal = isGlobalFilial(currentUser);
+                let query = supabaseClient.from('transferencias_armazem')
+                    .select('*, transferencias_armazem_itens(*)')
+                    .order('criado_em', { ascending: false })
+                    .limit(100);
+
+                if (!isGlobal) {
+                    query = query.eq('filial_id', String(currentFilialId).padStart(2, '0'));
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+                allHistoryBatches = data || [];
+                applyHistoryFilters();
+            } catch(e) {
+                console.error("Erro no histórico:", e);
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-rose-500">Erro ao carregar histórico de transferências.</td></tr>`;
+            }
+        }
+
+        function applyHistoryFilters() {
+            const filialFilter = document.getElementById('histFilterFilial')?.value || 'ALL';
+            const statusFilter = document.getElementById('histFilterStatus')?.value || 'ALL';
+            const setorFilter = document.getElementById('histFilterSetor')?.value || 'ALL';
+            const query = document.getElementById('histFilterSearch')?.value.toLowerCase().trim() || '';
+
+            const filtered = allHistoryBatches.filter(b => {
+                if (filialFilter !== 'ALL' && String(b.filial_id || '').padStart(2, '0') !== String(filialFilter).padStart(2, '0')) return false;
+                if (statusFilter !== 'ALL' && b.status !== statusFilter) return false;
+                if (setorFilter !== 'ALL' && b.setor !== setorFilter) return false;
+                if (query) {
+                    const matchCode = String(b.codigo_lote).toLowerCase().includes(query);
+                    const matchCreator = String(b.criado_por).toLowerCase().includes(query);
+                    const matchDest = String(b.armazem_destino || '').toLowerCase().includes(query);
+                    const matchFilial = String(b.filial_id || '').includes(query);
+                    const matchItem = (b.transferencias_armazem_itens || []).some(it => 
+                        String(it.produto).toLowerCase().includes(query) || 
+                        String(it.descricao).toLowerCase().includes(query)
+                    );
+                    return matchCode || matchCreator || matchDest || matchFilial || matchItem;
+                }
+                return true;
+            });
+
+            const tbody = document.getElementById('historyTableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-8 text-center text-xs font-bold text-slate-400">Nenhuma transferência encontrada com os filtros selecionados.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(b => {
+                const dt = b.criado_em ? new Date(b.criado_em) : new Date();
+                const dtFormatted = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                const skus = (b.transferencias_armazem_itens || []).length;
+                const destArm = b.armazem_destino || '01';
+                const filName = getFilialDisplayName(b.filial_id, b.setor === 'INDUSTRIA' ? 'industria' : 'comercio');
+
+                let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200">🟡 Rascunho</span>`;
+                if (b.status === 'FINALIZADO_FISICO') statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">🔵 Físico OK</span>`;
+                if (b.status === 'TRANSFERIDO_ERP') statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">🟢 ERP OK</span>`;
+
+                let erpInfo = b.doc_erp_numero ? `Doc: ${b.doc_erp_numero}` : (b.status === 'TRANSFERIDO_ERP' ? 'Baixado' : 'Pendente');
+
+                let actionBtn = `
+                    <button onclick="loadBatchIntoActiveView('${b.id}')" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-600 text-[#002f6c] hover:text-white rounded-xl text-[10px] font-black transition border border-blue-200 cursor-pointer shadow-xs">
+                        Ver Lote
+                    </button>
+                `;
+
+                if (b.status === 'EM_ABERTO') {
+                    actionBtn = `
+                        <button onclick="loadBatchIntoActiveView('${b.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[11px] font-black transition flex items-center gap-1.5 mx-auto cursor-pointer shadow-sm">
+                            <i data-lucide="play" class="w-3 h-3 text-white"></i>
+                            <span>Continuar</span>
+                        </button>
+                    `;
+                }
+
+                html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/80 text-xs">
+                        <td class="px-3 py-2.5">
+                            <div class="flex flex-col">
+                                <span class="font-mono font-black text-[#002f6c] dark:text-blue-400">${b.codigo_lote}</span>
+                                <span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 font-mono">➜ Destino: Arm. ${destArm}</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-2.5 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                <i data-lucide="map-pin" class="w-3 h-3 text-red-500"></i>
+                                <span>${filName}</span>
+                            </span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center font-bold">${b.setor === 'INDUSTRIA' ? 'Indústria' : 'Comércio'}</td>
+                        <td class="px-3 py-2.5 text-center">${statusBadge}</td>
+                        <td class="px-3 py-2.5 text-center font-black text-slate-700 dark:text-slate-300">${skus}</td>
+                        <td class="px-3 py-2.5 font-bold text-slate-700 dark:text-slate-300">${b.criado_por || 'N/D'}</td>
+                        <td class="px-3 py-2.5 text-slate-500 font-semibold">${dtFormatted}</td>
+                        <td class="px-3 py-2.5 text-[11px] font-bold text-slate-600 dark:text-slate-400">${erpInfo}</td>
+                        <td class="px-3 py-2.5 text-center">
+                            ${actionBtn}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function clearHistoryFilters() {
+            const isGlobal = isGlobalFilial(currentUser);
+            if (isGlobal) {
+                const filSel = document.getElementById('histFilterFilial');
+                if (filSel) filSel.value = 'ALL';
+            }
+            document.getElementById('histFilterStatus').value = 'ALL';
+            document.getElementById('histFilterSetor').value = 'ALL';
+            document.getElementById('histFilterSearch').value = '';
+            applyHistoryFilters();
+        }
+
+        async function loadBatchIntoActiveView(batchId) {
+            const batch = allHistoryBatches.find(b => b.id === batchId);
+            if (!batch) return;
+
+            if (batch.setor && batch.setor !== currentSector) {
+                await switchSector(batch.setor, false);
+            }
+
+            activeBatch = {
+                id: batch.id,
+                codigo_lote: batch.codigo_lote,
+                setor: batch.setor,
+                filial_id: batch.filial_id,
+                armazem_destino: batch.armazem_destino || '01',
+                armazem_origem_padrao: batch.armazem_origem_padrao || '02',
+                status: batch.status,
+                observacao: batch.observacao || '',
+                criado_por: batch.criado_por,
+                criado_em: batch.criado_em,
+                finalizado_fisico_por: batch.finalizado_fisico_por,
+                finalizado_fisico_em: batch.finalizado_fisico_em,
+                transferido_erp_por: batch.transferido_erp_por,
+                transferido_erp_em: batch.transferido_erp_em,
+                doc_erp_numero: batch.doc_erp_numero,
+                itens: batch.transferencias_armazem_itens || []
+            };
+
+            switchTransferTab('active');
+            renderActiveBatchUI();
+
+            if (batch.status === 'EM_ABERTO') {
+                showAlert(`Rascunho ${activeBatch.codigo_lote} carregado! Destino: Armazém ${activeBatch.armazem_destino}.`, "success");
+            } else {
+                showAlert(`Lote ${activeBatch.codigo_lote} carregado para visualização!`, "info");
+            }
+        }
+    </script>
+</body>
+</html>
