@@ -14,7 +14,7 @@ import {
 import EtiquetaButton from './EtiquetaButton'
 import { formatNumber } from '../../utils/formatters'
 
-export default function InventoryCard({ item, onOpenCount, onOpenAudit }) {
+export default function InventoryCard({ item, onOpenCount, onOpenAudit, onOpenTags, onOpenFornecedores }) {
   const getStatusBadge = () => {
     if (item.status === 'ACURADO') {
       return (
@@ -92,19 +92,27 @@ export default function InventoryCard({ item, onOpenCount, onOpenAudit }) {
           )}
 
           {item.fornecedores && (
-            <span className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200/80 flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => onOpenFornecedores && onOpenFornecedores(item)}
+              className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200/80 flex items-center gap-0.5 cursor-pointer"
+              title="Gerenciar Fornecedores"
+            >
               <Truck className="w-2.5 h-2.5 text-teal-600" />
               {item.fornecedores}
-            </span>
+            </button>
           )}
 
           {tagsList.map(tag => (
-            <span
+            <button
               key={tag}
-              className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800"
+              type="button"
+              onClick={() => onOpenTags && onOpenTags(item)}
+              className="px-2 py-0.5 rounded-lg text-[9px] font-extrabold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 cursor-pointer"
+              title="Gerenciar Tags"
             >
               {tag}
-            </span>
+            </button>
           ))}
         </div>
 
@@ -143,7 +151,7 @@ export default function InventoryCard({ item, onOpenCount, onOpenAudit }) {
         </div>
       </div>
 
-      {/* Ações: Contar e Histórico */}
+      {/* Ações: Contar, Tags, Fornecedores, Histórico */}
       <div className="flex items-center gap-2 pt-1">
         <button
           type="button"
@@ -152,6 +160,24 @@ export default function InventoryCard({ item, onOpenCount, onOpenAudit }) {
         >
           <Clipboard className="w-4 h-4" />
           <span>Contar Material</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onOpenTags && onOpenTags(item)}
+          className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-2xl border border-indigo-200 dark:border-indigo-800 cursor-pointer"
+          title="Gerenciar Tags"
+        >
+          <TagIcon className="w-4 h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onOpenFornecedores && onOpenFornecedores(item)}
+          className="p-2.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 rounded-2xl border border-teal-200 dark:border-teal-800 cursor-pointer"
+          title="Gerenciar Fornecedores"
+        >
+          <Truck className="w-4 h-4" />
         </button>
 
         <button

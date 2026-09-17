@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { 
   Package, 
   CheckCircle2, 
@@ -6,8 +6,7 @@ import {
   TrendingDown, 
   BarChart3, 
   ChevronLeft, 
-  ChevronRight,
-  Layers
+  ChevronRight
 } from 'lucide-react'
 import { useInventory } from '../context/InventoryContext'
 import Scoreboard from '../components/inventario/Scoreboard'
@@ -17,6 +16,9 @@ import InventoryCard from '../components/inventario/InventoryCard'
 import InventoryTable from '../components/inventario/InventoryTable'
 import CountModal from '../components/inventario/CountModal'
 import AuditHistoryModal from '../components/inventario/AuditHistoryModal'
+import TagsModal from '../components/inventario/TagsModal'
+import FornecedoresModal from '../components/inventario/FornecedoresModal'
+import MassCountModal from '../components/inventario/MassCountModal'
 import { formatNumber } from '../utils/formatters'
 
 const ITEMS_PER_PAGE = 50
@@ -27,6 +29,9 @@ export default function InventarioPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [activeCountItem, setActiveCountItem] = useState(null)
   const [activeAuditItem, setActiveAuditItem] = useState(null)
+  const [activeTagsItem, setActiveTagsItem] = useState(null)
+  const [activeFornecedoresItem, setActiveFornecedoresItem] = useState(null)
+  const [isMassCountOpen, setIsMassCountOpen] = useState(false)
 
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE) || 1
   const validPage = Math.min(Math.max(1, currentPage), totalPages)
@@ -129,7 +134,7 @@ export default function InventarioPage() {
       <DailyGoalBanner />
 
       {/* 4. Barra de Filtros e Busca Rápida */}
-      <FilterBar />
+      <FilterBar onOpenMassCount={() => setIsMassCountOpen(true)} />
 
       {/* 5. Listagem de Produtos (Tabela Desktop / Cards Mobile) */}
       {loading ? (
@@ -148,6 +153,8 @@ export default function InventarioPage() {
               items={pageItems}
               onOpenCount={(item) => setActiveCountItem(item)}
               onOpenAudit={(item) => setActiveAuditItem(item)}
+              onOpenTags={(item) => setActiveTagsItem(item)}
+              onOpenFornecedores={(item) => setActiveFornecedoresItem(item)}
             />
           </div>
 
@@ -159,6 +166,8 @@ export default function InventarioPage() {
                 item={item}
                 onOpenCount={(i) => setActiveCountItem(i)}
                 onOpenAudit={(i) => setActiveAuditItem(i)}
+                onOpenTags={(i) => setActiveTagsItem(i)}
+                onOpenFornecedores={(i) => setActiveFornecedoresItem(i)}
               />
             ))}
           </div>
@@ -208,6 +217,26 @@ export default function InventarioPage() {
         <AuditHistoryModal
           item={activeAuditItem}
           onClose={() => setActiveAuditItem(null)}
+        />
+      )}
+
+      {activeTagsItem && (
+        <TagsModal
+          item={activeTagsItem}
+          onClose={() => setActiveTagsItem(null)}
+        />
+      )}
+
+      {activeFornecedoresItem && (
+        <FornecedoresModal
+          item={activeFornecedoresItem}
+          onClose={() => setActiveFornecedoresItem(null)}
+        />
+      )}
+
+      {isMassCountOpen && (
+        <MassCountModal
+          onClose={() => setIsMassCountOpen(false)}
         />
       )}
 

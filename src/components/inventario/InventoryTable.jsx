@@ -4,15 +4,16 @@ import {
   MapPin, 
   Truck, 
   History, 
-  MessageSquare,
+  MessageSquare, 
   CheckCircle2, 
   TrendingUp, 
-  TrendingDown
+  TrendingDown,
+  Tag as TagIcon
 } from 'lucide-react'
 import EtiquetaButton from './EtiquetaButton'
 import { formatNumber } from '../../utils/formatters'
 
-export default function InventoryTable({ items, onOpenCount, onOpenAudit }) {
+export default function InventoryTable({ items, onOpenCount, onOpenAudit, onOpenTags, onOpenFornecedores }) {
   const getStatusBadge = (item) => {
     if (item.status === 'ACURADO') {
       return (
@@ -95,19 +96,27 @@ export default function InventoryTable({ items, onOpenCount, onOpenAudit }) {
                       )}
 
                       {item.fornecedores && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200/80 flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => onOpenFornecedores && onOpenFornecedores(item)}
+                          className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200/80 flex items-center gap-0.5 cursor-pointer"
+                          title="Gerenciar fornecedores"
+                        >
                           <Truck className="w-2.5 h-2.5 text-teal-600" />
                           {item.fornecedores}
-                        </span>
+                        </button>
                       )}
 
                       {tagsList.map(tag => (
-                        <span
+                        <button
                           key={tag}
-                          className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800"
+                          type="button"
+                          onClick={() => onOpenTags && onOpenTags(item)}
+                          className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 cursor-pointer"
+                          title="Gerenciar tags"
                         >
                           {tag}
-                        </span>
+                        </button>
                       ))}
                     </div>
 
@@ -163,11 +172,29 @@ export default function InventoryTable({ items, onOpenCount, onOpenAudit }) {
 
                       <button
                         type="button"
+                        onClick={() => onOpenTags && onOpenTags(item)}
+                        className="p-1.5 rounded-xl text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all cursor-pointer"
+                        title="Gerenciar Tags"
+                      >
+                        <TagIcon className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onOpenFornecedores && onOpenFornecedores(item)}
+                        className="p-1.5 rounded-xl text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition-all cursor-pointer"
+                        title="Gerenciar Fornecedores"
+                      >
+                        <Truck className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => onOpenAudit(item)}
                         className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer"
                         title="Ver Histórico de Auditoria"
                       >
-                        <History className="w-4 h-4" />
+                        <History className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>

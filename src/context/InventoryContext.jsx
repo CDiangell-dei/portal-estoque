@@ -129,8 +129,8 @@ export function InventoryProvider({ children }) {
 
     const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio'
     const saldoTable = sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio'
-    const contagemTable = sector === 'INDUSTRIA' ? 'contagens_industria' : 'contagens_comercio'
-    const valTable = sector === 'INDUSTRIA' ? 'validades_industria' : 'validades_comercio'
+    const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio'
+    const valTable = sector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio'
 
     const userFilial = (!isGlobal && filial !== 'ALL' && filial !== '00') ? filial : null
 
@@ -157,7 +157,15 @@ export function InventoryProvider({ children }) {
         let fromC = 0, stepC = 1000, fetchMoreC = true
         while (fetchMoreC) {
           let q = supabase.from(contagemTable).select('*')
-          if (userFilial) q = q.eq('filial', userFilial)
+          if (userFilial) {
+            const uPad = String(userFilial).padStart(2, '0')
+            const uRaw = String(parseInt(userFilial, 10))
+            if (uPad === uRaw) {
+              q = q.eq('filial', uPad)
+            } else {
+              q = q.in('filial', [uPad, uRaw])
+            }
+          }
           const { data, error } = await q.range(fromC, fromC + stepC - 1)
           if (error || !data || data.length === 0) {
             fetchMoreC = false
@@ -186,7 +194,15 @@ export function InventoryProvider({ children }) {
         let fromV = 0, stepV = 1000, fetchMoreV = true
         while (fetchMoreV) {
           let q = supabase.from(valTable).select('*')
-          if (userFilial) q = q.eq('filial', userFilial)
+          if (userFilial) {
+            const uPad = String(userFilial).padStart(2, '0')
+            const uRaw = String(parseInt(userFilial, 10))
+            if (uPad === uRaw) {
+              q = q.eq('filial', uPad)
+            } else {
+              q = q.in('filial', [uPad, uRaw])
+            }
+          }
           const { data, error } = await q.range(fromV, fromV + stepV - 1)
           if (error || !data || data.length === 0) {
             fetchMoreV = false
@@ -314,32 +330,38 @@ export function InventoryProvider({ children }) {
     }
   }, [availableArmazens, selectedArmazens.length])
 
-  // Lista de tags disponíveis
+  // Lista de tags disponíveis ({ key, label })
   const availableTags = useMemo(() => {
-    const set = new Set()
+    const map = new Map()
     rawSb1.forEach(p => {
       if (p.tags) {
         p.tags.split(',').forEach(t => {
-          const tr = t.trim().toLowerCase()
-          if (tr) set.add(tr)
+          const tr = t.trim()
+          if (tr) {
+            const key = tr.toLowerCase()
+            if (!map.has(key)) map.set(key, tr)
+          }
         })
       }
     })
-    return Array.from(set).sort()
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label))
   }, [rawSb1])
 
-  // Lista de fornecedores disponíveis
+  // Lista de fornecedores disponíveis ({ key, label })
   const availableFornecedores = useMemo(() => {
-    const set = new Set()
+    const map = new Map()
     rawSb1.forEach(p => {
       if (p.fornecedores) {
         p.fornecedores.split(/,|;/).forEach(f => {
-          const tr = f.trim().toLowerCase()
-          if (tr) set.add(tr)
+          const tr = f.trim()
+          if (tr) {
+            const key = tr.toLowerCase()
+            if (!map.has(key)) map.set(key, tr)
+          }
         })
       }
     })
-    return Array.from(set).sort()
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label))
   }, [rawSb1])
 
   // Mapeamento de saldos e contagens por armazém
@@ -755,20 +777,24 @@ export function InventoryProvider({ children }) {
     const filPad = String(filial === 'ALL' || filial === '00' ? '01' : filial).padStart(2, '0')
     const armPad = String(armazem || '01').padStart(2, '0')
     const codNorm = String(codigo).trim().toUpperCase()
-    const contagemTable = sector === 'INDUSTRIA' ? 'contagens_industria' : 'contagens_comercio'
+    const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio'
+    const conferenteIdent = user ? `${user.matricula || ''} - ${user.nome || ''}`.replace(/^ - /, '') : 'SISTEMA'
+
+    const currentSysRecord = rawSaldo.find(s => {
+      if (s.produto !== codNorm || s.armazem !== armPad) return false
+      const sf = String(s.filial || '01').padStart(2, '0')
+      return sf === filPad
+    })
+    const qtdSistema = currentSysRecord ? Number(currentSysRecord.quantidade || 0) : 0
 
     const payload = {
       filial: filPad,
-      armazem: armPad,
       armazem_contagem: armPad,
       produto: codNorm,
       quantidade_contada: Number(quantidade),
-      qtd_contada: Number(quantidade),
-      quem_contou: user ? user.nome : 'SISTEMA',
-      conferente_nome: user ? user.nome : 'SISTEMA',
-      observacao: observacao || '',
-      validade: validade || null,
-      lote: lote || null,
+      quantidade_sistema: qtdSistema,
+      quem_contou: conferenteIdent,
+      observacao: observacao || null,
       created_at: new Date().toISOString()
     }
 
@@ -794,13 +820,81 @@ export function InventoryProvider({ children }) {
           currentUser: user
         })
       }
+
+      // Se informou validade ou lote, grava também em validade_comercio/validade_industria
+      if (validade || lote) {
+        const valTable = sector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio'
+        await supabase.from(valTable).insert([{
+          filial: filPad,
+          armazem: armPad,
+          produto: codNorm,
+          quantidade: Number(quantidade),
+          data_validade: validade || null,
+          lote: lote || null,
+          quem_registrou: user ? user.nome : 'SISTEMA',
+          observacao: observacao || null,
+          created_at: new Date().toISOString()
+        }])
+      }
     } catch (err) {
       console.warn('Falha de rede, contagem preservada localmente:', err)
     }
 
     // Auto recarga silenciosa para sincronizar contagens consolidadas
     setTimeout(() => loadData(true), 500)
-  }, [filial, sector, user, localCounts, loadData])
+  }, [filial, sector, user, localCounts, rawSaldo, loadData])
+
+  // Ação de Atualizar Tags do Produto no Supabase
+  const updateProductTags = useCallback(async (codigo, newTagsArray) => {
+    const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio'
+    const tagsString = newTagsArray.join(',')
+
+    setRawSb1(prev => prev.map(p => p.codigo === codigo ? { ...p, tags: tagsString } : p))
+
+    try {
+      let { error } = await supabase.from(sb1Table).update({ tags: tagsString || null }).eq('codigo', codigo)
+      if (error) {
+        await supabase.from(sb1Table).update({ tags: tagsString || null }).eq('Codigo', codigo)
+      }
+      logAuditAction({
+        filial: filial || '01',
+        produto: codigo,
+        modulo: 'INVENTARIO',
+        acao: 'TAGS_ATUALIZADAS',
+        detalhes: `Tags atualizadas para produto ${codigo}: ${tagsString || 'Nenhuma'}`,
+        meta: { tags: tagsString },
+        currentUser: user
+      })
+    } catch (err) {
+      console.error('Erro ao atualizar tags:', err)
+    }
+  }, [sector, filial, user])
+
+  // Ação de Atualizar Fornecedores do Produto no Supabase
+  const updateProductFornecedores = useCallback(async (codigo, newFornArray) => {
+    const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio'
+    const fornString = newFornArray.join(',')
+
+    setRawSb1(prev => prev.map(p => p.codigo === codigo ? { ...p, fornecedores: fornString } : p))
+
+    try {
+      let { error } = await supabase.from(sb1Table).update({ fornecedores: fornString || null }).eq('codigo', codigo)
+      if (error) {
+        await supabase.from(sb1Table).update({ fornecedores: fornString || null }).eq('Codigo', codigo)
+      }
+      logAuditAction({
+        filial: filial || '01',
+        produto: codigo,
+        modulo: 'INVENTARIO',
+        acao: 'FORNECEDORES_ATUALIZADOS',
+        detalhes: `Fornecedores atualizados para produto ${codigo}: ${fornString || 'Nenhum'}`,
+        meta: { fornecedores: fornString },
+        currentUser: user
+      })
+    } catch (err) {
+      console.error('Erro ao atualizar fornecedores:', err)
+    }
+  }, [sector, filial, user])
 
   return (
     <InventoryContext.Provider
@@ -846,7 +940,9 @@ export function InventoryProvider({ children }) {
         kpis,
         // Ações
         toggleEtiqueta,
-        saveCount
+        saveCount,
+        updateProductTags,
+        updateProductFornecedores
       }}
     >
       {children}
