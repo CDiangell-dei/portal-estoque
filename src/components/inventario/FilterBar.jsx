@@ -49,7 +49,9 @@ export default function FilterBar({ onOpenMassCount, onOpenImportSaldo }) {
     setIsRouteSortActive,
     filteredItems,
     reload,
-    loading
+    loading,
+    isSyncing,
+    lastSyncedAt
   } = useInventory()
 
   const [armDropdownOpen, setArmDropdownOpen] = useState(false)
@@ -221,15 +223,33 @@ export default function FilterBar({ onOpenMassCount, onOpenImportSaldo }) {
             <span className="hidden sm:inline">Exportar</span>
           </button>
 
+          {/* Status de Sincronização Periódica / Realtime */}
+          <div 
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 text-[10px] font-black text-slate-600 dark:text-slate-300 select-none shadow-xs"
+            title={`Sincronização automática ativa a cada 15s e em tempo real. Última atualização: ${lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString('pt-BR') : 'agora'}`}
+          >
+            <span className="relative flex h-2 w-2">
+              {isSyncing ? (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              ) : (
+                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${isSyncing ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+            </span>
+            <span className="hidden sm:inline">
+              {isSyncing ? 'Sincronizando...' : 'Ao Vivo'}
+            </span>
+          </div>
+
           {/* Atualizar Banco */}
           <button
             type="button"
             onClick={() => reload(false)}
-            disabled={loading}
+            disabled={loading || isSyncing}
             className="px-3 py-2 rounded-2xl text-xs font-bold bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all disabled:opacity-50"
-            title="Recarregar saldos e contagens do banco"
+            title="Forçar recarga completa do banco agora"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 ${(loading || isSyncing) ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Atualizar</span>
           </button>
 

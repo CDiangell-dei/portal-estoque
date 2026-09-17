@@ -33,7 +33,7 @@ export default function CountModal({ item, onClose }) {
   const [saving, setSaving] = useState(false)
   const [showKeypad, setShowKeypad] = useState(false)
 
-  // Preenche dados anteriores se existirem para o armazém selecionado
+  // Preenche dados anteriores se existirem para o armazém selecionado (apenas ao abrir ou trocar de armazém)
   useEffect(() => {
     if (item && selectedArm) {
       const armPad = String(selectedArm).padStart(2, '0')
@@ -48,7 +48,7 @@ export default function CountModal({ item, onClose }) {
       }
       setObservacao(item.observacao || '')
     }
-  }, [item, selectedArm, warehouseCountMap])
+  }, [item?.codigo, selectedArm])
 
   if (!item) return null
 

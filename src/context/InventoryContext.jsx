@@ -23,6 +23,22 @@ export function InventoryProvider({ children }) {
   const [rawValidades, setRawValidades] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [lastSyncedAt, setLastSyncedAt] = useState(() => new Date())
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const rawSb1Ref = useRef([])
+  const lastSectorRef = useRef(sector)
+
+  useEffect(() => {
+    rawSb1Ref.current = rawSb1
+  }, [rawSb1])
+
+  useEffect(() => {
+    if (lastSectorRef.current !== sector) {
+      lastSectorRef.current = sector
+      rawSb1Ref.current = []
+    }
+  }, [sector])
 
   // Local Counts (offline/local cache)
   const [localCounts, setLocalCounts] = useState(() => {
@@ -126,6 +142,7 @@ export function InventoryProvider({ children }) {
   // Carregamento de dados do Supabase
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
+    setIsSyncing(true)
     setError(null)
 
     const sb1Table = sector === 'INDUSTRIA' ? 'sb1_industria' : 'sb1_comercio'
@@ -217,47 +234,74 @@ export function InventoryProvider({ children }) {
         console.warn('Erro ao carregar validades:', eV)
       }
 
-      // 4. Catálogo SB1
+      // 4. Catálogo SB1 (reutiliza cache em atualizações periódicas/silenciosas para sincronização ultrarrápida)
       let sb1All = []
-      try {
-        const { count: totalSb1 } = await supabase.from(sb1Table).select('codigo', { count: 'exact', head: true })
-        const totalRows = totalSb1 || (sector === 'INDUSTRIA' ? 50000 : 12000)
-        const chunkSize = 1000
-        const totalChunks = Math.ceil(totalRows / chunkSize)
-        const batchLimit = 6
-
-        for (let i = 0; i < totalChunks; i += batchLimit) {
-          const batchPromises = []
-          for (let j = i; j < Math.min(i + batchLimit, totalChunks); j++) {
-            const fromIdx = j * chunkSize
-            batchPromises.push(
-              supabase.from(sb1Table)
-                .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-                .range(fromIdx, fromIdx + chunkSize - 1)
-                .then(res => res.data || [])
-            )
-          }
-          const batchResults = await Promise.all(batchPromises)
-          batchResults.forEach(chunkData => {
-            if (chunkData && chunkData.length > 0) {
-              sb1All = sb1All.concat(chunkData)
+      const hasCachedSb1 = silent && rawSb1Ref.current && rawSb1Ref.current.length > 0
+      if (hasCachedSb1) {
+        sb1All = [...rawSb1Ref.current]
+        const existingCodes = new Set(rawSb1Ref.current.map(p => String(p.codigo).trim().toUpperCase()))
+        const missingCodes = new Set()
+        confAll.forEach(c => {
+          const cod = String(c.produto || '').trim().toUpperCase()
+          if (cod && !existingCodes.has(cod)) missingCodes.add(cod)
+        })
+        saldoAll.forEach(s => {
+          const cod = String(s.produto || '').trim().toUpperCase()
+          if (cod && !existingCodes.has(cod)) missingCodes.add(cod)
+        })
+        if (missingCodes.size > 0) {
+          const arrMissing = Array.from(missingCodes)
+          for (let i = 0; i < arrMissing.length; i += 500) {
+            const chunk = arrMissing.slice(i, i + 500)
+            const { data } = await supabase.from(sb1Table)
+              .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+              .in('codigo', chunk)
+            if (data && data.length > 0) {
+              sb1All = sb1All.concat(data)
             }
-          })
+          }
         }
-      } catch (errSb1) {
-        console.warn('Erro ao carregar catálogo completo, buscando ativos:', errSb1)
-        const activeCodesSet = new Set([
-          ...saldoAll.map(s => String(s.produto).trim()),
-          ...confAll.map(c => String(c.produto).trim()),
-          ...valAll.map(v => String(v.produto).trim())
-        ])
-        const activeCodes = Array.from(activeCodesSet).filter(Boolean)
-        for (let i = 0; i < activeCodes.length; i += 500) {
-          const chunk = activeCodes.slice(i, i + 500)
-          const { data } = await supabase.from(sb1Table)
-            .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
-            .in('codigo', chunk)
-          if (data) sb1All = sb1All.concat(data)
+      } else {
+        try {
+          const { count: totalSb1 } = await supabase.from(sb1Table).select('codigo', { count: 'exact', head: true })
+          const totalRows = totalSb1 || (sector === 'INDUSTRIA' ? 50000 : 12000)
+          const chunkSize = 1000
+          const totalChunks = Math.ceil(totalRows / chunkSize)
+          const batchLimit = 6
+
+          for (let i = 0; i < totalChunks; i += batchLimit) {
+            const batchPromises = []
+            for (let j = i; j < Math.min(i + batchLimit, totalChunks); j++) {
+              const fromIdx = j * chunkSize
+              batchPromises.push(
+                supabase.from(sb1Table)
+                  .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+                  .range(fromIdx, fromIdx + chunkSize - 1)
+                  .then(res => res.data || [])
+              )
+            }
+            const batchResults = await Promise.all(batchPromises)
+            batchResults.forEach(chunkData => {
+              if (chunkData && chunkData.length > 0) {
+                sb1All = sb1All.concat(chunkData)
+              }
+            })
+          }
+        } catch (errSb1) {
+          console.warn('Erro ao carregar catálogo completo, buscando ativos:', errSb1)
+          const activeCodesSet = new Set([
+            ...saldoAll.map(s => String(s.produto).trim()),
+            ...confAll.map(c => String(c.produto).trim()),
+            ...valAll.map(v => String(v.produto).trim())
+          ])
+          const activeCodes = Array.from(activeCodesSet).filter(Boolean)
+          for (let i = 0; i < activeCodes.length; i += 500) {
+            const chunk = activeCodes.slice(i, i + 500)
+            const { data } = await supabase.from(sb1Table)
+              .select('codigo, descricao, unidade, fator_conv, tags, fornecedores, endereco')
+              .in('codigo', chunk)
+            if (data) sb1All = sb1All.concat(data)
+          }
         }
       }
 
@@ -293,7 +337,7 @@ export function InventoryProvider({ children }) {
         sharedEtiquetasMap = getEtiquetasStorageMap(true)
       }
 
-      // Deduplicação
+      // Deduplicação SB1
       const uniqueSb1Map = {}
       sb1All.forEach(p => {
         const cod = String(p.codigo || p.Codigo || '').trim()
@@ -328,15 +372,19 @@ export function InventoryProvider({ children }) {
         endereco: s.endereco || ''
       }))
 
-      setRawSb1(Object.values(uniqueSb1Map))
+      if (!hasCachedSb1 || Object.keys(uniqueSb1Map).length !== rawSb1Ref.current.length) {
+        setRawSb1(Object.values(uniqueSb1Map))
+      }
       setRawSaldo(parsedSaldos)
       setRawConf(Object.values(latestConfMap))
       setRawValidades(valAll)
       setEtiquetasMap(sharedEtiquetasMap || getEtiquetasStorageMap(true))
+      setLastSyncedAt(new Date())
     } catch (err) {
       console.error('Erro ao carregar inventário:', err)
       setError('Falha ao carregar dados do inventário.')
     } finally {
+      setIsSyncing(false)
       if (!silent) setLoading(false)
     }
   }, [sector, filial, isGlobal])
@@ -344,6 +392,38 @@ export function InventoryProvider({ children }) {
   // Recarrega sempre que o setor ou filial mudar
   useEffect(() => {
     loadData()
+  }, [loadData])
+
+  // Sincronização periódica contínua e em eventos de retorno à aba/janela
+  useEffect(() => {
+    // 1. Polling contínuo em segundo plano a cada 15 segundos
+    const intervalId = setInterval(() => {
+      if (!document.hidden && navigator.onLine) {
+        loadData(true)
+      }
+    }, 15000)
+
+    // 2. Atualização imediata ao reativar a aba ou focar na janela (PC ou Celular)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        loadData(true)
+      }
+    }
+
+    const handleFocus = () => {
+      if (navigator.onLine) {
+        loadData(true)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
   }, [loadData])
 
   // Lista dinâmica de armazéns disponíveis
@@ -841,38 +921,63 @@ export function InventoryProvider({ children }) {
   // Sincronização em Tempo Real (Supabase Realtime)
   useEffect(() => {
     const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio'
+    const saldoTable = sector === 'INDUSTRIA' ? 'saldo_industria' : 'saldo_comercio'
     
+    const channelName = `inventory-realtime-${sector}-${Date.now()}`
     const channel = supabase
-      .channel(`inventory-realtime-${sector}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: contagemTable },
+        { event: '*', schema: 'public', table: contagemTable },
         (payload) => {
-          const newRow = payload.new
-          if (newRow && newRow.produto) {
-            const mappedItem = {
-              created_at: newRow.created_at,
-              produto: String(newRow.produto).trim().toUpperCase(),
-              filial: String(newRow.filial || '01').trim().padStart(2, '0'),
-              armazem: String(newRow.armazem_contagem || newRow.armazem || '01').trim().padStart(2, '0'),
-              qtd_contada: Number(newRow.quantidade_contada !== undefined ? newRow.quantidade_contada : (newRow.qtd_contada || 0)),
-              conferente_nome: newRow.quem_contou || newRow.conferente_nome || 'SISTEMA',
-              observacao: newRow.observacao || ''
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newRow = payload.new
+            if (newRow && newRow.produto) {
+              const mappedItem = {
+                created_at: newRow.created_at || new Date().toISOString(),
+                produto: String(newRow.produto).trim().toUpperCase(),
+                filial: String(newRow.filial || '01').trim().padStart(2, '0'),
+                armazem: String(newRow.armazem_contagem || newRow.armazem || '01').trim().padStart(2, '0'),
+                qtd_contada: Number(newRow.quantidade_contada !== undefined ? newRow.quantidade_contada : (newRow.qtd_contada || 0)),
+                conferente_nome: newRow.quem_contou || newRow.conferente_nome || 'SISTEMA',
+                observacao: newRow.observacao || ''
+              }
+              setRawConf(prev => {
+                const without = prev.filter(c => !(
+                  String(c.filial || '01').padStart(2, '0') === mappedItem.filial &&
+                  String(c.armazem || '01').padStart(2, '0') === mappedItem.armazem &&
+                  String(c.produto || '').trim().toUpperCase() === mappedItem.produto
+                ))
+                return [mappedItem, ...without]
+              })
             }
-            setRawConf(prev => {
-              const without = prev.filter(c => !(
-                String(c.filial || '01').padStart(2, '0') === mappedItem.filial &&
-                String(c.armazem || '01').padStart(2, '0') === mappedItem.armazem &&
-                String(c.produto || '').trim().toUpperCase() === mappedItem.produto
-              ))
-              return [mappedItem, ...without]
-            })
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old
+            if (oldRow && oldRow.produto) {
+              const delFil = String(oldRow.filial || '01').trim().padStart(2, '0')
+              const delArm = String(oldRow.armazem_contagem || oldRow.armazem || '01').trim().padStart(2, '0')
+              const delProd = String(oldRow.produto || '').trim().toUpperCase()
+              setRawConf(prev => prev.filter(c => !(
+                String(c.filial || '01').padStart(2, '0') === delFil &&
+                String(c.armazem || '01').padStart(2, '0') === delArm &&
+                String(c.produto || '').trim().toUpperCase() === delProd
+              )))
+            }
           }
+          // Sincroniza em segundo plano para manter integridade dos cálculos
+          loadData(true)
         }
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'auditoria_estoque' },
+        { event: '*', schema: 'public', table: saldoTable },
+        () => {
+          loadData(true)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'auditoria_estoque' },
         (payload) => {
           const newRow = payload.new
           if (newRow && (newRow.acao === 'ETIQUETA_TROCADA' || newRow.acao === 'ETIQUETA_DESMARCADA')) {
@@ -886,7 +991,7 @@ export function InventoryProvider({ children }) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [sector])
+  }, [sector, loadData])
 
   // Ação de Toggle de Etiqueta (compartilhada no Supabase e otimista no React)
   const toggleEtiqueta = useCallback(async (itemFilial, armazem, codigo) => {
@@ -1107,6 +1212,8 @@ export function InventoryProvider({ children }) {
         rawValidades,
         loading,
         error,
+        isSyncing,
+        lastSyncedAt,
         reload: loadData,
         // Filtros
         search,
