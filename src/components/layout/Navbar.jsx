@@ -19,14 +19,15 @@ import {
   Settings,
   ChevronDown,
   Menu,
-  X
+  X,
+  Calculator
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useInventory } from '../../context/InventoryContext'
 import { FILIAIS_LIST, getFilialName } from '../../utils/formatters'
 import logoAmazonAco from '../../assets/logo_amazon_aco.png'
 
-export default function Navbar({ activeTab, setActiveTab }) {
+export default function Navbar({ activeTab, setActiveTab, onOpenCalc }) {
   const { user, sector, setSector, filial, setFilial, isGlobal, logout, theme, toggleTheme } = useAuth()
   const { loading, reload } = useInventory()
 
@@ -299,6 +300,16 @@ export default function Navbar({ activeTab, setActiveTab }) {
               <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
             </button>
 
+            {/* Calculadora Rápida do Almoxarifado */}
+            <button
+              type="button"
+              onClick={onOpenCalc}
+              className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer flex-shrink-0"
+              title="Abrir Calculadora do Almoxarifado"
+            >
+              <Calculator className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
+            </button>
+
             {/* Alternar Tema (Desktop/Tablet) */}
             <button
               type="button"
@@ -430,6 +441,21 @@ export default function Navbar({ activeTab, setActiveTab }) {
                   <span>Admin</span>
                 </a>
               )}
+
+              {/* Calculadora Mobile */}
+              <button
+                type="button"
+                onClick={() => { if (onOpenCalc) onOpenCalc(); setMobileMenuOpen(false); }}
+                className="w-full p-2.5 rounded-xl text-xs font-black bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300/40 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4 text-amber-600" />
+                  <span>Calculadora Inteligente</span>
+                </span>
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-lg">
+                  Abrir
+                </span>
+              </button>
             </div>
 
             {/* Controles Rápidos Mobile: Setor e Tema */}

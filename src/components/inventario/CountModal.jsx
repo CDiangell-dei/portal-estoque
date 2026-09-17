@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { useInventory } from '../../context/InventoryContext'
 import { formatNumber } from '../../utils/formatters'
+import { parseSmartMathExpression, isMathExpression } from '../../utils/mathParser'
+import CalculatorKeypad from '../common/CalculatorKeypad'
 import EtiquetaButton from './EtiquetaButton'
 
 export default function CountModal({ item, onClose }) {
@@ -29,6 +31,7 @@ export default function CountModal({ item, onClose }) {
   const [validade, setValidade] = useState('')
   const [lote, setLote] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showKeypad, setShowKeypad] = useState(false)
 
   // Preenche dados anteriores se existirem para o armazém selecionado
   useEffect(() => {
@@ -55,12 +58,35 @@ export default function CountModal({ item, onClose }) {
     ? warehouseSaldoMap[wKey]
     : (item.quantidade || 0)
 
-  const parsedCount = quantidade !== '' ? parseFloat(quantidade) : null
-  const diff = parsedCount !== null ? parsedCount - sysQty : null
+  // Avaliação matemática inteligente em tempo real
+  const evaluatedCount = parseSmartMathExpression(quantidade)
+  const isFormula = isMathExpression(quantidade)
+  const finalNumericCount = evaluatedCount !== null 
+    ? evaluatedCount 
+    : (quantidade.trim() !== '' && !isNaN(parseFloat(quantidade)) ? parseFloat(quantidade) : null)
+
+  const diff = finalNumericCount !== null ? finalNumericCount - sysQty : null
+
+  const handleKeypadPress = (char) => {
+    if (char === 'C') {
+      setQuantidade('')
+    } else if (char === 'BACKSPACE') {
+      setQuantidade(prev => prev.slice(0, -1))
+    } else {
+      setQuantidade(prev => prev + char)
+    }
+  }
+
+  const handleKeypadCalculate = () => {
+    if (evaluatedCount !== null) {
+      setQuantidade(String(evaluatedCount))
+    }
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
-    if (parsedCount === null || isNaN(parsedCount) || parsedCount < 0) {
+    const resolvedQty = evaluatedCount !== null ? evaluatedCount : parseFloat(quantidade)
+    if (resolvedQty === null || isNaN(resolvedQty) || resolvedQty < 0) {
       alert('Informe uma quantidade válida para a contagem.')
       return
     }
@@ -70,7 +96,7 @@ export default function CountModal({ item, onClose }) {
       await saveCount({
         codigo: item.codigo,
         armazem: selectedArm,
-        quantidade: parsedCount,
+        quantidade: resolvedQty,
         observacao,
         validade,
         lote
@@ -84,8 +110,8 @@ export default function CountModal({ item, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden space-y-3 my-auto">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/60">
@@ -103,17 +129,34 @@ export default function CountModal({ item, onClose }) {
             </h3>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Botão de Abrir / Fechar Calculadora */}
+            <button
+              type="button"
+              onClick={() => setShowKeypad(!showKeypad)}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer border ${
+                showKeypad
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+              }`}
+              title="Abrir ou fechar calculadora inteligente"
+            >
+              <Calculator className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden xs:inline">{showKeypad ? 'Fechar Calc' : 'Calculadora'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body / Form */}
-        <form onSubmit={handleSave} className="p-4 sm:p-5 space-y-4">
+        <form onSubmit={handleSave} className="p-4 sm:p-5 space-y-3.5">
           
           {/* Seletor de Armazém da Contagem */}
           <div>
@@ -151,26 +194,80 @@ export default function CountModal({ item, onClose }) {
 
           {/* Campo Quantidade Contada */}
           <div>
-            <label className="block text-xs font-black text-slate-700 dark:text-slate-300 uppercase mb-1 flex items-center justify-between">
-              <span>Quantidade Contada ({item.unidade})</span>
-              <span className="text-slate-400 font-bold font-mono">
-                Saldo Sistema: {formatNumber(sysQty)}
-              </span>
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase flex items-center gap-1.5">
+                <span>Quantidade Contada ({item.unidade})</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 font-bold font-mono text-[11px]">
+                  Saldo Sistema: {formatNumber(sysQty)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowKeypad(!showKeypad)}
+                  className="text-[10px] font-black text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                >
+                  <Calculator className="w-3 h-3 text-amber-500" />
+                  <span>{showKeypad ? 'Ocultar Teclado' : 'Teclado Virtual'}</span>
+                </button>
+              </div>
+            </div>
 
             <div className="relative">
-              <Calculator className="w-5 h-5 absolute left-3.5 top-3.5 text-slate-400" />
+              <button
+                type="button"
+                onClick={() => setShowKeypad(!showKeypad)}
+                className="absolute left-3.5 top-3.5 text-slate-400 hover:text-amber-500 transition-colors cursor-pointer"
+                title="Abrir teclado calculadora"
+              >
+                <Calculator className="w-5 h-5 text-amber-500" />
+              </button>
+
               <input
-                type="number"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 required
                 autoFocus
                 value={quantidade}
                 onChange={(e) => setQuantidade(e.target.value)}
-                placeholder="0"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (isFormula && evaluatedCount !== null) {
+                      e.preventDefault()
+                      setQuantidade(String(evaluatedCount))
+                    }
+                  }
+                }}
+                placeholder="Digite a quantidade ou fórmula (ex: 12*10+5)"
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-11 pr-4 text-base font-black text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#002f6c]"
               />
             </div>
+
+            {/* Preview de Fórmula / Expressão Matemática */}
+            {isFormula && (
+              <div className="mt-2 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs">
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                  <span>🧮 Cálculo em tempo real:</span>
+                </span>
+                <span className="font-mono font-black text-amber-900 dark:text-amber-200">
+                  {evaluatedCount !== null ? `${evaluatedCount.toLocaleString('pt-BR')} ${item.unidade}` : 'Expressão incompleta...'}
+                </span>
+              </div>
+            )}
+
+            {/* Teclado Touch da Calculadora (se ativo) */}
+            {showKeypad && (
+              <div className="mt-3">
+                <CalculatorKeypad
+                  onKeyPress={handleKeypadPress}
+                  onCalculate={handleKeypadCalculate}
+                  onClose={() => setShowKeypad(false)}
+                  currentValue={quantidade}
+                  evaluatedValue={evaluatedCount}
+                  targetLabel={`Armazém ${selectedArm}`}
+                />
+              </div>
+            )}
 
             {/* Preview de Divergência em Tempo Real */}
             {diff !== null && (
