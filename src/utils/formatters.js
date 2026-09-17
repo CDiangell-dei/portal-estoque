@@ -17,7 +17,7 @@ export function getFilialName(num) {
 export function isGlobalFilial(user) {
   if (!user) return false
   const fil = String(user.filial_atual || user.filial || '').trim()
-  return fil === '00' || fil === '0' || user.role === 'admin' || user.is_admin
+  return fil === '00' || fil === '0' || user.role === 'admin' || user.is_admin || user.eh_admin === true
 }
 
 export function formatNumber(val, minimumFractionDigits = 0) {

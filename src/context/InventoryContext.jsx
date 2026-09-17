@@ -6,7 +6,8 @@ import {
   isEtiquetaTrocada, 
   getEtiquetaInfo, 
   saveEtiquetaToggle,
-  makeEtiquetaKey 
+  makeEtiquetaKey,
+  mergeEtiquetasFromDb 
 } from '../utils/etiquetas'
 import { logAuditAction } from '../lib/audit'
 import { normalizeProductCode } from '../utils/formatters'
@@ -156,7 +157,7 @@ export function InventoryProvider({ children }) {
       try {
         let fromC = 0, stepC = 1000, fetchMoreC = true
         while (fetchMoreC) {
-          let q = supabase.from(contagemTable).select('*')
+          let q = supabase.from(contagemTable).select('*').order('created_at', { ascending: true })
           if (userFilial) {
             const uPad = String(userFilial).padStart(2, '0')
             const uRaw = String(parseInt(userFilial, 10))
@@ -260,6 +261,38 @@ export function InventoryProvider({ children }) {
         }
       }
 
+      // 5. Etiquetas Compartilhadas (Auditoria de Estoque do Supabase)
+      let sharedEtiquetasMap = null
+      try {
+        let fromA = 0, stepA = 1000, fetchMoreA = true
+        let auditEtiquetasAll = []
+        while (fetchMoreA) {
+          const { data: aData, error: aErr } = await supabase
+            .from('auditoria_estoque')
+            .select('filial, armazem, produto, acao, usuario_nome, usuario_matricula, created_at, meta')
+            .in('acao', ['ETIQUETA_TROCADA', 'ETIQUETA_DESMARCADA'])
+            .order('created_at', { ascending: true })
+            .range(fromA, fromA + stepA - 1)
+
+          if (aErr || !aData || aData.length === 0) {
+            fetchMoreA = false
+          } else {
+            auditEtiquetasAll = auditEtiquetasAll.concat(aData)
+            if (aData.length < stepA) fetchMoreA = false
+            else fromA += stepA
+          }
+        }
+
+        if (auditEtiquetasAll.length > 0) {
+          sharedEtiquetasMap = mergeEtiquetasFromDb(auditEtiquetasAll)
+        } else {
+          sharedEtiquetasMap = getEtiquetasStorageMap(true)
+        }
+      } catch (errAudit) {
+        console.warn('Erro ao carregar etiquetas compartilhadas do Supabase:', errAudit)
+        sharedEtiquetasMap = getEtiquetasStorageMap(true)
+      }
+
       // Deduplicação
       const uniqueSb1Map = {}
       sb1All.forEach(p => {
@@ -299,7 +332,7 @@ export function InventoryProvider({ children }) {
       setRawSaldo(parsedSaldos)
       setRawConf(Object.values(latestConfMap))
       setRawValidades(valAll)
-      setEtiquetasMap(getEtiquetasStorageMap(true))
+      setEtiquetasMap(sharedEtiquetasMap || getEtiquetasStorageMap(true))
     } catch (err) {
       console.error('Erro ao carregar inventário:', err)
       setError('Falha ao carregar dados do inventário.')
@@ -439,20 +472,26 @@ export function InventoryProvider({ children }) {
       }
     })
 
-    // Incorpora contagens locais offline
+    // Incorpora contagens locais offline (apenas se ainda não existirem no rawConf para aquele armazém)
     Object.keys(localCounts).forEach(key => {
-      const [armRaw, cod] = key.split('_')
+      const parts = key.split('_')
+      const armRaw = parts[0]
+      const cod = parts.slice(1).join('_')
       if (cod) {
         const armPad = armRaw.padStart(2, '0')
         if (!pwMap[cod]) pwMap[cod] = new Set()
         pwMap[cod].add(armPad)
 
-        wcMap[`${armPad}_${cod}`] = Number(localCounts[key] || 0)
+        const wKey = `${armPad}_${cod}`
+        if (wcMap[wKey] === undefined) {
+          const val = Number(localCounts[key] || 0)
+          wcMap[wKey] = val
 
-        if (isArmSelectedCheck(armPad)) {
-          pcMap[cod] = (pcMap[cod] || 0) + Number(localCounts[key] || 0)
-          hcMap[cod] = true
-          pldMap[cod] = new Date()
+          if (isArmSelectedCheck(armPad)) {
+            pcMap[cod] = (pcMap[cod] || 0) + val
+            hcMap[cod] = true
+            pldMap[cod] = new Date()
+          }
         }
       }
     })
@@ -571,6 +610,7 @@ export function InventoryProvider({ children }) {
 
       return {
         ...prod,
+        filial: filialForEtiqueta,
         quantidade: sysQty,
         qtd_contada: countedQty,
         hasCount,
@@ -798,43 +838,119 @@ export function InventoryProvider({ children }) {
     }
   }, [rawSb1.length, rawSaldo, filteredItems, selectedArmazens, filial])
 
-  // Ação de Toggle de Etiqueta
+  // Sincronização em Tempo Real (Supabase Realtime)
+  useEffect(() => {
+    const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio'
+    
+    const channel = supabase
+      .channel(`inventory-realtime-${sector}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: contagemTable },
+        (payload) => {
+          const newRow = payload.new
+          if (newRow && newRow.produto) {
+            const mappedItem = {
+              created_at: newRow.created_at,
+              produto: String(newRow.produto).trim().toUpperCase(),
+              filial: String(newRow.filial || '01').trim().padStart(2, '0'),
+              armazem: String(newRow.armazem_contagem || newRow.armazem || '01').trim().padStart(2, '0'),
+              qtd_contada: Number(newRow.quantidade_contada !== undefined ? newRow.quantidade_contada : (newRow.qtd_contada || 0)),
+              conferente_nome: newRow.quem_contou || newRow.conferente_nome || 'SISTEMA',
+              observacao: newRow.observacao || ''
+            }
+            setRawConf(prev => {
+              const without = prev.filter(c => !(
+                String(c.filial || '01').padStart(2, '0') === mappedItem.filial &&
+                String(c.armazem || '01').padStart(2, '0') === mappedItem.armazem &&
+                String(c.produto || '').trim().toUpperCase() === mappedItem.produto
+              ))
+              return [mappedItem, ...without]
+            })
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'auditoria_estoque' },
+        (payload) => {
+          const newRow = payload.new
+          if (newRow && (newRow.acao === 'ETIQUETA_TROCADA' || newRow.acao === 'ETIQUETA_DESMARCADA')) {
+            const updated = mergeEtiquetasFromDb([newRow])
+            setEtiquetasMap(updated)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [sector])
+
+  // Ação de Toggle de Etiqueta (compartilhada no Supabase e otimista no React)
   const toggleEtiqueta = useCallback(async (itemFilial, armazem, codigo) => {
-    const filPad = String(itemFilial || filial || '01').padStart(2, '0')
+    const targetFilial = (itemFilial && itemFilial !== 'ALL' && itemFilial !== '00')
+      ? itemFilial
+      : (filial && filial !== 'ALL' && filial !== '00')
+        ? filial
+        : (user?.filial_atual || '01')
+    const filPad = String(targetFilial).padStart(2, '0')
     const armPad = String(armazem || '01').padStart(2, '0')
     const codNorm = String(codigo || '').trim().toUpperCase()
 
-    const { newStatus } = saveEtiquetaToggle(filPad, armPad, codNorm, user)
-    setEtiquetasMap(getEtiquetasStorageMap(true))
-
-    logAuditAction({
-      filial: filPad,
-      armazem: armPad,
-      produto: codNorm,
-      modulo: 'INVENTARIO',
-      acao: newStatus ? 'ETIQUETA_TROCADA' : 'ETIQUETA_DESMARCADA',
-      detalhes: newStatus
-        ? `Etiqueta física do Armazém ${armPad} marcada como OK`
-        : `Etiqueta física do Armazém ${armPad} desmarcada (voltando para pendente)`,
-      meta: { trocado_em: new Date().toISOString(), status: newStatus },
-      currentUser: user
+    const { newStatus, key, entry } = saveEtiquetaToggle(filPad, armPad, codNorm, user)
+    
+    // Atualização otimista imediata no estado React (0ms)
+    setEtiquetasMap(prev => {
+      const updated = { ...prev }
+      if (newStatus && entry) {
+        updated[key] = entry
+      } else {
+        delete updated[key]
+        const altFil = filPad === '01' ? '05' : '01'
+        delete updated[makeEtiquetaKey(altFil, armPad, codNorm)]
+      }
+      return updated
     })
+
+    try {
+      await logAuditAction({
+        filial: filPad,
+        armazem: armPad,
+        produto: codNorm,
+        modulo: 'INVENTARIO',
+        acao: newStatus ? 'ETIQUETA_TROCADA' : 'ETIQUETA_DESMARCADA',
+        detalhes: newStatus
+          ? `Etiqueta física do Armazém ${armPad} marcada como OK`
+          : `Etiqueta física do Armazém ${armPad} desmarcada (voltando para pendente)`,
+        meta: { trocado_em: new Date().toISOString(), status: newStatus },
+        currentUser: user
+      })
+    } catch (e) {
+      console.warn('Erro ao registrar log de etiqueta:', e)
+    }
   }, [filial, user])
 
-  // Ação de Salvar Contagem
+  // Ação de Salvar Contagem (Atualização Otimista Imediata + Supabase)
   const saveCount = useCallback(async ({ codigo, armazem, quantidade, observacao = '', validade = '', lote = '' }) => {
-    const filPad = String(filial === 'ALL' || filial === '00' ? '01' : filial).padStart(2, '0')
+    const targetFilial = (filial && filial !== 'ALL' && filial !== '00')
+      ? filial
+      : (user?.filial_atual || '01')
+    const filPad = String(targetFilial).padStart(2, '0')
     const armPad = String(armazem || '01').padStart(2, '0')
     const codNorm = String(codigo).trim().toUpperCase()
     const contagemTable = sector === 'INDUSTRIA' ? 'contagem_industria' : 'contagem_comercio'
     const conferenteIdent = user ? `${user.matricula || ''} - ${user.nome || ''}`.replace(/^ - /, '') : 'SISTEMA'
 
     const currentSysRecord = rawSaldo.find(s => {
-      if (s.produto !== codNorm || s.armazem !== armPad) return false
+      if (String(s.produto || '').trim().toUpperCase() !== codNorm) return false
       const sf = String(s.filial || '01').padStart(2, '0')
-      return sf === filPad
+      const sa = String(s.armazem || '01').padStart(2, '0')
+      return sf === filPad && sa === armPad
     })
     const qtdSistema = currentSysRecord ? Number(currentSysRecord.quantidade || 0) : 0
+    const nowIso = new Date().toISOString()
 
     const payload = {
       filial: filPad,
@@ -844,19 +960,55 @@ export function InventoryProvider({ children }) {
       quantidade_sistema: qtdSistema,
       quem_contou: conferenteIdent,
       observacao: observacao || null,
-      created_at: new Date().toISOString()
+      created_at: nowIso
     }
 
-    // Grava localmente de imediato
+    // 1. ATUALIZAÇÃO OTIMISTA IMEDIATA (0ms) no estado local React
+    const newConfItem = {
+      created_at: nowIso,
+      produto: codNorm,
+      filial: filPad,
+      armazem: armPad,
+      qtd_contada: Number(quantidade),
+      conferente_nome: conferenteIdent,
+      observacao: observacao || ''
+    }
+
+    setRawConf(prev => {
+      const filtered = prev.filter(c => !(
+        String(c.filial || '01').padStart(2, '0') === filPad &&
+        String(c.armazem || '01').padStart(2, '0') === armPad &&
+        String(c.produto || '').trim().toUpperCase() === codNorm
+      ))
+      return [newConfItem, ...filtered]
+    })
+
+    if (validade || lote) {
+      setRawValidades(prev => [{
+        created_at: nowIso,
+        filial: filPad,
+        armazem: armPad,
+        produto: codNorm,
+        quantidade: Number(quantidade),
+        data_validade: validade || null,
+        lote: lote || null,
+        quem_registrou: user ? user.nome : 'SISTEMA',
+        observacao: observacao || null
+      }, ...prev])
+    }
+
     const countKey = `${armPad}_${codNorm}`
     const updatedLocal = { ...localCounts, [countKey]: Number(quantidade) }
     setLocalCounts(updatedLocal)
-    localStorage.setItem('amazon_local_counts', JSON.stringify(updatedLocal))
+    try {
+      localStorage.setItem('amazon_local_counts', JSON.stringify(updatedLocal))
+    } catch (e) {}
 
+    // 2. Gravação no Supabase e Auditoria
     try {
       const { error } = await supabase.from(contagemTable).insert([payload])
       if (error) {
-        console.warn('Erro ao salvar no Supabase, mantido em cache local:', error)
+        console.warn('Erro ao salvar no Supabase, contagem mantida no cache local:', error)
       } else {
         logAuditAction({
           filial: filPad,
@@ -870,7 +1022,6 @@ export function InventoryProvider({ children }) {
         })
       }
 
-      // Se informou validade ou lote, grava também em validade_comercio/validade_industria
       if (validade || lote) {
         const valTable = sector === 'INDUSTRIA' ? 'validade_industria' : 'validade_comercio'
         await supabase.from(valTable).insert([{
@@ -882,15 +1033,17 @@ export function InventoryProvider({ children }) {
           lote: lote || null,
           quem_registrou: user ? user.nome : 'SISTEMA',
           observacao: observacao || null,
-          created_at: new Date().toISOString()
+          created_at: nowIso
         }])
       }
     } catch (err) {
       console.warn('Falha de rede, contagem preservada localmente:', err)
     }
 
-    // Auto recarga silenciosa para sincronizar contagens consolidadas
-    setTimeout(() => loadData(true), 500)
+    // 3. Recarga silenciosa em background para sincronização definitiva
+    setTimeout(() => {
+      loadData(true)
+    }, 1000)
   }, [filial, sector, user, localCounts, rawSaldo, loadData])
 
   // Ação de Atualizar Tags do Produto no Supabase
