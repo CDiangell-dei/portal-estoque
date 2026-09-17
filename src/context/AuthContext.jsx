@@ -25,8 +25,12 @@ export function AuthProvider({ children }) {
         const parsed = JSON.parse(raw)
         if (parsed?.user?.matricula) {
           setUser(parsed.user)
-          if (!localStorage.getItem('amazon_selected_filial') && parsed.user.filial_atual) {
-            setFilialState(String(parsed.user.filial_atual).padStart(2, '0'))
+          if (!isGlobalFilial(parsed.user) && parsed.user.filial_atual) {
+            const lockedFil = String(parsed.user.filial_atual).padStart(2, '0')
+            setFilialState(lockedFil)
+            localStorage.setItem('amazon_selected_filial', lockedFil)
+          } else if (localStorage.getItem('amazon_selected_filial')) {
+            setFilialState(localStorage.getItem('amazon_selected_filial'))
           }
         }
       }
@@ -36,6 +40,17 @@ export function AuthProvider({ children }) {
       setLoading(false)
     }
   }, [])
+
+  // Garante que se o usuário não for admin global, a filial seja estritamente a atrelada ao login
+  useEffect(() => {
+    if (user && !isGlobalFilial(user) && user.filial_atual) {
+      const lockedFil = String(user.filial_atual).padStart(2, '0')
+      if (filial !== lockedFil) {
+        setFilialState(lockedFil)
+        localStorage.setItem('amazon_selected_filial', lockedFil)
+      }
+    }
+  }, [user, filial])
 
   useEffect(() => {
     // Sincroniza tema dark/light
@@ -58,6 +73,13 @@ export function AuthProvider({ children }) {
   }
 
   const setFilial = (newFilial) => {
+    if (!isGlobalFilial(user)) {
+      // Bloqueado: usuário comum não pode trocar de filial
+      const lockedFil = String(user?.filial_atual || '01').padStart(2, '0')
+      setFilialState(lockedFil)
+      localStorage.setItem('amazon_selected_filial', lockedFil)
+      return
+    }
     const pad = newFilial === 'ALL' ? 'ALL' : String(newFilial).padStart(2, '0')
     setFilialState(pad)
     localStorage.setItem('amazon_selected_filial', pad)

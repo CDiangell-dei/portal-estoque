@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { Target, CheckCircle, Sparkles, Filter } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useInventory } from '../../context/InventoryContext'
@@ -23,7 +23,7 @@ export default function DailyGoalBanner() {
   const isCompleted = doneCount >= targetCount
 
   return (
-    <div className="bg-gradient-to-r from-blue-900 to-[#002f6c] text-white p-4 sm:p-5 rounded-3xl shadow-md space-y-3">
+    <div className="bg-gradient-to-r from-blue-900 to-[#002f6c] text-white p-3.5 sm:p-5 rounded-3xl shadow-md space-y-3 w-full max-w-full overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         
         <div className="flex items-center gap-3">

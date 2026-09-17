@@ -124,7 +124,7 @@ function isGlobalFilial(user = null) {
     const usr = user || getCurrentUser();
     if (!usr) return false;
     const f = String(usr.filial_atual || usr.filial_comercio || usr.filial || '').trim();
-    return f === '00' || f === '0' || f === 'TODAS' || f === 'ALL';
+    return f === '00' || f === '0' || f === 'TODAS' || f === 'ALL' || usr.eh_admin === true || usr.role === 'admin' || usr.is_admin === true;
 }
 
 /**
@@ -140,6 +140,108 @@ function getUserAssignedFilial(user = null, sector = 'COMERCIO') {
         f = String(usr.filial_comercio || usr.filial_atual || '01').trim();
     }
     return f.padStart(2, '0');
+}
+
+/**
+ * Bloqueia estritamente e força todos os seletores e campos de filial na tela
+ * para a filial vinculada ao login do usuário, impedindo que usuários comuns alterem a filial.
+ */
+function enforceUserFilialLock(user = null) {
+    const usr = user || getCurrentUser();
+    if (!usr) return;
+    if (isGlobalFilial(usr)) return; // Administradores globais têm permissão
+
+    const currentSec = typeof currentSector !== 'undefined' ? currentSector : (typeof currentSd2Sector !== 'undefined' ? currentSd2Sector : 'COMERCIO');
+    const assignedPad = getUserAssignedFilial(usr, currentSec);
+    const assignedRaw = String(parseInt(assignedPad, 10));
+    const displayName = getFilialDisplayName(assignedPad, currentSec === 'INDUSTRIA' ? 'industria' : 'comercio');
+
+    try {
+        localStorage.setItem('amazon_selected_filial', assignedPad);
+    } catch (e) {}
+
+    // Lista explícita de IDs de selects e inputs de filial em todos os módulos
+    const targetIds = [
+        'kardexFilialFilter',
+        'valFilterFilial',
+        'valInputFilial',
+        'importValidadeFilial',
+        'transferFilialSelect',
+        'modalNewTransferFilial',
+        'histFilterFilial',
+        'filterMinutaFilial',
+        'minutaOrcamentoFilial',
+        'editMinutaOrcFilial',
+        'filterLuvasFilial',
+        'sim-target-branch'
+    ];
+
+    targetIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        if (el.tagName === 'SELECT') {
+            const hasPadOpt = el.querySelector(`option[value="${assignedPad}"]`);
+            const hasRawOpt = el.querySelector(`option[value="${assignedRaw}"]`);
+            
+            if (!hasPadOpt && !hasRawOpt) {
+                const opt = document.createElement('option');
+                opt.value = assignedPad;
+                opt.textContent = displayName;
+                el.appendChild(opt);
+            }
+            
+            el.value = hasPadOpt ? assignedPad : (hasRawOpt ? assignedRaw : assignedPad);
+            el.disabled = true;
+            el.classList.add('cursor-not-allowed', 'opacity-80');
+            el.classList.remove('cursor-pointer');
+            el.setAttribute('data-locked-filial', assignedPad);
+            el.title = `Filial travada ao login: ${displayName}`;
+        }
+    });
+
+    // Varre outros selects de filial genéricos
+    document.querySelectorAll('select').forEach(sel => {
+        const idLower = (sel.id || '').toLowerCase();
+        const nameLower = (sel.name || '').toLowerCase();
+        if (idLower.includes('filial') || idLower.includes('branch') || nameLower.includes('filial')) {
+            const hasPadOpt = sel.querySelector(`option[value="${assignedPad}"]`);
+            const hasRawOpt = sel.querySelector(`option[value="${assignedRaw}"]`);
+            if (hasPadOpt || hasRawOpt) {
+                sel.value = hasPadOpt ? assignedPad : assignedRaw;
+            }
+            sel.disabled = true;
+            sel.classList.add('cursor-not-allowed', 'opacity-80');
+            sel.classList.remove('cursor-pointer');
+            sel.setAttribute('data-locked-filial', assignedPad);
+            sel.title = `Filial travada ao login: ${displayName}`;
+        }
+    });
+}
+
+let filialLockObserverStarted = false;
+function initFilialLockObserver(user = null) {
+    if (filialLockObserverStarted || typeof MutationObserver === 'undefined') return;
+    const usr = user || getCurrentUser();
+    if (!usr || isGlobalFilial(usr)) return;
+
+    filialLockObserverStarted = true;
+    let timeoutId = null;
+
+    const observer = new MutationObserver(() => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            enforceUserFilialLock(usr);
+        }, 80);
+    });
+
+    if (document.body) {
+        observer.observe(document.body, { childList: true, subtree: true });
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+        });
+    }
 }
 
 // --- INICIALIZAÇÃO DO SUPABASE ---
@@ -233,9 +335,11 @@ async function checkAuth(requiredRole = null) {
         return null;
     }
 
-    // Atualiza cabeçalho
+    // Atualiza cabeçalho e permissões
     updateHeaderUserInfo(user);
     updateRolePermissionsUI(user);
+    enforceUserFilialLock(user);
+    initFilialLockObserver(user);
 
     // Sincroniza perfil do usuário em background
     if (supabaseClient && user.matricula) {
@@ -248,12 +352,15 @@ async function checkAuth(requiredRole = null) {
                 saveUserSession(currentUser);
                 updateHeaderUserInfo(currentUser);
                 updateRolePermissionsUI(currentUser);
+                enforceUserFilialLock(currentUser);
             }
         } catch (e) {
             console.warn("Sincronização de perfil em segundo plano falhou:", e);
         }
     }
 
+    enforceUserFilialLock(user);
+    initFilialLockObserver(user);
     return user;
 }
 

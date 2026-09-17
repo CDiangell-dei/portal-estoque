@@ -56,6 +56,8 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <!-- SheetJS (xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Utilitários Compartilhados de Autenticação e Filial -->
+    <script src="shared.js"></script>
 
     <style>
         body {
@@ -2155,6 +2157,18 @@
         function buildTargetBranchSelect() {
             const selectEl = document.getElementById("sim-target-branch");
             if (!selectEl) return;
+
+            if (typeof currentUser !== 'undefined' && currentUser && typeof isGlobalFilial === 'function' && !isGlobalFilial(currentUser)) {
+                const userFil = getUserAssignedFilial(currentUser, currentSd2Sector);
+                const userFilInt = parseInt(userFil, 10);
+                selectEl.innerHTML = `<option value="${userFilInt}" selected>${DIC_FILIAIS[userFilInt] || `Filial ${userFil}`}</option>`;
+                selectEl.value = String(userFilInt);
+                selectEl.disabled = true;
+                selectEl.classList.add('cursor-not-allowed', 'opacity-80');
+                selectEl.classList.remove('cursor-pointer');
+                return;
+            }
+
             const currentVal = selectEl.value;
             selectEl.innerHTML = "";
             const listToUse = (selectedBranches && selectedBranches.length > 0) ? selectedBranches : activeBranches;
@@ -3826,8 +3840,13 @@
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
         // Execução ao Carregar
-        window.onload = function() {
-            initSupabase();
+        window.onload = async function() {
+            if (typeof checkAuth === 'function') {
+                const user = await checkAuth();
+                if (!user) return;
+            } else {
+                initSupabase();
+            }
             const savedSec = localStorage.getItem('sd2_active_sector');
             if (savedSec && (savedSec === 'COMERCIO' || savedSec === 'INDUSTRIA')) {
                 currentSd2Sector = savedSec;

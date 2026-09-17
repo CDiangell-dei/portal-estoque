@@ -42,10 +42,10 @@ export default function InventarioPage() {
   const pageItems = filteredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE)
 
   return (
-    <div className="space-y-4 pb-16 max-w-7xl mx-auto px-3 sm:px-6 pt-4">
+    <div className="space-y-4 pb-16 max-w-7xl mx-auto px-2.5 sm:px-6 pt-4 w-full max-w-full overflow-x-hidden">
       
       {/* 1. KPIs Rápidos do Inventário */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 w-full max-w-full">
         
         {/* Com Saldo */}
         <div className="bg-white dark:bg-slate-800/90 p-3.5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col justify-between">

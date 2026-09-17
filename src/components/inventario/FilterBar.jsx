@@ -159,7 +159,7 @@ export default function FilterBar({ onOpenMassCount, onOpenImportSaldo }) {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800/90 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-3.5">
+    <div className="bg-white dark:bg-slate-800/90 p-3 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-3.5 w-full max-w-full overflow-hidden">
       
       {/* 1. Linha Superior: Busca Rápida + Ações Operacionais */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-2.5">
@@ -518,7 +518,7 @@ export default function FilterBar({ onOpenMassCount, onOpenImportSaldo }) {
       </div>
 
       {/* 3. Linha Inferior: Filtros de Status (Acurado, Ganho, Perda, Pendente) */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60">
         <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
           Status de Contagem:
         </span>
