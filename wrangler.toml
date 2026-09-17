@@ -1,6 +1,9 @@
-﻿name = "portal-estoque"
+name = "portal-estoque"
 main = "worker.js"
 compatibility_date = "2024-09-01"
+
+[build]
+command = "npm run build"
 
 [assets]
 directory = "./dist"
