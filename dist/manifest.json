@@ -1,0 +1,44 @@
+{
+  "name": "Amazon Aço - Controle de Estoque",
+  "short_name": "Amazon Aço",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "description": "Sistema de Controle de Estoques - Amazon Aço",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./logo_amazon_aco.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Solicitação de Estoque",
+      "short_name": "Solicitação",
+      "description": "Vendas, Cobertura & Remanejamento SD2",
+      "url": "./solicitacao_estoque.html",
+      "icons": [
+        {
+          "src": "./icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
+
