@@ -17,7 +17,9 @@ import {
   Shield,
   FileText,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Menu,
+  X
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useInventory } from '../../context/InventoryContext'
@@ -30,6 +32,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
   const [showEstoqueDropdown, setShowEstoqueDropdown] = useState(false)
   const [showAlmoxDropdown, setShowAlmoxDropdown] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isAlmoxarife = user?.eh_almoxarife === true || user?.eh_admin === true
   const isAdmin = user?.eh_admin === true
@@ -41,38 +44,46 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
       <header className="bg-white/95 dark:bg-[#0B132B]/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 transition-colors shadow-xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6">
-          <div className="flex items-center justify-between h-16 gap-2">
+          <div className="flex items-center justify-between h-16 gap-3">
             
             {/* Logo & Brand */}
             <button 
               type="button"
-              onClick={() => setActiveTab('home')}
-              className="flex items-center space-x-3 text-left cursor-pointer group"
+              onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }}
+              className="flex items-center gap-2.5 text-left cursor-pointer group flex-shrink-0"
+              title="Amazon Aço - Início"
             >
               <img 
                 src={logoAmazonAco} 
                 alt="Amazon Aço" 
                 fetchPriority="high" 
                 loading="eager" 
-                className="h-9 sm:h-10 w-auto flex-shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-102 dark:bg-white/95 dark:p-1.5 dark:rounded-xl" 
+                className="h-8 sm:h-9 w-auto flex-shrink-0 object-contain drop-shadow-xs transition-transform group-hover:scale-102 dark:bg-white/95 dark:p-1 dark:rounded-xl" 
               />
-              <div className="border-l border-slate-200 dark:border-slate-800 pl-3 hidden sm:block">
+              
+              {/* Badge Setor visível em telas intermediárias */}
+              <span className="hidden xl:inline-block 2xl:hidden bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#B40D15]/20 uppercase tracking-wider whitespace-nowrap">
+                {sector}
+              </span>
+
+              {/* Subtítulo completo apenas em telas ultra-wide para evitar sobreposição nos menus */}
+              <div className="border-l border-slate-200 dark:border-slate-800 pl-3 hidden 2xl:flex flex-col justify-center flex-shrink-0 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase">
+                  <span className="text-xs font-black tracking-tight text-[#002f6c] dark:text-white uppercase whitespace-nowrap">
                     WMS Almoxarifado
                   </span>
-                  <span className="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#B40D15]/20 uppercase tracking-wider">
+                  <span className="bg-[#B40D15]/10 text-[#B40D15] dark:bg-rose-950/50 dark:text-rose-300 text-[9px] px-2 py-0.5 rounded-full font-extrabold border border-[#B40D15]/20 uppercase tracking-wider whitespace-nowrap">
                     {sector}
                   </span>
                 </div>
-                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-tight whitespace-nowrap">
                   Portal de Controle de Estoques
                 </p>
               </div>
             </button>
 
           {/* Navigation Tabs Desktop */}
-          <nav className="hidden lg:flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+          <nav className="hidden lg:flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700 flex-shrink-0 space-x-1">
             {/* INÍCIO */}
             <button
               onClick={() => { setActiveTab('home'); setShowEstoqueDropdown(false); setShowAlmoxDropdown(false); }}
@@ -240,17 +251,17 @@ export default function Navbar({ activeTab, setActiveTab }) {
           </nav>
 
           {/* Controls: Sector, Filial, Theme, User */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             
             {/* Seletor de Setor: COMÉRCIO vs INDÚSTRIA */}
             <button
               type="button"
               onClick={() => setSector(sector === 'COMERCIO' ? 'INDUSTRIA' : 'COMERCIO')}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-black bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
               title="Alternar entre Comércio e Indústria"
             >
               <Building2 className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden lg:inline">{sector === 'COMERCIO' ? 'Comércio' : 'Indústria'}</span>
+              <span className="hidden xl:inline">{sector === 'COMERCIO' ? 'Comércio' : 'Indústria'}</span>
             </button>
 
             {/* Seletor de Filial */}
@@ -258,7 +269,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
               value={filial}
               onChange={(e) => setFilial(e.target.value)}
               disabled={!isGlobal}
-              className={`bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-800 dark:text-slate-100 rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-[#002f6c] ${
+              className={`bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-800 dark:text-slate-100 rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-[#002f6c] max-w-[125px] sm:max-w-[170px] truncate flex-shrink-0 ${
                 !isGlobal ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
@@ -275,7 +286,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
               type="button"
               onClick={() => reload()}
               disabled={loading}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer flex-shrink-0"
               title="Atualizar dados do inventário"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
@@ -285,15 +296,15 @@ export default function Navbar({ activeTab, setActiveTab }) {
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer flex-shrink-0"
               title="Alternar Tema Claro / Escuro"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
             </button>
 
             {/* Perfil & Logout */}
-            <div className="flex items-center gap-1.5 pl-1 sm:pl-2 border-l border-slate-200 dark:border-slate-800">
-              <div className="hidden sm:flex flex-col text-right">
+            <div className="flex items-center gap-1.5 pl-1 sm:pl-2 border-l border-slate-200 dark:border-slate-800 flex-shrink-0">
+              <div className="hidden 2xl:flex flex-col text-right">
                 <span className="text-xs font-black text-slate-800 dark:text-slate-100 leading-tight">
                   {user?.nome || 'Usuário'}
                 </span>
@@ -312,9 +323,108 @@ export default function Navbar({ activeTab, setActiveTab }) {
               </button>
             </div>
 
+            {/* Botão Hambúrguer Mobile (< lg) */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex-shrink-0"
+              title="Abrir Menu de Navegação"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
           </div>
 
         </div>
+
+        {/* Dropdown Menu Mobile */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 py-3 px-2 space-y-2 animate-in slide-in-from-top-2 duration-150 bg-white/95 dark:bg-[#0B132B]/95">
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }}
+                className={`p-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-colors cursor-pointer ${
+                  activeTab === 'home'
+                    ? 'bg-[#002f6c] text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                <Home className="w-4 h-4" />
+                <span>Início</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('inventario'); setMobileMenuOpen(false); }}
+                className={`p-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-colors cursor-pointer ${
+                  activeTab === 'inventario'
+                    ? 'bg-[#002f6c] text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                <ClipboardList className="w-4 h-4 text-blue-500" />
+                <span>Inventário</span>
+              </button>
+
+              <a
+                href="solicitacao_estoque.html"
+                className="p-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <ShoppingCart className="w-4 h-4 text-slate-500" />
+                <span>Solicitação</span>
+              </a>
+
+              <a
+                href="transferencia.html"
+                className="p-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Truck className="w-4 h-4 text-teal-600" />
+                <span>Transferência</span>
+              </a>
+
+              <a
+                href="kardex.html"
+                className="p-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <History className="w-4 h-4 text-amber-600" />
+                <span>Kardex</span>
+              </a>
+
+              <a
+                href="validade.html"
+                className="p-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <CalendarClock className="w-4 h-4 text-rose-600" />
+                <span>Validade</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => { setActiveTab('ranking'); setMobileMenuOpen(false); }}
+                className={`p-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-colors cursor-pointer ${
+                  activeTab === 'ranking'
+                    ? 'bg-[#002f6c] text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
+                }`}
+              >
+                <Layers className="w-4 h-4 text-blue-500" />
+                <span>Produtividade</span>
+              </button>
+
+              {isAdmin && (
+                <a
+                  href="admin.html"
+                  className="p-2.5 rounded-xl text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300/40 flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 text-amber-600" />
+                  <span>Admin</span>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </header>
   </div>
